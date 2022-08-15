@@ -1,0 +1,54 @@
+{
+  "parser": "vue-eslint-parser",
+  "parserOptions": {
+    "parser": "@babel/eslint-parser",
+    "sourceType": "module"
+  },
+  "extends": [
+    "eslint:recommended",
+    "plugin:vue/recommended"
+  ],
+  "plugins": [
+    "@babel"
+  ],
+  "env": {
+    "es6": true,
+    "browser": true,
+    "node": true
+  },
+  "globals": {
+    "LM_OK": false,
+    "LM_INFO": false,
+    "LM_WARN": false,
+    "LM_ERR": false,
+    "LM_FATAL": false,
+    "LM_TOTAL": false
+  },
+  "rules": {
+    "vue/html-indent": ["warn", 4, {
+      "alignAttributesVertically": false
+    }],
+    "vue/max-attributes-per-line": "off",
+    "vue/html-self-closing": "off",
+    "vue/no-v-html": "off",
+    "vue/no-v-model-argument": "off",
+
+    "strict": 0,
+    "indent": [0, 4, {
+      "SwitchCase": 1
+    }],
+    "space-before-function-paren": [2, "never"],
+    "valid-jsdoc": [2, {
+      "requireReturn": false,
+      "prefer": {
+        "returns": "return"
+      }
+    }],
+    "require-jsdoc": 0,
+    "max-len": [1, 200, 4, {
+      "ignoreComments": true,
+      "ignoreUrls": true
+    }],
+    "no-console": off
+  }
+}
