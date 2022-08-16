@@ -1,6 +1,8 @@
 const WebSocket = require ('ws');
 const _ = require('lodash');
 
+const WorkerState = require('../core/WorkerState');//singleton
+const WebWorker = require('../core/WebWorker');//singleton
 const log = new (require('../core/AppLogger'))().log;//singleton
 //const utils = require('../core/utils');
 
@@ -11,6 +13,9 @@ class WebSocketController {
     constructor(wss, config) {
         this.config = config;
         this.isDevelopment = (config.branch == 'development');
+
+        this.workerState = new WorkerState();
+        this.webWorker = new WebWorker(config);
 
         this.wss = wss;
 
@@ -59,6 +64,8 @@ class WebSocketController {
                     await this.test(req, ws); break;
                 case 'get-config':
                     await this.getConfig(req, ws); break;
+                case 'get-worker-state':
+                    await this.getWorkerState(req, ws); break;
 
                 default:
                     throw new Error(`Action not found: ${req.action}`);
@@ -98,6 +105,14 @@ class WebSocketController {
         } else {
             throw new Error('params is not an array');
         }
+    }
+
+    async getWorkerState(req, ws) {
+        if (!req.workerId)
+            throw new Error(`key 'workerId' is empty`);
+
+        const state = this.workerState.getState(req.workerId);
+        this.send((state ? state : {}), req, ws);
     }
 
 }
