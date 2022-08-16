@@ -1,5 +1,6 @@
 const fs = require('fs-extra');
-const argv = require('minimist')(process.argv.slice(2));
+const path = require('path');
+
 const express = require('express');
 const compression = require('compression');
 const http = require('http');
@@ -8,12 +9,30 @@ const WebSocket = require ('ws');
 const ayncExit = new (require('./core/AsyncExit'))();
 const utils = require('./core/utils');
 
-let log = null;
-let config = null;
-
 const maxPayloadSize = 50;//in MB
 
+let log;
+let config;
+let argv;
+const argvStrings = ['lib-dir', 'inpx'];
+
+function showHelp() {
+    console.log(utils.versionText(config));
+    console.log(
+`Usage: ${config.name} [options]
+
+Options:
+  --help              Print ${config.name} command line options
+  --lib-dir=<dirpath> Set library directory, default: the same as ${config.name} executable
+  --inpx=<filepath>   Set INPX collection file, default: the one that found in library dir
+  --recreate          Force recreation of the search database on start
+`
+    );
+}
+
 async function init() {
+    argv = require('minimist')(process.argv.slice(2), {string: argvStrings});
+
     //config
     const configManager = new (require('./config'))();//singleton
     await configManager.init();
@@ -26,11 +45,52 @@ async function init() {
     await appLogger.init(config);
     log = appLogger.log;
 
-    if (!argv.help) {
+    //cli
+    if (argv.help) {
+        showHelp();
+        ayncExit.exit(0);
+    } else {
         log(utils.versionText(config));
         log('Initializing');
     }
 
+    const libDir = argv['lib-dir'];
+    if (libDir) {
+        if (await fs.pathExists(libDir)) {
+            config.libDir = libDir;
+        } else {
+            throw new Error(`Directory "${libDir}" not exists`);
+        }
+    } else {
+        config.libDir = config.execDir;
+    }
+
+    if (argv.inpx) {
+        if (await fs.pathExists(argv.inpx)) {
+            config.inpxFile = argv.inpx;
+        } else {
+            throw new Error(`File "${argv.inpx}" not found`);
+        }
+    } else {
+        const inpxFiles = [];
+        await utils.findFiles((file) => {
+            if (path.extname(file) == '.inpx')
+                inpxFiles.push(file);
+        }, config.libDir, false);
+
+        if (inpxFiles.length) {
+            if (inpxFiles.length == 1) {
+                config.inpxFile = inpxFiles[0];
+            } else {
+                throw new Error(`Found more than one .inpx files: \n${inpxFiles.join('\n')}`);
+            }
+        } else {
+            throw new Error(`No .inpx files found here: ${config.libDir}`);
+        }
+    }
+
+    config.recreateDb = argv.recreate || false;
+    
     //dirs
     await fs.ensureDir(config.dataDir);
     await fs.ensureDir(config.tempDir);
@@ -44,23 +104,7 @@ async function init() {
     }
 }
 
-function showHelp() {
-    console.log(utils.versionText(config));
-    console.log(
-`Usage: ${config.name} [options]
-
-Options:
-  --help         Print ${config.name} command line options
-`
-    );
-}
-
 async function main() {
-    if (argv.help) {
-        showHelp();
-        ayncExit.exit(0);
-    }
-
     const log = new (require('./core/AppLogger'))().log;//singleton
 
     //server
