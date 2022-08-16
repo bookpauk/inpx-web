@@ -5,7 +5,7 @@
   "license": "CC0-1.0",
   "repository": "bookpauk/inpx-web",
   "engines": {
-    "node": ">=14.4.0"
+    "node": ">=16.16.0"
   },
   "scripts": {
     "dev": "nodemon --inspect --ignore server/.inpx-web --ignore client --exec 'node server --lib-dir=.inpx-web/lib'",
