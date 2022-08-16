@@ -45,6 +45,11 @@ async function init() {
     await appLogger.init(config);
     log = appLogger.log;
 
+    //dirs
+    await fs.ensureDir(config.dataDir);
+    await fs.ensureDir(config.tempDir);
+    await fs.emptyDir(config.tempDir);
+
     //cli
     if (argv.help) {
         showHelp();
@@ -90,12 +95,8 @@ async function init() {
     }
 
     config.recreateDb = argv.recreate || false;
-    
-    //dirs
-    await fs.ensureDir(config.dataDir);
-    await fs.ensureDir(config.tempDir);
-    await fs.emptyDir(config.tempDir);
 
+    //app
     const appDir = `${config.publicDir}/app`;
     const appNewDir = `${config.publicDir}/app_new`;
     if (await fs.pathExists(appNewDir)) {
