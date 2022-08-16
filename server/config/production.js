@@ -7,6 +7,8 @@ const dataDir = `${execDir}/.${pckg.name}`;
 
 module.exports = Object.assign({}, base, {
     branch: 'production',
+
+    execDir,
     dataDir,
     tempDir: `${dataDir}/tmp`,
     logDir: `${dataDir}/log`,

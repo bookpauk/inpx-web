@@ -9,6 +9,7 @@ module.exports = {
     version: pckg.version,
     name: pckg.name,
 
+    execDir,
     dataDir,
     tempDir: `${dataDir}/tmp`,
     logDir: `${dataDir}/log`,
