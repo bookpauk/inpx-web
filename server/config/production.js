@@ -3,7 +3,7 @@ const pckg = require('../../package.json');
 const base = require('./base');
 
 const execDir = path.dirname(process.execPath);
-const dataDir = `${execDir}/.${pckg.name}/data`;
+const dataDir = `${execDir}/.${pckg.name}`;
 
 module.exports = Object.assign({}, base, {
     branch: 'production',

@@ -2,7 +2,7 @@ const path = require('path');
 const pckg = require('../../package.json');
 
 const execDir = path.resolve(__dirname, '..');
-const dataDir = `${execDir}/.${pckg.name}/data`;
+const dataDir = `${execDir}/.${pckg.name}`;
 
 module.exports = {
     branch: 'unknown',

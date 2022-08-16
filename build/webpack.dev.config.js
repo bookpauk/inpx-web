@@ -1,5 +1,6 @@
 const path = require('path');
 const webpack = require('webpack');
+const pckg = require('../package.json');
 
 const { merge } = require('webpack-merge');
 const baseWpConfig = require('./webpack.base.config');
@@ -8,7 +9,7 @@ baseWpConfig.entry.unshift('webpack-hot-middleware/client');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
 
-const publicDir = path.resolve(__dirname, '../server/public');
+const publicDir = path.resolve(__dirname, `../server/.${pckg.name}/public`);
 const clientDir = path.resolve(__dirname, '../client');
 
 module.exports = merge(baseWpConfig, {

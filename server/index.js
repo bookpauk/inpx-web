@@ -105,6 +105,17 @@ async function main() {
 function initStatic(app, config) {// eslint-disable-line
     //загрузка файлов в /files
     //TODO
+
+    app.use(express.static(config.publicDir, {
+        maxAge: '30d',
+
+        /*setHeaders: (res, filePath) => {
+            if (path.dirname(filePath) == filesDir) {
+                res.set('Content-Type', 'application/xml');
+                res.set('Content-Encoding', 'gzip');
+            }
+        },*/
+    }));
 }
 
 (async() => {
