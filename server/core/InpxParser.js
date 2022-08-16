@@ -37,33 +37,41 @@ class InpxParser {
         try {
             const info = this.inpxInfo;
 
+            //посчитаем inp-файлы
+            const entries = Object.values(zipReader.entries);
+            const inpFiles = [];
+            for (const entry of entries) {
+                if (!entry.isDirectory && path.extname(entry.name) == '.inp')
+                    inpFiles.push(entry.name);
+            }            
+
+            //плюс 3 файла .info
+            await readFileCallback({total: inpFiles.length + 3});
+
+            let current = 0;
             //info
-            await readFileCallback(collectionInfo);
+            await readFileCallback({fileName: collectionInfo, current: ++current});
             info.collection = await this.safeExtractToString(zipReader, collectionInfo);
             
-            await readFileCallback(structureInfo);
+            await readFileCallback({fileName: structureInfo, current: ++current});
             info.structure = await this.safeExtractToString(zipReader, structureInfo);
             
-            await readFileCallback(versionInfo);
+            await readFileCallback({fileName: versionInfo, current: ++current});
             info.version = await this.safeExtractToString(zipReader, versionInfo);
 
-            //structure
+            //структура
             let inpxStructure = info.structure;
             if (!inpxStructure)
                 inpxStructure = defaultStructure;
             inpxStructure = inpxStructure.toLowerCase();
             const structure = inpxStructure.split(';');
 
-            //inp-файлы
-            const entries = Object.values(zipReader.entries);
-            for (const entry of entries) {
-                if (!entry.isDirectory && path.extname(entry.name) == '.inp') {
-
-                    await readFileCallback(entry.name);
-                    const buf = await zipReader.extractToBuf(entry.name);
-                    
-                    await this.parseInp(buf, structure, parsedCallback);
-                }
+            //парсим inp-файлы
+            for (const inpFile of inpFiles) {
+                await readFileCallback({fileName: inpFile, current: ++current});
+                const buf = await zipReader.extractToBuf(inpFile);
+                
+                await this.parseInp(buf, structure, parsedCallback);
             }
         } finally {
             zipReader.close();

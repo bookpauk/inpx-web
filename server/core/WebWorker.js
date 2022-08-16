@@ -63,6 +63,7 @@ class WebWorker {
 
     async createDb(dbPath) {
         this.setMyState(ssDbCreating);
+        log('Creating search DB');
 
         const config = this.config;
 
@@ -81,10 +82,25 @@ class WebWorker {
         });
 
         try {
+            log('  start INPX import');
             const dbCreator = new DbCreator(config);        
-            await dbCreator.run(db, (state) => this.setMyState(ssDbCreating, state));
+
+            let fileName = '';
+            await dbCreator.run(db, (state) => {
+                this.setMyState(ssDbCreating, state);
+
+                if (state.fileName && state.fileName !== fileName) {
+                    fileName = state.fileName;
+                    log(`  load ${fileName}`);
+                }
+                if (state.recsLoaded)
+                    log(`  processed ${state.recsLoaded} records`);
+            });
+
+            log('  finish INPX import');
         } finally {
             await db.unlock();
+            log('Search DB created');
         }
     }
 
@@ -105,6 +121,7 @@ class WebWorker {
 
             //загружаем БД
             this.setMyState(ssDbLoading);
+            log('Open search DB');
 
             this.db = new JembaDbThread();
             await this.db.lock({
@@ -118,6 +135,8 @@ class WebWorker {
 
             //открываем все таблицы
             await this.db.openAll();
+
+            log('Search DB ready');
         } catch (e) {
             log(LM_FATAL, e.message);            
             ayncExit.exit(1);
