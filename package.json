@@ -55,6 +55,7 @@
     "localforage": "^1.10.0",
     "lodash": "^4.17.21",
     "minimist": "^1.2.6",
+    "node-stream-zip": "^1.15.0",
     "quasar": "^2.7.5",
     "vue": "^3.2.37",
     "vue-router": "^4.1.2",
