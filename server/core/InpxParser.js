@@ -1,4 +1,4 @@
-const path = require(path);
+const path = require('path');
 const ZipReader = require('./ZipReader');
 
 const collectionInfo = 'collection.info';
@@ -9,18 +9,18 @@ const defaultStructure = 'AUTHOR;GENRE;TITLE;SERIES;SERNO;FILE;SIZE;LIBID;DEL;EX
 
 class InpxParser {
     constructor() {
-        this.info = {};
+        this.inpxInfo = {};
     }
 
     async safeExtractToString(zipReader, fileName) {
         let result = '';
 
         try {
-            result = await zipReader.extractToBuf(fileName).toString();
+            result = (await zipReader.extractToBuf(fileName)).toString().trim();
         } catch (e) {
             //quiet
         }
-        return result.trim();
+        return result;
     }
 
     async parse(inpxFile, readFileCallback, parsedCallback) {
@@ -35,7 +35,7 @@ class InpxParser {
         await zipReader.open(inpxFile);
 
         try {
-            const info = this.info;
+            const info = this.inpxInfo;
 
             //info
             await readFileCallback(collectionInfo);
@@ -55,14 +55,14 @@ class InpxParser {
             const structure = inpxStructure.split(';');
 
             //inp-файлы
-            let chunk = [];
             const entries = Object.values(zipReader.entries);
             for (const entry of entries) {
                 if (!entry.isDirectory && path.extname(entry.name) == '.inp') {
 
                     await readFileCallback(entry.name);
                     const buf = await zipReader.extractToBuf(entry.name);
-                    chunk.push(this.parseInp(buf, structure));
+                    
+                    await this.parseInp(buf, structure, parsedCallback);
                 }
             }
         } finally {
@@ -70,13 +70,60 @@ class InpxParser {
         }
     }
 
-    parseInp(inpBuf, structure) {
+    async parseInp(inpBuf, structure, parsedCallback) {
+        const structLen = structure.length;
         const rows = inpBuf.toString().split('\n');
-        console.log(rows);
+
+        let chunk = [];
+        for (const row of rows) {
+            let line = row;
+            if (!line)
+                continue;
+
+            if (line[line.length - 1] == '\x0D')
+                line = line.substring(0, line.length - 1);
+
+            //парсим запись
+            const parts = line.split('\x04');
+            const rec = {};
+
+            const len = (parts.length > structLen ? structLen : parts.length);
+            for (let i = 0; i < len; i++) {
+                if (structure[i])
+                    rec[structure[i]] = parts[i];
+            }
+
+            //специальная обработка некоторых полей
+            if (rec.author) {
+                rec.author = rec.author.split(':').map(s => s.replace(/,/g, ' ').trim()).filter(s => s).join(',');
+            }
+
+            if (rec.genre) {
+                rec.genre = rec.genre.split(':').filter(s => s).join(',');
+            }
+
+            rec.serno = parseInt(rec.serno, 10) || 0;
+            rec.size = parseInt(rec.size, 10) || 0;
+            rec.del = parseInt(rec.del, 10) || 0;
+            rec.insno = parseInt(rec.insno, 10) || 0;
+            rec.librate = parseInt(rec.librate, 10) || 0;
+
+            //пушим
+            chunk.push(rec);
+
+            if (chunk.length >= 10000) {
+                await parsedCallback(chunk);
+                chunk = [];
+            }
+        }
+
+        if (chunk.length) {
+            await parsedCallback(chunk);
+        }
     }
 
     get info() {
-        return this.info;
+        return this.inpxInfo;
     }
 }
 
