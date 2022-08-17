@@ -67,12 +67,18 @@ class InpxParser {
             const structure = inpxStructure.split(';');
 
             //парсим inp-файлы
+            this.chunk = [];
             for (const inpFile of inpFiles) {
                 await readFileCallback({fileName: inpFile, current: ++current});
                 const buf = await zipReader.extractToBuf(inpFile);
                 
                 await this.parseInp(buf, structure, parsedCallback);
             }
+
+            if (this.chunk.length) {
+                await parsedCallback(this.chunk);
+            }
+            
         } finally {
             zipReader.close();
         }
@@ -82,7 +88,6 @@ class InpxParser {
         const structLen = structure.length;
         const rows = inpBuf.toString().split('\n');
 
-        let chunk = [];
         for (const row of rows) {
             let line = row;
             if (!line)
@@ -117,16 +122,12 @@ class InpxParser {
             rec.librate = parseInt(rec.librate, 10) || 0;
 
             //пушим
-            chunk.push(rec);
+            this.chunk.push(rec);
 
-            if (chunk.length >= 10000) {
-                await parsedCallback(chunk);
-                chunk = [];
+            if (this.chunk.length >= 10000) {
+                await parsedCallback(this.chunk);
+                this.chunk = [];
             }
-        }
-
-        if (chunk.length) {
-            await parsedCallback(chunk);
         }
     }
 
