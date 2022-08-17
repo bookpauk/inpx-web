@@ -1,3 +1,4 @@
+const os = require('os');
 const fs = require('fs-extra');
 
 const WorkerState = require('./WorkerState');
@@ -6,6 +7,7 @@ const DbCreator = require('./DbCreator');
 
 const ayncExit = new (require('./AsyncExit'))();
 const log = new (require('./AppLogger'))().log;//singleton
+const utils = require('./utils');
 
 //server states
 const ssNormal = 'normal';
@@ -34,6 +36,7 @@ class WebWorker {
             ayncExit.add(this.closeDb.bind(this));
 
             this.loadOrCreateDb();//no await
+            this.logServerStats();//no await
 
             instance = this;
         }
@@ -70,7 +73,7 @@ class WebWorker {
         if (await fs.pathExists(dbPath))
             throw new Error(`createDb.pathExists: ${dbPath}`);
 
-        const db = new JembaDbThread();
+        const db = new JembaDbThread();//создаем не в потоке, чтобы лучше работал GC
         await db.lock({
             dbPath,
             create: true,
@@ -92,6 +95,8 @@ class WebWorker {
                     log(`  load ${state.fileName}`);
                 if (state.recsLoaded)
                     log(`  processed ${state.recsLoaded} records`);
+                if (state.job)
+                    log(`  ${state.job}`);
             });
 
             log('  finish INPX import');
@@ -132,6 +137,7 @@ class WebWorker {
 
             //открываем все таблицы
             await this.db.openAll();
+            await this.db.close({table: 'title'});
 
             log('Searcher DB is ready');
         } catch (e) {
@@ -139,6 +145,21 @@ class WebWorker {
             ayncExit.exit(1);
         } finally {
             this.setMyState(ssNormal);
+        }
+    }
+
+    async logServerStats() {
+        while (1) {// eslint-disable-line
+            try {
+                const memUsage = process.memoryUsage().rss/(1024*1024);//Mb
+                let loadAvg = os.loadavg();
+                loadAvg = loadAvg.map(v => v.toFixed(2));
+
+                log(`Server info [ memUsage: ${memUsage.toFixed(2)}MB, loadAvg: (${loadAvg.join(', ')}) ]`);
+            } catch (e) {
+                log(LM_ERR, e.message);
+            }
+            await utils.sleep(5000);
         }
     }
 }

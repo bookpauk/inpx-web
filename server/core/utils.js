@@ -34,10 +34,20 @@ function hasProp(obj, prop) {
     return Object.prototype.hasOwnProperty.call(obj, prop);
 }
 
+function freeMemory() {
+    if (global.gc) {
+        global.gc();
+        global.gc();
+        global.gc();
+    }
+}
+
+
 module.exports = {
     sleep,
     versionText,
     findFiles,
     touchFile,
     hasProp,
+    freeMemory,
 };
