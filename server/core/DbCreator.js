@@ -28,15 +28,33 @@ class DbCreator {
         let titleArr = [];
         let genreMap = new Map();//жанры
         let genreArr = [];
+        let langMap = new Map();//языки
+        let langArr = [];
 
+        //stats
+        let authorCount = 0;
+        let bookCount = 0;
+        let noAuthorBookCount = 0;
+        let bookDelCount = 0;
+
+        //stuff
         let recsLoaded = 0;
         let id = 0;
+        let chunkNum = 0;
         const parsedCallback = async(chunk) => {
             for (const rec of chunk) {
                 rec.id = ++id;
 
-                if (!rec.author)
-                    continue;
+                if (!rec.del)
+                    bookCount++;
+                else 
+                    bookDelCount++;
+
+                if (!rec.author) {
+                    if (!rec.del)
+                        noAuthorBookCount++;
+                    rec.author = 'Автор не указан';
+                }
 
                 //авторы
                 const author = rec.author.split(',');
@@ -44,8 +62,10 @@ class DbCreator {
                     author.push(rec.author);
 
                 const authorIds = [];
-                for (const a of author) {
-                    let authorRec;
+                for (let i = 0; i < author.length; i++) {
+                    const a = author[i];
+
+                    let authorRec;                    
                     if (authorMap.has(a)) {
                          const authorId = authorMap.get(a);
                          authorRec = authorArr[authorId];
@@ -53,6 +73,9 @@ class DbCreator {
                         authorRec = {id: authorArr.length, author: a, value: a.toLowerCase(), bookId: []};
                         authorArr.push(authorRec);
                         authorMap.set(a, authorRec.id);
+
+                        if (author.length == 1 || i < author.length - 1) //без соавторов
+                            authorCount++;
                     }
 
                     authorRec.bookId.push(id);
@@ -84,8 +107,8 @@ class DbCreator {
 
                     let titleRec;
                     if (titleMap.has(title)) {
-                        const titileId = titleMap.get(title);
-                        titleRec = titleArr[titileId];
+                        const titleId = titleMap.get(title);
+                        titleRec = titleArr[titleId];
                     } else {
                         titleRec = {id: titleArr.length, value: title.toLowerCase(), authorId: new Set()};
                         titleArr.push(titleRec);
@@ -117,19 +140,39 @@ class DbCreator {
                         }
                     }
                 }
+
+                //языки
+                if (rec.lang) {
+                    const lang = rec.lang;
+
+                    let langRec;
+                    if (langMap.has(lang)) {
+                        const langId = langMap.get(lang);
+                        langRec = langArr[langId];
+                    } else {
+                        langRec = {id: langArr.length, value: lang, authorId: new Set()};
+                        langArr.push(langRec);
+                        langMap.set(lang, langRec.id);
+                    }
+
+                    for (const id of authorIds) {
+                        langRec.authorId.add(id);
+                    }
+                }
             }
 
             await db.insert({table: 'book', rows: chunk});
             
             recsLoaded += chunk.length;
             callback({recsLoaded});
+
+            if (chunkNum++ % 10 == 0)
+                utils.freeMemory();
         };
 
         //парсинг
         const parser = new InpxParser();
         await parser.parse(config.inpxFile, readFileCallback, parsedCallback);
-
-        callback({job: 'config save', jobMessage: 'Сохранение конфигурации'});
 
         //чистка памяти, ибо жрет как не в себя
         authorMap = null;
@@ -139,13 +182,35 @@ class DbCreator {
 
         utils.freeMemory();
 
-        //конфиг
+        //config
+        callback({job: 'config save', jobMessage: 'Сохранение конфигурации'});
+        await db.create({
+            table: 'config'
+        });
 
-        console.log('author:', authorArr.length);
-        console.log('series:', seriesArr.length);
-        console.log('title:', titleArr.length);
-        console.log('genre:', genreArr.length);
+        const stats = {
+            recsLoaded,
+            authorCount,
+            authorCountAll: authorArr.length,
+            bookCount,
+            bookCountAll: bookCount + bookDelCount,
+            bookDelCount,
+            noAuthorBookCount,
+            titleCount: titleArr.length,
+            seriesCount: seriesArr.length,
+            genreCount: genreArr.length,
+            langCount: langArr.length,
+        };
 
+        console.log(stats);
+
+        const inpxHash = await utils.getFileHash(config.inpxFile, 'sha256', 'hex');
+
+        await db.insert({table: 'config', rows: [
+            {id: 'inpxInfo', value: parser.info},
+            {id: 'stats', value: stats},
+            {id: 'inpxHash', value: inpxHash},
+        ]});
 
         //сохраним поисковые таблицы
         const chunkSize = 10000;
@@ -196,12 +261,16 @@ class DbCreator {
         });
 
         //вставка в БД по кусочкам, экономим память
+        let j = 0;
         for (let i = 0; i < titleArr.length; i += chunkSize) {
             const chunk = titleArr.slice(i, i + chunkSize);
             for (const rec of chunk)
                 rec.authorId = Array.from(rec.authorId);
 
             await db.insert({table: 'title', rows: chunk});
+            if (j++ % 10 == 0)
+                utils.freeMemory();
+            await utils.sleep(100);
         }
 
         titleArr = null;
@@ -226,6 +295,26 @@ class DbCreator {
 
         genreArr = null;
         await db.close({table: 'genre'});
+        utils.freeMemory();
+
+        //genre
+        callback({job: 'lang save', jobMessage: 'Сохранение языков'});
+        await db.create({
+            table: 'lang',
+            index: {field: 'value', depth: config.indexDepth},
+        });
+
+        //вставка в БД по кусочкам, экономим память
+        for (let i = 0; i < langArr.length; i += chunkSize) {
+            const chunk = langArr.slice(i, i + chunkSize);
+            for (const rec of chunk)
+                rec.authorId = Array.from(rec.authorId);
+
+            await db.insert({table: 'lang', rows: chunk});
+        }
+
+        langArr = null;
+        await db.close({table: 'lang'});
         utils.freeMemory();
 
         callback({job: 'done', jobMessage: ''});

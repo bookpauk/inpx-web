@@ -96,7 +96,7 @@ async function init() {
 
     config.recreateDb = argv.recreate || false;
 
-    //TODO as cli param
+    //TODO as cli param?
     config.indexDepth = 1000;
 
     //app

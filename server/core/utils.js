@@ -1,5 +1,6 @@
 const fs = require('fs-extra');
 const path = require('path');
+const crypto = require('crypto');
 
 function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
@@ -42,6 +43,21 @@ function freeMemory() {
     }
 }
 
+function getFileHash(filename, hashName, enc) {
+    return new Promise((resolve, reject) => {
+        const hash = crypto.createHash(hashName);
+        const rs = fs.createReadStream(filename);
+        rs.on('error', reject);
+        rs.on('data', chunk => hash.update(chunk));
+        rs.on('end', () => resolve(hash.digest(enc)));
+    });
+}
+
+function getBufHash(buf, hashName, enc) {
+    const hash = crypto.createHash(hashName);
+    hash.update(buf);
+    return hash.digest(enc);
+}
 
 module.exports = {
     sleep,
@@ -50,4 +66,6 @@ module.exports = {
     touchFile,
     hasProp,
     freeMemory,
+    getFileHash,
+    getBufHash,
 };

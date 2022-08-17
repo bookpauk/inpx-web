@@ -106,7 +106,7 @@ class WebWorker {
         }
     }
 
-    async loadOrCreateDb() {
+    async loadOrCreateDb(recreate = false) {
         this.setMyState(ssDbLoading);
 
         try {
@@ -114,7 +114,7 @@ class WebWorker {
             const dbPath = `${config.dataDir}/db`;
 
             //пересоздаем БД из INPX если нужно
-            if (config.recreateDb)
+            if (config.recreateDb || recreate)
                 await fs.remove(dbPath);
 
             if (!await fs.pathExists(dbPath)) {
