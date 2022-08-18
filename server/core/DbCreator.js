@@ -201,8 +201,7 @@ class DbCreator {
             genreCount: genreArr.length,
             langCount: langArr.length,
         };
-
-        console.log(stats);
+        //console.log(stats);
 
         const inpxHash = await utils.getFileHash(config.inpxFile, 'sha256', 'hex');
 
@@ -284,34 +283,20 @@ class DbCreator {
             index: {field: 'value', depth: config.indexDepth},
         });
 
-        //вставка в БД по кусочкам, экономим память
-        for (let i = 0; i < genreArr.length; i += chunkSize) {
-            const chunk = genreArr.slice(i, i + chunkSize);
-            for (const rec of chunk)
-                rec.authorId = Array.from(rec.authorId);
-
-            await db.insert({table: 'genre', rows: chunk});
-        }
+        await db.insert({table: 'genre', rows: genreArr});
 
         genreArr = null;
         await db.close({table: 'genre'});
         utils.freeMemory();
 
-        //genre
+        //lang
         callback({job: 'lang save', jobMessage: 'Сохранение языков'});
         await db.create({
             table: 'lang',
             index: {field: 'value', depth: config.indexDepth},
         });
 
-        //вставка в БД по кусочкам, экономим память
-        for (let i = 0; i < langArr.length; i += chunkSize) {
-            const chunk = langArr.slice(i, i + chunkSize);
-            for (const rec of chunk)
-                rec.authorId = Array.from(rec.authorId);
-
-            await db.insert({table: 'lang', rows: chunk});
-        }
+        await db.insert({table: 'lang', rows: langArr});
 
         langArr = null;
         await db.close({table: 'lang'});
