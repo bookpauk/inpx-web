@@ -1,5 +1,6 @@
 <template>
     <div class="fit row">
+        <Api ref="api" />
         <Notify ref="notify" />
         <StdDialog ref="stdDialog" />
 
@@ -19,10 +20,12 @@ import vueComponent from './vueComponent.js';
 import Notify from './share/Notify.vue';
 import StdDialog from './share/StdDialog.vue';
 
+import Api from './Api/Api.vue';
 import Search from './Search/Search.vue';
 
 const componentOptions = {
     components: {
+        Api,
         Notify,
         StdDialog,
 
@@ -36,6 +39,8 @@ class App {
     _options = componentOptions;
 
     created() {
+        this.commit = this.$store.commit;
+
         //root route
         let cachedRoute = '';
         let cachedPath = '';
@@ -49,6 +54,7 @@ class App {
         }
 
         this.$root.isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry/i.test(navigator.userAgent);
+        this.$root.setAppTitle = this.setAppTitle;
 
         //global keyHooks
         this.keyHooks = [];
@@ -80,10 +86,26 @@ class App {
     }
 
     mounted() {
+        this.$root.api = this.$refs.api;
         this.$root.notify = this.$refs.notify;
         this.$root.stdDialog = this.$refs.stdDialog;
 
         this.setAppTitle();
+
+        (async() => {
+            try {
+                const api = this.$root.api;
+                const config = await api.config();
+                this.commit('setConfig', config);
+            } catch (e) {
+                this.$root.stdDialog.alert(e.message, 'Ошибка');
+            }
+        })();
+
+    }
+
+    get config() {
+        return this.$store.state.config;
     }
 
     get rootRoute() {

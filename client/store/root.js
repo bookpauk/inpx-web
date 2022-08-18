@@ -1,6 +1,6 @@
 // initial state
 const state = {
-    apiError: null,
+    config: {},
 };
 
 // getters
@@ -11,8 +11,8 @@ const actions = {};
 
 // mutations
 const mutations = {
-    setApiError(state, value) {
-        state.apiError = value;
+    setConfig(state, value) {
+        state.config = value;
     },
 };
 
