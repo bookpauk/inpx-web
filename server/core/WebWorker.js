@@ -176,6 +176,19 @@ class WebWorker {
         return db.wwCache.config;
     }
 
+    async search(query) {
+        this.checkMyState();
+
+        const config = await this.dbConfig();
+        const result = await this.dbSearcher.search(query);
+
+        return {
+            author: result.result,
+            totalFound: result.totalFound,
+            inpxHash: (config.inpxHash ? config.inpxHash : ''),
+        };
+    }    
+
     async logServerStats() {
         while (1) {// eslint-disable-line
             try {

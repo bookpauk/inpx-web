@@ -91,17 +91,6 @@ class App {
         this.$root.stdDialog = this.$refs.stdDialog;
 
         this.setAppTitle();
-
-        (async() => {
-            try {
-                const api = this.$root.api;
-                const config = await api.config();
-                this.commit('setConfig', config);
-            } catch (e) {
-                this.$root.stdDialog.alert(e.message, 'Ошибка');
-            }
-        })();
-
     }
 
     get config() {

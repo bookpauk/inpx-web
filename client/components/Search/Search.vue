@@ -1,7 +1,7 @@
 <template>
     <div class="root column fit">
-        <div class="tool-panel bg-green-11">
-            <div class="header q-mx-md q-mt-xs row justify-between items-center">
+        <div class="tool-panel column bg-green-11">
+            <div class="header q-mx-md q-mt-sm row justify-between items-center">
                 <div class="row items-center">
                     <div class="q-mr-xs">
                         Коллекция:
@@ -15,22 +15,55 @@
                 </div>
             </div>
             <div class="row q-mx-md q-my-sm items-center">
-                <q-input ref="authorInput" v-model="author" maxlength="1000" class="bg-white" style="width: 300px;" label="Автор" stack-label outlined dense clearable />
+                <q-input
+                    ref="authorInput" v-model="author" :maxlength="inputMaxLength" :debounce="inputDebounce"
+                    class="bg-white q-mt-xs" style="width: 300px;" label="Автор" stack-label outlined dense clearable
+                />
                 <div class="q-mx-xs" />
-                <q-input v-model="series" maxlength="1000" class="bg-white" style="width: 200px;" label="Серия" stack-label outlined dense clearable />
+                <q-input
+                    v-model="series" :maxlength="inputMaxLength" :debounce="inputDebounce"
+                    class="bg-white q-mt-xs" style="width: 200px;" label="Серия" stack-label outlined dense clearable
+                />
                 <div class="q-mx-xs" />
-                <q-input v-model="title" maxlength="1000" class="bg-white" style="width: 200px;" label="Название" stack-label outlined dense clearable />
+                <q-input
+                    v-model="title" :maxlength="inputMaxLength" :debounce="inputDebounce"
+                    class="bg-white q-mt-xs" style="width: 200px;" label="Название" stack-label outlined dense clearable
+                />
                 <div class="q-mx-xs" />
-                <q-input v-model="genre" maxlength="1000" class="bg-white" style="width: 200px;" label="Жанр" stack-label outlined dense clearable readonly />
+                <q-input
+                    v-model="genre" :maxlength="inputMaxLength" :debounce="inputDebounce"
+                    class="bg-white q-mt-xs" style="width: 200px;" label="Жанр" stack-label outlined dense clearable readonly
+                    @click="selectGenre"
+                />
                 <div class="q-mx-xs" />
-                <q-input v-model="lang" maxlength="1000" class="bg-white" style="width: 80px;" label="Язык" stack-label outlined dense clearable readonly />
+                <q-input
+                    v-model="lang" :maxlength="inputMaxLength" :debounce="inputDebounce"
+                    class="bg-white q-mt-xs" style="width: 80px;" label="Язык" stack-label outlined dense clearable readonly
+                    @click="selectLang"
+                />
                 <div class="q-mx-xs" />                
                 <q-btn round dense style="height: 20px" color="info" icon="la la-question" @click="showSearchHelp" />
+
+                <div class="q-mx-xs" />
+                <div class="row items-center q-mt-xs" style="font-size: 120%">
+                    Показаны {{ queryFound }} из {{ totalFound }}
+                </div>
+
+                <div class="q-mx-xs" />
+                <div class="col row justify-end q-mt-xs">
+                    <q-select
+                        v-model="limit" :options="limitOptions" class="bg-white"
+                        dropdown-icon="la la-angle-down la-sm"
+                        outlined dense emit-value map-options
+                    />
+                </div>
             </div>
         </div>
 
-        <div class="col fit" style="overflow: auto">
-            {{ config }}
+        <div class="col fit column no-wrap" style="overflow: auto">
+            <div v-for="item in tableData" :key="item.key" style="border-bottom: 1px solid #aaaaaa">
+                <div class="q-my-sm q-ml-md" style="font-size: 120%">{{ item.value }}</div>
+            </div>
         </div>
     </div>
 </template>
@@ -55,12 +88,32 @@ class Search {
     collection = '';
     projectName = '';
 
+    //input field consts 
+    inputMaxLength = 1000;
+    inputDebounce = 400;
+
     //search fields
     author = '';
     series = '';
     title = '';
     genre = '';
     lang = '';
+    limit = 100;
+
+    //stuff
+    queryFound = 0;
+    totalFound = 0;
+
+    limitOptions = [
+        {label: '10', value: 10},
+        {label: '20', value: 20},
+        {label: '50', value: 50},
+        {label: '100', value: 100},
+        {label: '1000', value: 1000},
+    ];
+
+    searchResult = {};
+    tableData = [];
 
     created() {
         this.commit = this.$store.commit;
@@ -101,7 +154,23 @@ class Search {
             `, 'Статистика по коллекции', {iconName: 'la la-info-circle'});
     }
 
+    selectGenre() {
+        this.$root.stdDialog.alert('Выбор жанра');
+    }    
+
+    selectLang() {
+        this.$root.stdDialog.alert('Выбор языка');
+    }
+    
     async updateTableData() {
+        let result = [];
+
+        let id = 0;
+        for (const rec of this.searchResult.author) {
+            result.push({key: id++, value: rec.author});
+        }
+
+        this.tableData = result;
     }
 
     async refresh() {
@@ -111,6 +180,7 @@ class Search {
             title: this.title,
             genre: this.genre,
             lang:  this.lang,
+            limit: this.limit,
         };
 
         this.queryExecute = newQuery;
@@ -125,13 +195,17 @@ class Search {
                 this.queryExecute = null;
 
                 try {
-                    this.searchResult = await this.api.search(query);
+                    const result = await this.api.search(query);
+
+                    this.queryFound = result.author.length;
+                    this.totalFound = result.totalFound;
+
+                    this.searchResult = result;
+                    this.updateTableData();//no await
                 } catch (e) {
                     this.$root.stdDialog.alert(e.message, 'Ошибка');
                     return;
                 }
-
-                this.updateTableData();//no await
             }
         } finally {
             this.refreshing = false;
@@ -153,7 +227,7 @@ export default vueComponent(Search);
 
 .header {
     font-size: 150%;
-    height: 30px;
+    min-height: 30px;
 }
 
 .clickable {

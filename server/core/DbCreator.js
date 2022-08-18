@@ -302,6 +302,9 @@ class DbCreator {
         await db.close({table: 'lang'});
         utils.freeMemory();
 
+        //кэш-таблицы
+        
+
         callback({job: 'done', jobMessage: ''});
     }
 }

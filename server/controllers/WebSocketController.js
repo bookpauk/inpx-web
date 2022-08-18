@@ -66,6 +66,8 @@ class WebSocketController {
                     await this.getConfig(req, ws); break;
                 case 'get-worker-state':
                     await this.getWorkerState(req, ws); break;
+                case 'search':
+                    await this.search(req, ws); break;
 
                 default:
                     throw new Error(`Action not found: ${req.action}`);
@@ -112,6 +114,14 @@ class WebSocketController {
         this.send((state ? state : {}), req, ws);
     }
 
+    async search(req, ws) {
+        if (!req.query)
+            throw new Error(`query is empty`);
+
+        const result = await this.webWorker.search(req.query);
+
+        this.send(result, req, ws);
+    }
 }
 
 module.exports = WebSocketController;

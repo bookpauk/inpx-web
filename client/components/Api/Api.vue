@@ -24,6 +24,20 @@ class Api {
     }
 
     mounted() {
+        this.updateConfig();//no await
+    }
+
+    async updateConfig() {
+        try {
+            const config = await this.getConfig();
+            this.commit('setConfig', config);
+        } catch (e) {
+            this.$root.stdDialog.alert(e.message, 'Ошибка');
+        }
+    }
+
+    get config() {
+        return this.$store.state.config;
     }
 
     async request(params) {
@@ -40,7 +54,7 @@ class Api {
         return response;
     }
 
-    async config() {
+    async getConfig() {
         const response = await this.request({action: 'get-config'});
 
         if (response.error) {

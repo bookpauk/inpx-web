@@ -59,6 +59,38 @@ function getBufHash(buf, hashName, enc) {
     return hash.digest(enc);
 }
 
+function intersectSet(arrSet) {
+    if (!arrSet.length)
+        return new Set();
+
+    let min = 0;
+    let size = arrSet[0].size;
+    for (let i = 1; i < arrSet.length; i++) {
+        if (arrSet[i].size < size) {
+            min = i;
+            size = arrSet[i].size;
+        }
+    }
+
+    const result = new Set();
+    for (const elem of arrSet[min]) {
+        let inAll = true;
+        for (let i = 0; i < arrSet.length; i++) {
+            if (i === min)
+                continue;
+            if (!arrSet[i].has(elem)) {
+                inAll = false;
+                break;
+            }
+        }
+
+        if (inAll)
+            result.add(elem);
+    }
+
+    return result;
+}
+
 module.exports = {
     sleep,
     versionText,
@@ -68,4 +100,5 @@ module.exports = {
     freeMemory,
     getFileHash,
     getBufHash,
+    intersectSet,
 };
