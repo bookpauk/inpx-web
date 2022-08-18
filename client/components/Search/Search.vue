@@ -4,7 +4,7 @@
             <div class="header q-mx-md q-mt-sm row justify-between items-center">
                 <div class="row items-center">
                     <div class="q-mr-xs">
-                        Коллекция:
+                        Коллекция
                     </div>
                     <div class="clickable" @click="showCollectionInfo">
                         {{ collection }}
@@ -45,8 +45,8 @@
                 <q-btn round dense style="height: 20px" color="info" icon="la la-question" @click="showSearchHelp" />
 
                 <div class="q-mx-xs" />
-                <div class="row items-center q-mt-xs" style="font-size: 120%">
-                    Показаны {{ queryFound }} из {{ totalFound }}
+                <div class="row items-center q-mt-xs">
+                    Показаны {{ queryFound }} из {{ totalFound }} найденных авторов
                 </div>
 
                 <div class="q-mx-xs" />
@@ -62,7 +62,9 @@
 
         <div class="col fit column no-wrap" style="overflow: auto">
             <div v-for="item in tableData" :key="item.key" style="border-bottom: 1px solid #aaaaaa">
-                <div class="q-my-sm q-ml-md" style="font-size: 120%">{{ item.value }}</div>
+                <div class="q-my-sm q-ml-md" style="font-size: 120%">
+                    {{ item.value }}
+                </div>
             </div>
         </div>
     </div>
@@ -165,9 +167,8 @@ class Search {
     async updateTableData() {
         let result = [];
 
-        let id = 0;
         for (const rec of this.searchResult.author) {
-            result.push({key: id++, value: rec.author});
+            result.push({key: rec.id, value: `${rec.id} ${rec.author.replace(/,/g, ', ')}`});
         }
 
         this.tableData = result;

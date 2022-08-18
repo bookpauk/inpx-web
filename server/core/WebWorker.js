@@ -121,11 +121,12 @@ class WebWorker {
 
             if (!await fs.pathExists(dbPath)) {
                 await this.createDb(dbPath);
+                await utils.freeMemory();
             }
 
             //загружаем БД
             this.setMyState(ssDbLoading);
-            log('Searcher DB open');
+            log('Searcher DB loading');
 
             const db = new JembaDbThread();
             await db.lock({

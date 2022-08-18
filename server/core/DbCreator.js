@@ -375,8 +375,9 @@ class DbCreator {
         await db.close({table: 'lang'});
         utils.freeMemory();
 
-        //кэш-таблицы
-
+        //кэш-таблицы запросов
+        await db.create({table: 'query_cache'});
+        await db.create({table: 'query_time'});
 
         callback({job: 'done', jobMessage: ''});
     }
