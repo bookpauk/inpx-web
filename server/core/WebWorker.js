@@ -4,6 +4,7 @@ const fs = require('fs-extra');
 const WorkerState = require('./WorkerState');
 const { JembaDbThread } = require('jembadb');
 const DbCreator = require('./DbCreator');
+const DbSearcher = require('./DbSearcher');
 
 const ayncExit = new (require('./AsyncExit'))();
 const log = new (require('./AppLogger'))().log;//singleton
@@ -32,6 +33,7 @@ class WebWorker {
             this.wState = this.workerState.getControl('server_state');
             this.myState = '';
             this.db = null;
+            this.dbSearcher = null;
 
             ayncExit.add(this.closeDb.bind(this));
 
@@ -125,8 +127,8 @@ class WebWorker {
             this.setMyState(ssDbLoading);
             log('Searcher DB open');
 
-            this.db = new JembaDbThread();
-            await this.db.lock({
+            const db = new JembaDbThread();
+            await db.lock({
                 dbPath,
                 softLock: true,
 
@@ -136,8 +138,16 @@ class WebWorker {
             });
 
             //открываем все таблицы
-            await this.db.openAll();
-            await this.db.close({table: 'title'});
+            await db.openAll();
+
+            //закроем title для экономии памяти, откроем при необходимости
+            await db.close({table: 'title'});
+            this.titleOpen = false;
+
+            this.dbSearcher = new DbSearcher(db);
+
+            db.wwCache = {};            
+            this.db = db;
 
             log('Searcher DB is ready');
         } catch (e) {
@@ -146,6 +156,24 @@ class WebWorker {
         } finally {
             this.setMyState(ssNormal);
         }
+    }
+
+    async dbConfig() {
+        this.checkMyState();
+
+        const db = this.db;
+        if (!db.wwCache.config) {
+            const rows = await db.select({table: 'config'});
+            const config = {};
+
+            for (const row of rows) {
+                config[row.id] = row.value;
+            }
+
+            db.wwCache.config = config;
+        }
+
+        return db.wwCache.config;
     }
 
     async logServerStats() {

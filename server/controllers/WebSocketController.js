@@ -98,13 +98,10 @@ class WebSocketController {
     }
 
     async getConfig(req, ws) {
-        if (Array.isArray(req.params)) {
-            const paramsSet = new Set(req.params);
+        const config = _.pick(this.config, this.config.webConfigParams);
+        config.dbConfig = await this.webWorker.dbConfig();
 
-            this.send(_.pick(this.config, this.config.webConfigParams.filter(x => paramsSet.has(x))), req, ws);
-        } else {
-            throw new Error('params is not an array');
-        }
+        this.send(config, req, ws);
     }
 
     async getWorkerState(req, ws) {
