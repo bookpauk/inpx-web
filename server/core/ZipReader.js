@@ -10,13 +10,14 @@ class ZipReader {
             throw new Error('Zip closed');
     }
 
-    async open(zipFile) {
+    async open(zipFile, zipEntries = true) {
         if (this.zip)
             throw new Error('Zip file is already open');
 
          const zip = new StreamZip.async({file: zipFile});
          
-         this.zipEntries = await zip.entries();
+        if (zipEntries)
+            this.zipEntries = await zip.entries();
 
          this.zip = zip;
     }
@@ -49,7 +50,7 @@ class ZipReader {
         if (this.zip) {
             this.zip.close();
             this.zip = null;
-            this.zipEntries = null;
+            this.zipEntries = undefined;
         }
     }
 }
