@@ -83,6 +83,24 @@ const componentOptions = {
         config() {
             this.makeTitle();
         },
+        author() {
+            this.refresh();
+        },
+        series() {
+            this.refresh();
+        },
+        title() {
+            this.refresh();
+        },
+        genre() {
+            this.refresh();
+        },
+        lang() {
+            this.refresh();
+        },
+        limit() {
+            this.refresh();
+        },
     },
 };
 class Search {
@@ -92,7 +110,7 @@ class Search {
 
     //input field consts 
     inputMaxLength = 1000;
-    inputDebounce = 400;
+    inputDebounce = 200;
 
     //search fields
     author = '';

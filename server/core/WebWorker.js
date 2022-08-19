@@ -144,7 +144,7 @@ class WebWorker {
             db.wwCache = {};            
             this.db = db;
 
-            log('Searcher DB is ready');
+            log('Searcher DB ready');
         } catch (e) {
             log(LM_FATAL, e.message);            
             ayncExit.exit(1);

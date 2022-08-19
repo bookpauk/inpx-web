@@ -86,6 +86,11 @@ class DbCreator {
                             authorCount++;
                     }
 
+                    //это нужно для того, чтобы имя автора начиналось с заглавной
+                    if (a[0].toUpperCase() === a[0])
+                        authorRec.author = a;
+                    
+                    //ссылки на книги
                     authorRec.bookId.push(id);
                 }
             }

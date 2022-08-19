@@ -2,6 +2,8 @@
 
 const utils = require('./utils');
 
+const maxUtf8Char = String.fromCodePoint(0xFFFFF);
+
 class DbSearcher {
     constructor(config, db) {
         this.config = config;
@@ -22,9 +24,14 @@ class DbSearcher {
         //сначала выберем все id авторов по фильтру
         //порядок id соответсвует ASC-сортировке по author
         if (query.author) {
+            const a = query.author.toLowerCase(query.author);
+
             authorRows = await db.select({
                 table: 'author',
                 map: `(r) => ({id: r.id})`,
+                where: `
+                    @@dirtyIndexLR('value', ${db.esc(a)}, ${db.esc(a + maxUtf8Char)})
+                `,
             });
 
             for (const row of authorRows)
@@ -136,17 +143,7 @@ class DbSearcher {
             let result = await db.select({
                 table: 'author',
                 map: `(r) => ({id: r.id, author: r.author})`,
-                where: `
-                    const all = @all();
-                    const ids = new Set();
-                    let n = 0;
-                    for (const id of all) {
-                        if (++n > ${db.esc(limit)})
-                            break;
-                        ids.add(id);
-                    }
-                    return ids;
-                `
+                where: `@@id(${db.esc(authorIds.slice(0, limit))})`
             });
 
             return {result, totalFound};
