@@ -87,7 +87,6 @@ class WebWorker {
         });
 
         try {
-            log('  start INPX import');
             const dbCreator = new DbCreator(config);        
 
             await dbCreator.run(db, (state) => {
@@ -101,10 +100,9 @@ class WebWorker {
                     log(`  ${state.job}`);
             });
 
-            log('  finish INPX import');
+            log('Searcher DB successfully created');
         } finally {
             await db.unlock();
-            log('Searcher DB successfully created');
         }
     }
 
@@ -141,11 +139,7 @@ class WebWorker {
             //открываем все таблицы
             await db.openAll();
 
-            //закроем title для экономии памяти, откроем при необходимости
-            await db.close({table: 'title'});
-            this.titleOpen = false;
-
-            this.dbSearcher = new DbSearcher(db);
+            this.dbSearcher = new DbSearcher(config, db);
 
             db.wwCache = {};            
             this.db = db;
@@ -157,6 +151,19 @@ class WebWorker {
         } finally {
             this.setMyState(ssNormal);
         }
+    }
+
+    async recreateDb() {
+        this.setMyState(ssDbCreating);
+
+        if (this.dbSearcher) {
+            await this.dbSearcher.close();
+            this.dbSearcher = null;
+        }
+
+        await this.closeDb();
+
+        await this.loadOrCreateDb(true);
     }
 
     async dbConfig() {

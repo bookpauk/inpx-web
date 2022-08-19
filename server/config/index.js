@@ -6,7 +6,8 @@ const branchFilename = __dirname + '/application_env';
 const propsToSave = [
     'loggingEnabled',
     'maxFilesDirSize',
-    'server',
+    'cacheCleanInterval',
+    'server',    
 ];
 
 let instance = null;

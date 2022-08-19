@@ -18,6 +18,7 @@ module.exports = {
     loggingEnabled: true,
 
     maxFilesDirSize: 1024*1024*1024,//1Gb
+    cacheCleanInterval: 60,//minutes
 
     webConfigParams: ['name', 'version', 'branch'],
 

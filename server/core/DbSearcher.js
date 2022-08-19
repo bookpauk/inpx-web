@@ -3,8 +3,15 @@
 const utils = require('./utils');
 
 class DbSearcher {
-    constructor(db) {
+    constructor(config, db) {
+        this.config = config;
         this.db = db;
+
+        this.searchFlag = 0;
+        this.timer = null;
+        this.closed = false;
+
+        this.periodicCleanCache();//no await
     }
 
     async selectAuthorIds(query) {
@@ -83,6 +90,7 @@ class DbSearcher {
             const key = JSON.stringify(keyArr);
 
             const rows = await db.select({table: 'query_cache', where: `@@id(${db.esc(key)})`});
+
             if (rows.length) {//нашли в кеше
                 await db.insert({
                     table: 'query_time',
@@ -111,31 +119,88 @@ class DbSearcher {
     }
 
     async search(query) {
-        const db = this.db;
+        if (this.closed)
+            throw new Error('DbSearcher closed');
 
-        const authorIds = await this.getAuthorIds(query);
+        this.searchFlag++;
 
-        const totalFound = authorIds.length;
-        const limit = (query.limit ? query.limit : 1000);
+        try {
+            const db = this.db;
 
-        //выборка найденных авторов
-        let result = await db.select({
-            table: 'author',
-            map: `(r) => ({id: r.id, author: r.author})`,
-            where: `
-                const all = @all();
-                const ids = new Set();
-                let n = 0;
-                for (const id of all) {
-                    if (++n > ${db.esc(limit)})
-                        break;
-                    ids.add(id);
-                }
-                return ids;
-            `
-        });
+            const authorIds = await this.getAuthorIds(query);
 
-        return {result, totalFound};
+            const totalFound = authorIds.length;
+            const limit = (query.limit ? query.limit : 1000);
+
+            //выборка найденных авторов
+            let result = await db.select({
+                table: 'author',
+                map: `(r) => ({id: r.id, author: r.author})`,
+                where: `
+                    const all = @all();
+                    const ids = new Set();
+                    let n = 0;
+                    for (const id of all) {
+                        if (++n > ${db.esc(limit)})
+                            break;
+                        ids.add(id);
+                    }
+                    return ids;
+                `
+            });
+
+            return {result, totalFound};
+        } finally {
+            this.searchFlag--;
+        }
+    }
+
+    async periodicCleanCache() {
+        this.timer = null;
+        const cleanInterval = 5*1000;//this.config.cacheCleanInterval*60*1000;
+
+        try {
+            const db = this.db;
+
+            const oldThres = Date.now() - cleanInterval;
+
+            //выберем всех кандидатов удаление
+            const rows = await db.select({
+                table: 'query_time',
+                where: `
+                    @@iter(@all(), (r) => (r.time < ${db.esc(oldThres)}));
+                `
+            });
+
+            const ids = [];
+            for (const row of rows)
+                ids.push(row.id);
+
+            //удаляем
+            await db.delete({table: 'query_cache', where: `@@id(${db.esc(ids)})`});
+            await db.delete({table: 'query_time', where: `@@id(${db.esc(ids)})`});
+            
+            console.log('Cache clean', ids);
+        } catch(e) {
+            console.error(e.message);
+        } finally {
+            if (!this.closed) {
+                this.timer = setTimeout(() => { this.periodicCleanCache(); }, cleanInterval);
+            }
+        }
+    }
+
+    async close() {
+        while (this.searchFlag > 0) {
+            await utils.sleep(50);
+        }
+
+        if (this.timer) {
+            clearTimeout(this.timer);
+            this.timer = null;
+        }
+
+        this.closed = true;
     }
 }
 
