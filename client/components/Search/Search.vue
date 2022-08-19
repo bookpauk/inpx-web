@@ -60,10 +60,21 @@
             </div>
         </div>
 
-        <div class="col fit column no-wrap" style="overflow: auto">
-            <div v-for="item in tableData" :key="item.key" style="border-bottom: 1px solid #aaaaaa">
-                <div class="q-my-sm q-ml-md" style="font-size: 120%">
-                    {{ item.value }}
+        <div class="col fit" style="position: relative">
+            <div v-show="loadingVisible" class="fit row justify-center items-center" style="position: absolute; background-color: rgba(0, 0, 0, 0.2)">
+                <div class="bg-white row justify-center items-center" style="width: 180px; height: 50px; border-radius: 10px; box-shadow: 2px 2px 10px #333333">
+                    <q-spinner color="primary" size="2em" />
+                    <div class="q-ml-sm">
+                        Поиск авторов...
+                    </div>
+                </div>
+            </div>
+
+            <div class="col fit column no-wrap" style="overflow: auto">
+                <div v-for="item in tableData" :key="item.key" style="border-bottom: 1px solid #aaaaaa">
+                    <div class="q-my-sm q-ml-md" style="font-size: 120%">
+                        {{ item.value }}
+                    </div>
                 </div>
             </div>
         </div>
@@ -74,6 +85,7 @@
 //-----------------------------------------------------------------------------
 import vueComponent from '../vueComponent.js';
 
+import * as utils from '../../share/utils';
 //import _ from 'lodash';
 
 const componentOptions = {
@@ -107,6 +119,8 @@ class Search {
     _options = componentOptions;
     collection = '';
     projectName = '';
+
+    loadingVisible = false;
 
     //input field consts 
     inputMaxLength = 1000;
@@ -213,6 +227,13 @@ class Search {
                 const query = this.queryExecute;
                 this.queryExecute = null;
 
+                let inSearch = true;
+                (async() => {
+                    await utils.sleep(500);
+                    if (inSearch)
+                        this.loadingVisible = true;
+                })();
+
                 try {
                     const result = await this.api.search(query);
 
@@ -220,10 +241,13 @@ class Search {
                     this.totalFound = result.totalFound;
 
                     this.searchResult = result;
-                    this.updateTableData();//no await
+                    await this.updateTableData();
                 } catch (e) {
                     this.$root.stdDialog.alert(e.message, 'Ошибка');
                     return;
+                } finally {
+                    inSearch = false;
+                    this.loadingVisible = false;
                 }
             }
         } finally {
