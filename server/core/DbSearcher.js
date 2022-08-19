@@ -240,12 +240,13 @@ class DbSearcher {
 
             const totalFound = authorIds.length;
             const limit = (query.limit ? query.limit : 1000);
+            const offset = (query.offset ? query.offset : 0);
 
             //выборка найденных авторов
             let result = await db.select({
                 table: 'author',
                 map: `(r) => ({id: r.id, author: r.author})`,
-                where: `@@id(${db.esc(authorIds.slice(0, limit))})`
+                where: `@@id(${db.esc(authorIds.slice(offset, offset + limit))})`
             });
 
             return {result, totalFound};

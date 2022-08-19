@@ -67,10 +67,10 @@ const components = {
 };
 
 //directives 
-//import Ripple from 'quasar/src/directives/Ripple';
+import Ripple from 'quasar/src/directives/Ripple';
 import ClosePopup from 'quasar/src/directives/ClosePopup';
 
-const directives = {/*Ripple, */ClosePopup};
+const directives = {Ripple, ClosePopup};
 
 //plugins
 //import AppFullscreen from 'quasar/src/plugins/AppFullscreen';
