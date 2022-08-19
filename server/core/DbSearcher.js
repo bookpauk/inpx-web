@@ -3,6 +3,9 @@
 const utils = require('./utils');
 
 const maxUtf8Char = String.fromCodePoint(0xFFFFF);
+const ruAlphabet = 'абвгдеёжзийклмнопрстуфхцчшщъыьэюя';
+const enAlphabet = 'abcdefghijklmnopqrstuvwxyz';
+const enruArr = (ruAlphabet + enAlphabet).split('');
 
 class DbSearcher {
     constructor(config, db) {
@@ -16,31 +19,53 @@ class DbSearcher {
         this.periodicCleanCache();//no await
     }
 
+    getWhere(a) {
+        const db = this.db;
+        let where;
+
+        //особая обработка префиксов
+        if (a[0] == '=') {
+            a = a.substring(1);
+            where = `@@dirtyIndexLR('value', ${db.esc(a)}, ${db.esc(a)});`;
+        } else if (a[0] == '*') {
+            a = a.substring(1);
+            where = `@@indexIter('value', (v) => (v.indexOf(${db.esc(a)}) >= 0) );`;
+        } else if (a[0] == '#') {
+            a = a.substring(1);
+            where = `@@indexIter('value', (v) => {                    
+                const enru = new Set(${db.esc(enruArr)});
+                return !v || !enru.has(v[0].toLowerCase());
+            });`;
+        } else {
+            where = `@@dirtyIndexLR('value', ${db.esc(a)}, ${db.esc(a + maxUtf8Char)});`;
+        }
+
+        return where;
+    }
+
     async selectAuthorIds(query) {
         const db = this.db;
 
-        let authorRows;
         let authorIds = new Set();
+
         //сначала выберем все id авторов по фильтру
         //порядок id соответсвует ASC-сортировке по author
-        if (query.author) {
-            const a = query.author.toLowerCase(query.author);
+        if (query.author && query.author !== '*') {
+            const where = this.getWhere(query.author.toLowerCase());
 
-            authorRows = await db.select({
+            const authorRows = await db.select({
                 table: 'author',
-                map: `(r) => ({id: r.id})`,
-                where: `
-                    @@dirtyIndexLR('value', ${db.esc(a)}, ${db.esc(a + maxUtf8Char)})
-                `,
+                dirtyIdsOnly: true,
+                where
             });
 
             for (const row of authorRows)
                 authorIds.add(row.id);
         } else {//все авторы
             if (!db.searchCache.authorIdsAll) {
-                authorRows = await db.select({
+                const authorRows = await db.select({
                     table: 'author',
-                    map: `(r) => ({id: r.id})`,
+                    dirtyIdsOnly: true,
                 });
 
                 db.searchCache.authorIdsAll = [];
@@ -59,7 +84,45 @@ class DbSearcher {
         idsArr.push(authorIds);
 
         //серии
+        if (query.series && query.series !== '*') {
+            const where = this.getWhere(query.series.toLowerCase());
+
+            const seriesRows = await db.select({
+                table: 'series',
+                map: `(r) => ({authorId: r.authorId})`,
+                where
+            });
+
+            let ids = new Set();
+            for (const row of seriesRows) {
+                for (const id of row.authorId)
+                    ids.add(id);
+
+            }
+
+            idsArr.push(ids);
+        }
+
         //названия
+        if (query.title && query.title !== '*') {
+            const where = this.getWhere(query.title.toLowerCase());
+
+            const seriesRows = await db.select({
+                table: 'title',
+                map: `(r) => ({authorId: r.authorId})`,
+                where
+            });
+
+            let ids = new Set();
+            for (const row of seriesRows) {
+                for (const id of row.authorId)
+                    ids.add(id);
+
+            }
+
+            idsArr.push(ids);
+        }
+
         //жанры
         //языки
 
@@ -69,7 +132,7 @@ class DbSearcher {
         //сортировка
         authorIds = Array.from(authorIds);
         
-        authorIds.sort((a, b) => a > b);
+        authorIds.sort((a, b) => a - b);
 
         return authorIds;
     }

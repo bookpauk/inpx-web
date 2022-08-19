@@ -46,7 +46,12 @@
 
                 <div class="q-mx-xs" />
                 <div class="row items-center q-mt-xs">
-                    Показаны {{ queryFound }} из {{ totalFound }} найденных авторов
+                    <div v-show="queryFound > 0">
+                        Показаны {{ queryFound }} из {{ totalFound }} найденных авторов
+                    </div>
+                    <div v-show="queryFound == 0">
+                        Ничего не найдено
+                    </div>
                 </div>
 
                 <div class="q-mx-xs" />
@@ -135,7 +140,7 @@ class Search {
     limit = 100;
 
     //stuff
-    queryFound = 0;
+    queryFound = -1;
     totalFound = 0;
 
     limitOptions = [
