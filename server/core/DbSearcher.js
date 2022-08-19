@@ -21,15 +21,17 @@ class DbSearcher {
 
     getWhere(a) {
         const db = this.db;
+
+        a = a.toLowerCase();
         let where;
 
         //особая обработка префиксов
         if (a[0] == '=') {
             a = a.substring(1);
-            where = `@@dirtyIndexLR('value', ${db.esc(a)}, ${db.esc(a)});`;
+            where = `@@dirtyIndexLR('value', ${db.esc(a)}, ${db.esc(a)})`;
         } else if (a[0] == '*') {
             a = a.substring(1);
-            where = `@@indexIter('value', (v) => (v.indexOf(${db.esc(a)}) >= 0) );`;
+            where = `@@indexIter('value', (v) => (v.indexOf(${db.esc(a)}) >= 0) )`;
         } else if (a[0] == '#') {
             a = a.substring(1);
             where = `@@indexIter('value', (v) => {                    
@@ -37,7 +39,7 @@ class DbSearcher {
                 return !v || !enru.has(v[0].toLowerCase());
             });`;
         } else {
-            where = `@@dirtyIndexLR('value', ${db.esc(a)}, ${db.esc(a + maxUtf8Char)});`;
+            where = `@@dirtyIndexLR('value', ${db.esc(a)}, ${db.esc(a + maxUtf8Char)})`;
         }
 
         return where;
@@ -51,7 +53,7 @@ class DbSearcher {
         //сначала выберем все id авторов по фильтру
         //порядок id соответсвует ASC-сортировке по author
         if (query.author && query.author !== '*') {
-            const where = this.getWhere(query.author.toLowerCase());
+            const where = this.getWhere(query.author);
 
             const authorRows = await db.select({
                 table: 'author',
@@ -85,7 +87,7 @@ class DbSearcher {
 
         //серии
         if (query.series && query.series !== '*') {
-            const where = this.getWhere(query.series.toLowerCase());
+            const where = this.getWhere(query.series);
 
             const seriesRows = await db.select({
                 table: 'series',
@@ -93,11 +95,10 @@ class DbSearcher {
                 where
             });
 
-            let ids = new Set();
+            const ids = new Set();
             for (const row of seriesRows) {
                 for (const id of row.authorId)
                     ids.add(id);
-
             }
 
             idsArr.push(ids);
@@ -105,26 +106,64 @@ class DbSearcher {
 
         //названия
         if (query.title && query.title !== '*') {
-            const where = this.getWhere(query.title.toLowerCase());
+            const where = this.getWhere(query.title);
 
-            const seriesRows = await db.select({
+            const titleRows = await db.select({
                 table: 'title',
                 map: `(r) => ({authorId: r.authorId})`,
                 where
             });
 
-            let ids = new Set();
-            for (const row of seriesRows) {
+            const ids = new Set();
+            for (const row of titleRows) {
                 for (const id of row.authorId)
                     ids.add(id);
-
             }
 
             idsArr.push(ids);
         }
 
         //жанры
+        if (query.genre) {
+            const genres = query.genre.split(',');
+
+            const ids = new Set();
+            for (const g of genres) {
+                const genreRows = await db.select({
+                    table: 'genre',
+                    map: `(r) => ({authorId: r.authorId})`,
+                    where: `@@indexLR('value', ${db.esc(g)}, ${db.esc(g)})`,
+                });
+
+                for (const row of genreRows) {
+                    for (const id of row.authorId)
+                        ids.add(id);
+                }
+            }
+
+            idsArr.push(ids);
+        }
+
         //языки
+        if (query.lang) {
+            const langs = query.lang.split(',');
+
+            const ids = new Set();
+            for (const l of langs) {
+                const langRows = await db.select({
+                    table: 'lang',
+                    map: `(r) => ({authorId: r.authorId})`,
+                    where: `@@indexLR('value', ${db.esc(l)}, ${db.esc(l)})`,
+                });
+
+                for (const row of langRows) {
+                    for (const id of row.authorId)
+                        ids.add(id);
+                }
+            }
+            
+            idsArr.push(ids);
+        }
 
         if (idsArr.length > 1)
             authorIds = utils.intersectSet(idsArr);
@@ -217,14 +256,14 @@ class DbSearcher {
 
     async periodicCleanCache() {
         this.timer = null;
-        const cleanInterval = 5*1000;//this.config.cacheCleanInterval*60*1000;
+        const cleanInterval = 30*1000;//this.config.cacheCleanInterval*60*1000;
 
         try {
             const db = this.db;
 
             const oldThres = Date.now() - cleanInterval;
 
-            //выберем всех кандидатов удаление
+            //выберем всех кандидатов на удаление
             const rows = await db.select({
                 table: 'query_time',
                 where: `
@@ -240,7 +279,7 @@ class DbSearcher {
             await db.delete({table: 'query_cache', where: `@@id(${db.esc(ids)})`});
             await db.delete({table: 'query_time', where: `@@id(${db.esc(ids)})`});
             
-            console.log('Cache clean', ids);
+            //console.log('Cache clean', ids);
         } catch(e) {
             console.error(e.message);
         } finally {
