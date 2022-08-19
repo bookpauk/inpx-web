@@ -67,7 +67,7 @@
                     <div class="q-mx-xs" />
                     <div class="row items-center q-mt-xs">
                         <div v-show="queryFound > 0">
-                            Найдено {{ totalFound }} авторов
+                            {{ foundAuthorsMessage }}
                         </div>
                         <div v-show="queryFound == 0">
                             Ничего не найдено
@@ -76,7 +76,7 @@
                 </div>
             </div>
 
-            <div v-show="totalPages > 1" class="row justify-center items-center q-ml-md q-my-xs" style="font-size: 120%">
+            <div v-if="totalPages > 1" class="row justify-center items-center q-ml-md q-my-xs" style="font-size: 120%">
                 <div class="q-mr-xs">
                     Страница
                 </div>
@@ -87,14 +87,17 @@
                     из {{ totalPages }}
                 </div>
             </div>
+            <div v-else class="q-my-sm" />
 
+            <!-- Формирование списка ------------------------------------------------------------------------>
             <div v-for="item in tableData" :key="item.key" style="border-bottom: 1px solid #aaaaaa">
-                <div class="q-my-sm q-ml-md" style="font-size: 120%">
-                    {{ item.value }}
+                <div v-if="item.type == 'author'" class="q-my-sm q-ml-md clickable" style="font-size: 120%" @click="authorClick(item.value)">
+                    {{ item.key }} {{ item.name }}
                 </div>
             </div>
+            <!-- Формирование списка конец ------------------------------------------------------------------>
 
-            <div v-show="totalPages > 1" class="row justify-center items-center q-ml-md q-my-xs" style="font-size: 120%">
+            <div v-if="totalPages > 1" class="row justify-center items-center q-ml-md q-my-xs" style="font-size: 120%">
                 <div class="q-mr-xs">
                     Страница
                 </div>
@@ -105,6 +108,7 @@
                     из {{ totalPages }}
                 </div>
             </div>
+            <div v-else class="q-my-sm" />
         </div>
     </div>
 </template>
@@ -255,18 +259,26 @@ class Search {
         this.lastScrollTop = curScrollTop;    
     }
 
+    get foundAuthorsMessage() {
+        return `Найден${utils.wordEnding(this.totalFound, 2)} ${this.totalFound} автор${utils.wordEnding(this.totalFound)}`;
+    }
+
     updatePageCount() {
-        this.totalPages = Math.floor(this.totalFound/this.limit);
+        this.totalPages = Math.ceil(this.totalFound/this.limit);
         this.totalPages = (this.totalPages < 1 ? 1 : this.totalPages);
         if (this.page > this.totalPages)
             this.page = 1;
+    }
+
+    authorClick(authorName) {
+        this.author = `=${authorName}`;
     }
 
     async updateTableData() {
         let result = [];
 
         for (const rec of this.searchResult.author) {
-            result.push({key: rec.id, value: `${rec.id} ${rec.author.replace(/,/g, ', ')}`});
+            result.push({key: rec.id, type: 'author', value: rec.author, name: rec.author.replace(/,/g, ', ')});
         }
 
         this.tableData = result;

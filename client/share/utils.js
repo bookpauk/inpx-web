@@ -28,3 +28,17 @@ export function keyEventToCode(event) {
     return result.join('+');
 }
 
+export function wordEnding(num, type = 0) {
+    const endings = [
+        ['ов', '', 'а', 'а', 'а', 'ов', 'ов', 'ов', 'ов', 'ов'],
+        ['й', 'я', 'и', 'и', 'и', 'й', 'й', 'й', 'й', 'й'],
+        ['о', '', 'о', 'о', 'о', 'о', 'о', 'о', 'о', 'о'],
+        ['ий', 'ие', 'ия', 'ия', 'ия', 'ий', 'ий', 'ий', 'ий', 'ий']
+    ];
+    const deci = num % 100;
+    if (deci > 10 && deci < 20) {
+        return endings[type][0];
+    } else {
+        return endings[type][num % 10];
+    }
+}
