@@ -1,6 +1,8 @@
 const InpxParser = require('./InpxParser');
 const utils = require('./utils');
 
+const emptyFieldValue = '@';
+
 class DbCreator {
     constructor(config) {
         this.config = config;
@@ -44,7 +46,7 @@ class DbCreator {
 
         const splitAuthor = (author) => {
             if (!author) {
-                author = 'Автор не указан';
+                author = emptyFieldValue;
             }
 
             const result = author.split(',');
@@ -89,7 +91,7 @@ class DbCreator {
                     //это нужно для того, чтобы имя автора начиналось с заглавной
                     if (a[0].toUpperCase() === a[0])
                         authorRec.author = a;
-                    
+
                     //ссылки на книги
                     authorRec.bookId.push(id);
                 }
@@ -127,22 +129,23 @@ class DbCreator {
 
         //теперь можно создавать остальные поисковые таблицы
         const parseField = (fieldValue, fieldMap, fieldArr, authorIds) => {
-            if (fieldValue) {
-                const value = fieldValue.toLowerCase();
+            if (!fieldValue)
+                fieldValue = emptyFieldValue;
 
-                let fieldRec;
-                if (fieldMap.has(value)) {
-                    const fieldId = fieldMap.get(value);
-                    fieldRec = fieldArr[fieldId];
-                } else {
-                    fieldRec = {id: fieldArr.length, value, authorId: new Set()};
-                    fieldArr.push(fieldRec);
-                    fieldMap.set(value, fieldRec.id);
-                }
+            const value = fieldValue.toLowerCase();
 
-                for (const id of authorIds) {
-                    fieldRec.authorId.add(id);
-                }
+            let fieldRec;
+            if (fieldMap.has(value)) {
+                const fieldId = fieldMap.get(value);
+                fieldRec = fieldArr[fieldId];
+            } else {
+                fieldRec = {id: fieldArr.length, value, authorId: new Set()};
+                fieldArr.push(fieldRec);
+                fieldMap.set(value, fieldRec.id);
+            }
+
+            for (const id of authorIds) {
+                fieldRec.authorId.add(id);
             }
         };
 
@@ -165,23 +168,24 @@ class DbCreator {
             parseField(rec.title, titleMap, titleArr, authorIds);
 
             //жанры
-            if (rec.genre) {
-                const genre = rec.genre.split(',');
+            if (!rec.genre)
+                rec.genre = emptyFieldValue;
 
-                for (const g of genre) {
-                    let genreRec;
-                    if (genreMap.has(g)) {
-                        const genreId = genreMap.get(g);
-                        genreRec = genreArr[genreId];
-                    } else {
-                        genreRec = {id: genreArr.length, value: g, authorId: new Set()};
-                        genreArr.push(genreRec);
-                        genreMap.set(g, genreRec.id);
-                    }
+            const genre = rec.genre.split(',');
 
-                    for (const id of authorIds) {
-                        genreRec.authorId.add(id);
-                    }
+            for (const g of genre) {
+                let genreRec;
+                if (genreMap.has(g)) {
+                    const genreId = genreMap.get(g);
+                    genreRec = genreArr[genreId];
+                } else {
+                    genreRec = {id: genreArr.length, value: g, authorId: new Set()};
+                    genreArr.push(genreRec);
+                    genreMap.set(g, genreRec.id);
+                }
+
+                for (const id of authorIds) {
+                    genreRec.authorId.add(id);
                 }
             }
 
