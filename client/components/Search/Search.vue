@@ -1,72 +1,7 @@
 <template>
     <div class="root column fit">
-        <div class="tool-panel column bg-green-11">
-            <div class="header q-mx-md q-mt-sm row justify-between items-center">
-                <div class="row items-center">
-                    <div class="q-mr-xs">
-                        Коллекция
-                    </div>
-                    <div class="clickable" @click="showCollectionInfo">
-                        {{ collection }}
-                    </div>
-                </div>
-                <div class="q-ml-md">
-                    {{ projectName }}
-                </div>
-            </div>
-            <div class="row q-mx-md q-my-sm items-center">
-                <q-input
-                    ref="authorInput" v-model="author" :maxlength="inputMaxLength" :debounce="inputDebounce"
-                    class="bg-white q-mt-xs" style="width: 300px;" label="Автор" stack-label outlined dense clearable
-                />
-                <div class="q-mx-xs" />
-                <q-input
-                    v-model="series" :maxlength="inputMaxLength" :debounce="inputDebounce"
-                    class="bg-white q-mt-xs" style="width: 200px;" label="Серия" stack-label outlined dense clearable
-                />
-                <div class="q-mx-xs" />
-                <q-input
-                    v-model="title" :maxlength="inputMaxLength" :debounce="inputDebounce"
-                    class="bg-white q-mt-xs" style="width: 200px;" label="Название" stack-label outlined dense clearable
-                />
-                <div class="q-mx-xs" />
-                <q-input
-                    v-model="genre" :maxlength="inputMaxLength" :debounce="inputDebounce"
-                    class="bg-white q-mt-xs" style="width: 200px;" label="Жанр" stack-label outlined dense clearable readonly
-                    @click="selectGenre"
-                />
-                <div class="q-mx-xs" />
-                <q-input
-                    v-model="lang" :maxlength="inputMaxLength" :debounce="inputDebounce"
-                    class="bg-white q-mt-xs" style="width: 80px;" label="Язык" stack-label outlined dense clearable readonly
-                    @click="selectLang"
-                />
-                <div class="q-mx-xs" />                
-                <q-btn round dense style="height: 20px" color="info" icon="la la-question" @click="showSearchHelp" />
-
-                <div class="q-mx-xs" />
-                <div class="row items-center q-mt-xs">
-                    <div v-show="queryFound > 0">
-                        Показаны {{ queryFound }} из {{ totalFound }} найденных авторов
-                    </div>
-                    <div v-show="queryFound == 0">
-                        Ничего не найдено
-                    </div>
-                </div>
-
-                <div class="q-mx-xs" />
-                <div class="col row justify-end q-mt-xs">
-                    <q-select
-                        v-model="limit" :options="limitOptions" class="bg-white"
-                        dropdown-icon="la la-angle-down la-sm"
-                        outlined dense emit-value map-options
-                    />
-                </div>
-            </div>
-        </div>
-
         <div class="col fit" style="position: relative">
-            <div v-show="loadingVisible" class="fit row justify-center items-center" style="position: absolute; background-color: rgba(0, 0, 0, 0.2)">
+            <div v-show="loadingVisible" class="fit row justify-center items-center" style="position: absolute; background-color: rgba(0, 0, 0, 0.2); z-index: 1">
                 <div class="bg-white row justify-center items-center" style="width: 180px; height: 50px; border-radius: 10px; box-shadow: 2px 2px 10px #333333">
                     <q-spinner color="primary" size="2em" />
                     <div class="q-ml-sm">
@@ -75,7 +10,72 @@
                 </div>
             </div>
 
-            <div class="col fit column no-wrap" style="overflow: auto">
+            <div ref="scroller" class="col fit column no-wrap" style="overflow: auto; position: relative" @scroll="onScroll">
+                <div ref="toolPanel" class="tool-panel column bg-green-11" style="position: sticky; top: 0;">
+                    <div class="header q-mx-md q-mt-sm row justify-between items-center">
+                        <div class="row items-center">
+                            <div class="q-mr-xs">
+                                Коллекция
+                            </div>
+                            <div class="clickable" @click="showCollectionInfo">
+                                {{ collection }}
+                            </div>
+                        </div>
+                        <div class="q-ml-md">
+                            {{ projectName }}
+                        </div>
+                    </div>
+                    <div class="row q-mx-md q-my-sm items-center">
+                        <q-input
+                            ref="authorInput" v-model="author" :maxlength="5000" :debounce="inputDebounce"
+                            class="bg-white q-mt-xs" style="width: 300px;" label="Автор" stack-label outlined dense clearable
+                        />
+                        <div class="q-mx-xs" />
+                        <q-input
+                            v-model="series" :maxlength="inputMaxLength" :debounce="inputDebounce"
+                            class="bg-white q-mt-xs" style="width: 200px;" label="Серия" stack-label outlined dense clearable
+                        />
+                        <div class="q-mx-xs" />
+                        <q-input
+                            v-model="title" :maxlength="inputMaxLength" :debounce="inputDebounce"
+                            class="bg-white q-mt-xs" style="width: 200px;" label="Название" stack-label outlined dense clearable
+                        />
+                        <div class="q-mx-xs" />
+                        <q-input
+                            v-model="genre" :maxlength="inputMaxLength" :debounce="inputDebounce"
+                            class="bg-white q-mt-xs" style="width: 200px;" label="Жанр" stack-label outlined dense clearable readonly
+                            @click="selectGenre"
+                        />
+                        <div class="q-mx-xs" />
+                        <q-input
+                            v-model="lang" :maxlength="inputMaxLength" :debounce="inputDebounce"
+                            class="bg-white q-mt-xs" style="width: 80px;" label="Язык" stack-label outlined dense clearable readonly
+                            @click="selectLang"
+                        />
+                        <div class="q-mx-xs" />                
+                        <q-btn round dense style="height: 20px" color="info" icon="la la-question" @click="showSearchHelp" />
+
+                        <div class="q-mx-xs" />
+                        <div class="row items-center q-mt-xs">
+                            <div v-show="queryFound > 0">
+                                Найдено {{ totalFound }} авторов
+                            </div>
+                            <div v-show="queryFound == 0">
+                                Ничего не найдено
+                            </div>
+                        </div>
+
+                        <div class="q-mx-xs" />
+                        <div class="col row justify-end q-mt-xs">
+                            <q-select
+                                v-model="limit" :options="limitOptions" class="bg-white"
+                                dropdown-icon="la la-angle-down la-sm"
+                                outlined dense emit-value map-options
+                            />
+                        </div>
+                    </div>
+                </div>
+
                 <div v-for="item in tableData" :key="item.key" style="border-bottom: 1px solid #aaaaaa">
                     <div class="q-my-sm q-ml-md" style="font-size: 120%">
                         {{ item.value }}
@@ -201,6 +201,25 @@ class Search {
         this.$root.stdDialog.alert('Выбор языка');
     }
     
+    onScroll() {
+        const curScrollTop = this.$refs.scroller.scrollTop;
+        if (!this.lastScrollTop)
+            this.lastScrollTop = 0;
+        if (!this.lastScrollTop2)
+            this.lastScrollTop2 = 0;
+
+        if (curScrollTop - this.lastScrollTop > 0) {
+            this.$refs.toolPanel.style.position = 'relative';
+            this.$refs.toolPanel.style.top = `${this.lastScrollTop2}px`;
+        } else if (curScrollTop - this.lastScrollTop < 0) {
+            this.$refs.toolPanel.style.position = 'sticky';
+            this.$refs.toolPanel.style.top = 0;
+            this.lastScrollTop2 = curScrollTop;
+        }
+
+        this.lastScrollTop = curScrollTop;    
+    }
+
     async updateTableData() {
         let result = [];
 
