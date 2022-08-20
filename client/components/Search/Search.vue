@@ -62,7 +62,7 @@
                         @click="selectLang"
                     />
                     <div class="q-mx-xs" />                
-                    <q-btn round dense style="height: 20px" color="info" icon="la la-question" @click="showSearchHelp" />
+                    <q-btn round dense style="height: 20px" color="grey-13" icon="la la-question" @click="showSearchHelp" />
 
                     <div class="q-mx-xs" />
                     <div class="row items-center q-mt-xs">
@@ -76,18 +76,9 @@
                 </div>
             </div>
 
-            <div v-if="totalPages > 1" class="row justify-center items-center q-ml-md q-my-xs" style="font-size: 120%">
-                <div class="q-mr-xs">
-                    Страница
-                </div>
-                <div class="bg-white">
-                    <NumInput v-model="page" :min="1" :max="totalPages" style="width: 150px" />
-                </div>
-                <div class="q-ml-xs">
-                    из {{ totalPages }}
-                </div>
+            <div class="row justify-center">
+                <PageScroller v-model="page" :total-pages="totalPages" />
             </div>
-            <div v-else class="q-my-sm" />
 
             <!-- Формирование списка ------------------------------------------------------------------------>
             <div v-for="item in tableData" :key="item.key" style="border-bottom: 1px solid #aaaaaa">
@@ -97,18 +88,9 @@
             </div>
             <!-- Формирование списка конец ------------------------------------------------------------------>
 
-            <div v-if="totalPages > 1" class="row justify-center items-center q-ml-md q-my-xs" style="font-size: 120%">
-                <div class="q-mr-xs">
-                    Страница
-                </div>
-                <div class="bg-white">
-                    <NumInput v-model="page" :min="1" :max="totalPages" style="width: 150px" />
-                </div>
-                <div class="q-ml-xs">
-                    из {{ totalPages }}
-                </div>
+            <div class="row justify-center">
+                <PageScroller v-model="page" :total-pages="totalPages" />
             </div>
-            <div v-else class="q-my-sm" />
         </div>
     </div>
 </template>
@@ -117,14 +99,14 @@
 //-----------------------------------------------------------------------------
 import vueComponent from '../vueComponent.js';
 
-import NumInput from '../share/NumInput.vue';
+import PageScroller from './PageScroller/PageScroller.vue';
 import * as utils from '../../share/utils';
 
 //import _ from 'lodash';
 
 const componentOptions = {
     components: {
-        NumInput,
+        PageScroller,
     },
     watch: {
         config() {
@@ -250,13 +232,19 @@ class Search {
         if (curScrollTop - this.lastScrollTop > 0) {
             this.$refs.toolPanel.style.position = 'relative';
             this.$refs.toolPanel.style.top = `${this.lastScrollTop2}px`;
-        } else if (curScrollTop - this.lastScrollTop < 0) {
+        } else if (curScrollTop - this.lastScrollTop <= 0) {
             this.$refs.toolPanel.style.position = 'sticky';
             this.$refs.toolPanel.style.top = 0;
             this.lastScrollTop2 = curScrollTop;
         }
 
-        this.lastScrollTop = curScrollTop;    
+        this.lastScrollTop = curScrollTop;
+    }
+
+    scrollToTop() {
+        this.$refs.scroller.scrollTop = 0;
+        const curScrollTop = this.$refs.scroller.scrollTop;
+        this.lastScrollTop = curScrollTop;
     }
 
     get foundAuthorsMessage() {
@@ -323,6 +311,7 @@ class Search {
 
                     this.searchResult = result;
                     await this.updateTableData();
+                    this.scrollToTop();
                 } catch (e) {
                     this.$root.stdDialog.alert(e.message, 'Ошибка');
                     return;

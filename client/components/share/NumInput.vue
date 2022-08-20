@@ -12,7 +12,7 @@
             <q-icon
                 v-ripple="validate(modelValue - step)" 
                 :class="(validate(modelValue - step) ? '' : 'disable')" 
-                name="la la-minus-circle" 
+                :name="minusIcon" 
                 class="button" 
                 @click="minus"
                 @mousedown.prevent.stop="onMouseDown($event, 'minus')"
@@ -27,7 +27,7 @@
             <q-icon
                 v-ripple="validate(modelValue + step)"
                 :class="(validate(modelValue + step) ? '' : 'disable')"
-                name="la la-plus-circle"
+                :name="plusIcon"
                 class="button"
                 @click="plus"
                 @mousedown.prevent.stop="onMouseDown($event, 'plus')"
@@ -70,7 +70,9 @@ class NumInput {
         max: { type: Number, default: Number.MAX_VALUE },
         step: { type: Number, default: 1 },
         digits: { type: Number, default: 0 },
-        disable: Boolean
+        disable: Boolean,
+        minusIcon: {type: String, default: 'la la-minus-circle'},
+        plusIcon: {type: String, default: 'la la-plus-circle'},
     };
 
     filteredValue = 0;
