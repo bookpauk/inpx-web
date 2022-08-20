@@ -76,9 +76,10 @@
                 </div>
             </div>
 
-            <div class="row justify-center">
+            <div v-if="totalPages > 1" class="row justify-center">
                 <PageScroller v-model="page" :total-pages="totalPages" />
             </div>
+            <div v-else class="q-my-sm" />
 
             <!-- Формирование списка ------------------------------------------------------------------------>
             <div v-for="item in tableData" :key="item.key" style="border-bottom: 1px solid #aaaaaa">
@@ -88,9 +89,10 @@
             </div>
             <!-- Формирование списка конец ------------------------------------------------------------------>
 
-            <div class="row justify-center">
+            <div v-if="totalPages > 1" class="row justify-center">
                 <PageScroller v-model="page" :total-pages="totalPages" />
             </div>
+            <div v-else class="q-my-sm" />
         </div>
     </div>
 </template>

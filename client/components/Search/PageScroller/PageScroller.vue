@@ -1,5 +1,5 @@
 <template>
-    <div v-if="totalPages > 1" class="row items-center q-ml-md q-my-xs" style="font-size: 120%">
+    <div class="row items-center q-ml-md q-my-xs" style="font-size: 120%">
         <div class="q-mr-xs">
             Страница
         </div>
@@ -13,7 +13,6 @@
             из {{ totalPages }}
         </div>
     </div>
-    <div v-else class="q-my-sm" />
 </template>
 
 <script>
