@@ -158,7 +158,7 @@ class Search {
     title = '';
     genre = '';
     lang = '';
-    limit = 100;
+    limit = 50;
 
     //stuff
     queryFound = -1;

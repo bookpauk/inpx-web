@@ -239,7 +239,8 @@ class DbSearcher {
             const authorIds = await this.getAuthorIds(query);
 
             const totalFound = authorIds.length;
-            const limit = (query.limit ? query.limit : 1000);
+            let limit = (query.limit ? query.limit : 100);
+            limit = (limit > 1000 ? 1000 : limit);
             const offset = (query.offset ? query.offset : 0);
 
             //выборка найденных авторов
