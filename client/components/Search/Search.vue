@@ -1,10 +1,18 @@
 <template>
     <div class="root column fit" style="position: relative">
-        <div v-show="loadingMessage" class="fit row justify-center items-center" style="position: absolute; background-color: rgba(0, 0, 0, 0.2); z-index: 1">
-            <div class="bg-white row justify-center items-center" style="width: 180px; height: 50px; border-radius: 10px; box-shadow: 2px 2px 10px #333333">
+        <div v-show="loadingMessage" class="fit row justify-center items-center" style="position: absolute; background-color: rgba(0, 0, 0, 0.2); z-index: 2">
+            <div class="bg-white row justify-center items-center q-px-lg" style="min-width: 180px; height: 50px; border-radius: 10px; box-shadow: 2px 2px 10px #333333">
                 <q-spinner color="primary" size="2em" />
                 <div class="q-ml-sm">
                     {{ loadingMessage }}
+                </div>
+            </div>
+        </div>
+        <div v-show="getBooksMessage" class="fit row justify-center items-center" style="position: absolute; background-color: rgba(0, 0, 0, 0.2); z-index: 1">
+            <div class="bg-white row justify-center items-center q-px-lg" style="min-width: 180px; height: 50px; border-radius: 10px; box-shadow: 2px 2px 10px #333333">
+                <q-spinner color="primary" size="2em" />
+                <div class="q-ml-sm">
+                    {{ getBooksMessage }}
                 </div>
             </div>
         </div>
@@ -188,6 +196,7 @@ class Search {
     projectName = '';
 
     loadingMessage = '';
+    getBooksMessage = '';
     page = 1;
     totalPages = 1;
     expanded = [];
@@ -382,7 +391,7 @@ class Search {
                 (async() => {
                     await utils.sleep(500);
                     if (this.getBooksFlag > 0)
-                        this.loadingMessage = 'Загрузка списка книг...';
+                        this.getBooksMessage = 'Загрузка списка книг...';
                 })();
             }
 
@@ -390,7 +399,7 @@ class Search {
         } finally {
             this.getBooksFlag--;
             if (this.getBooksFlag == 0)
-                this.loadingMessage = '';
+                this.getBooksMessage = '';
         }
     }
 
