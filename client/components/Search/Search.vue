@@ -84,7 +84,7 @@
             <!-- Формирование списка ------------------------------------------------------------------------>
             <div v-for="item in tableData" :key="item.key" class="column" :class="{'odd-author': item.num % 2}" style="font-size: 120%">
                 <div class="row items-center q-ml-md q-mr-xs no-wrap">
-                    <div style="width: 30px">
+                    <div style="min-width: 35px">
                         <DivBtn v-if="tableData.length > 1" :icon-size="24" icon="la la-check-circle" @click="selectAuthor(item.author)">
                             <q-tooltip :delay="1500" anchor="bottom right" content-style="font-size: 80%">
                                 Только этот автор
@@ -92,15 +92,21 @@
                         </DivBtn>
                     </div>
 
-                    <div class="row items-center clickable q-mr-sm q-pa-xs" @click="expandAuthor(item)">
-                        <div v-if="!isExpanded(item)">
-                            <q-icon name="la la-plus-square" size="28px" />
-                        </div>
-                        <div v-else>
-                            <q-icon name="la la-minus-square" size="28px" />
+                    <div class="row items-center clickable q-py-xs no-wrap" @click="expandAuthor(item)">
+                        <div style="min-width: 30px">
+                            <div v-if="!isExpanded(item)">
+                                <q-icon name="la la-plus-square" size="28px" />
+                            </div>
+                            <div v-else>
+                                <q-icon name="la la-minus-square" size="28px" />
+                            </div>
                         </div>
                         <div class="q-ml-xs" style="font-weight: bold">
-                            {{ item.name }}
+                            {{ item.name }}                            
+                        </div>
+
+                        <div v-if="item.books" class="q-ml-sm" style="font-weight: bold">
+                            ({{ item.books.length }})
                         </div>
                     </div>
                 </div>
@@ -276,6 +282,9 @@ class Search {
     }
     
     onScroll() {
+        if (this.ignoreScrolling)
+            return;
+
         const curScrollTop = this.$refs.scroller.scrollTop;
         if (!this.lastScrollTop)
             this.lastScrollTop = 0;
@@ -292,6 +301,12 @@ class Search {
         }
 
         this.lastScrollTop = curScrollTop;
+    }
+
+    async ignoreScroll(ms) {
+        this.ignoreScrolling = true;
+        await utils.sleep(ms);
+        this.ignoreScrolling = false;
     }
 
     scrollToTop() {
@@ -324,17 +339,16 @@ class Search {
         const author = item.author;
 
         if (!this.isExpanded(item)) {
-            if (expanded.indexOf(author) < 0) {
-                expanded.push(author);
+            expanded.push(author);
 
-                this.getBooks(item);
+            this.getBooks(item);
 
-                if (expanded.length > 100) {
-                    expanded.shift();
-                }
-
-                this.expanded = expanded;
+            if (expanded.length > 10) {
+                expanded.shift();
             }
+
+            this.expanded = expanded;
+            this.ignoreScroll(50);
         } else {
             const i = expanded.indexOf(author);
             if (i >= 0) {
@@ -345,23 +359,12 @@ class Search {
     }
 
     async loadBooks(authorId) {
-        let inSearch = true;
-        (async() => {
-            await utils.sleep(500);
-            if (inSearch)
-                this.loadingMessage = 'Загрузка списка книг...';
-        })();
-
         try {
             const result = await this.api.getBookList(authorId);
 
-            return result;
+            return result.books;
         } catch (e) {
             this.$root.stdDialog.alert(e.message, 'Ошибка');
-            return;
-        } finally {
-            inSearch = false;
-            this.loadingMessage = '';
         }
     }
 
@@ -369,7 +372,26 @@ class Search {
         if (item.books)
             return;
 
-        item.books = await this.loadBooks(item.key);
+        if (!this.getBooksFlag)
+            this.getBooksFlag = 0;
+
+        this.getBooksFlag++;
+
+        try {
+            if (this.getBooksFlag == 1) {
+                (async() => {
+                    await utils.sleep(500);
+                    if (this.getBooksFlag > 0)
+                        this.loadingMessage = 'Загрузка списка книг...';
+                })();
+            }
+
+            item.books = await this.loadBooks(item.key);
+        } finally {
+            this.getBooksFlag--;
+            if (this.getBooksFlag == 0)
+                this.loadingMessage = '';
+        }
     }
 
     async updateTableData() {
@@ -448,7 +470,6 @@ class Search {
                     this.scrollToTop();
                 } catch (e) {
                     this.$root.stdDialog.alert(e.message, 'Ошибка');
-                    return;
                 } finally {
                     inSearch = false;
                     this.loadingMessage = '';
