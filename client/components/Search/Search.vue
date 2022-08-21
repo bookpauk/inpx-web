@@ -84,23 +84,23 @@
                 </div>
             </div>
 
-            <div v-if="totalPages > 1" class="row justify-center">
-                <PageScroller v-model="page" :total-pages="totalPages" />
+            <div v-if="pageCount > 1" class="row justify-center">
+                <PageScroller v-model="page" :page-count="pageCount" />
             </div>
             <div v-else class="q-my-sm" />
 
             <!-- Формирование списка ------------------------------------------------------------------------>
             <div v-for="item in tableData" :key="item.key" class="column" :class="{'odd-author': item.num % 2}" style="font-size: 120%">
                 <div class="row items-center q-ml-md q-mr-xs no-wrap">
-                    <div style="min-width: 35px">
+                    <!--div style="min-width: 35px">
                         <DivBtn v-if="tableData.length > 1" :icon-size="24" icon="la la-check-circle" @click="selectAuthor(item.author)">
                             <q-tooltip :delay="1500" anchor="bottom right" content-style="font-size: 80%">
                                 Только этот автор
                             </q-tooltip>
                         </DivBtn>
-                    </div>
+                    </div-->
 
-                    <div class="row items-center clickable q-py-xs no-wrap" @click="expandAuthor(item)">
+                    <div class="row items-center clickable2 q-py-xs no-wrap" @click="expandAuthor(item)">
                         <div style="min-width: 30px">
                             <div v-if="!isExpanded(item)">
                                 <q-icon name="la la-plus-square" size="28px" />
@@ -109,24 +109,29 @@
                                 <q-icon name="la la-minus-square" size="28px" />
                             </div>
                         </div>
-                        <div class="q-ml-xs" style="font-weight: bold">
-                            {{ item.name }}                            
-                        </div>
-
-                        <div v-if="item.books" class="q-ml-sm" style="font-weight: bold">
-                            ({{ item.books.length }})
-                        </div>
                     </div>
+
+                    <div class="clickable q-ml-xs" style="font-weight: bold" @click="selectAuthor(item.author)">
+                        {{ item.name }}                            
+                    </div>
+
+                    <div v-if="item.books" class="q-ml-sm" style="font-weight: bold">
+                        ({{ item.books.rows.length }})
+                    </div>                    
                 </div>
 
                 <div v-if="isExpanded(item) && item.books">
-                    {{ item.books }}
+                    <div v-for="row in item.books.rows" :key="row.key" class="book-row column">
+                        <div class="q-my-sm" @click="selectAuthor(row.title)">
+                            {{ row.title }}
+                        </div>
+                    </div>
                 </div>
             </div>
             <!-- Формирование списка конец ------------------------------------------------------------------>
 
-            <div v-if="totalPages > 1" class="row justify-center">
-                <PageScroller v-model="page" :total-pages="totalPages" />
+            <div v-if="pageCount > 1" class="row justify-center">
+                <PageScroller v-model="page" :total-pages="pageCount" />
             </div>
             <div v-else class="q-my-sm" />
         </div>
@@ -136,7 +141,7 @@
 <script>
 //-----------------------------------------------------------------------------
 import vueComponent from '../vueComponent.js';
-const { reactive } = require('@vue/reactivity');
+import { reactive } from 'vue';
 
 import PageScroller from './PageScroller/PageScroller.vue';
 import DivBtn from '../share/DivBtn.vue';
@@ -198,7 +203,7 @@ class Search {
     loadingMessage = '';
     getBooksMessage = '';
     page = 1;
-    totalPages = 1;
+    pageCount = 1;
     expanded = [];
 
     //input field consts 
@@ -216,6 +221,7 @@ class Search {
     //stuff
     queryFound = -1;
     totalFound = 0;
+    bookRowsOnPage = 100;
 
     limitOptions = [
         {label: '10', value: 10},
@@ -312,7 +318,7 @@ class Search {
         this.lastScrollTop = curScrollTop;
     }
 
-    async ignoreScroll(ms) {
+    async ignoreScroll(ms = 50) {
         this.ignoreScrolling = true;
         await utils.sleep(ms);
         this.ignoreScrolling = false;
@@ -320,8 +326,7 @@ class Search {
 
     scrollToTop() {
         this.$refs.scroller.scrollTop = 0;
-        const curScrollTop = this.$refs.scroller.scrollTop;
-        this.lastScrollTop = curScrollTop;
+        this.lastScrollTop = 0;
     }
 
     get foundAuthorsMessage() {
@@ -329,14 +334,15 @@ class Search {
     }
 
     updatePageCount() {
-        this.totalPages = Math.ceil(this.totalFound/this.limit);
-        this.totalPages = (this.totalPages < 1 ? 1 : this.totalPages);
-        if (this.page > this.totalPages)
+        this.pageCount = Math.ceil(this.totalFound/this.limit);
+        this.pageCount = (this.pageCount < 1 ? 1 : this.pageCount);
+        if (this.page > this.pageCount)
             this.page = 1;
     }
 
     selectAuthor(author) {
         this.author = `=${author}`;
+        this.scrollToTop();
     }
 
     isExpanded(item) {
@@ -357,7 +363,7 @@ class Search {
             }
 
             this.expanded = expanded;
-            this.ignoreScroll(50);
+            this.ignoreScroll();
         } else {
             const i = expanded.indexOf(author);
             if (i >= 0) {
@@ -367,7 +373,7 @@ class Search {
         }
     }
 
-    async loadBooks(authorId) {
+    async loadBooks(author, authorId) {
         try {
             const result = await this.api.getBookList(authorId);
 
@@ -375,6 +381,10 @@ class Search {
         } catch (e) {
             this.$root.stdDialog.alert(e.message, 'Ошибка');
         }
+    }
+
+    filterBooks(loadedBooks) {
+        return loadedBooks;
     }
 
     async getBooks(item) {
@@ -395,7 +405,24 @@ class Search {
                 })();
             }
 
-            item.books = await this.loadBooks(item.key);
+            const loadedBooks = await this.loadBooks(item.author, item.key);
+
+            const filtered = this.filterBooks(loadedBooks);
+
+            filtered.sort((a, b) => a.title.localeCompare(b.title));
+
+            const rows = [];
+            for (const book of filtered) {
+                rows.push({key: book.id, title: book.title});
+            }
+
+            const books = {
+                totalCount: loadedBooks.length,
+                filteredCount: filtered.length,
+                rows,
+            };
+
+            item.books = books;
         } finally {
             this.getBooksFlag--;
             if (this.getBooksFlag == 0)
@@ -507,10 +534,19 @@ export default vueComponent(Search);
 }
 
 .clickable {
+    color: blue;
+    cursor: pointer;
+}
+
+.clickable2 {
     cursor: pointer;
 }
 
 .odd-author {
-    background-color: #e7e7e7;
+    background-color: #e8e8e8;
+}
+
+.book-row {
+    margin-left: 100px;
 }
 </style>

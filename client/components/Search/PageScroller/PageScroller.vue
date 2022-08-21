@@ -5,12 +5,12 @@
         </div>
         <div class="bg-white">
             <NumInput 
-                v-model="page" :min="1" :max="totalPages"
+                v-model="page" :min="1" :max="pageCount"
                 style="width: 140px" minus-icon="la la-chevron-circle-left" plus-icon="la la-chevron-circle-right" :disable="disable"
             />
         </div>
         <div class="q-ml-xs">
-            из {{ totalPages }}
+            из {{ pageCount }}
         </div>
     </div>
 </template>
@@ -39,7 +39,7 @@ class PageScroller {
     _props = {
         modelValue: Number,
         disable: Boolean,
-        totalPages: Number,
+        pageCount: Number,
     };
 
     page = 1;
