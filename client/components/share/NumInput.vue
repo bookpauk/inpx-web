@@ -14,7 +14,7 @@
                 :class="(validate(modelValue - step) ? '' : 'disable')" 
                 :name="minusIcon" 
                 class="button" 
-                @click="minus"
+                @click="onClick('minus')"
                 @mousedown.prevent.stop="onMouseDown($event, 'minus')"
                 @mouseup.prevent.stop="onMouseUp"
                 @mouseout.prevent.stop="onMouseUp"
@@ -29,7 +29,7 @@
                 :class="(validate(modelValue + step) ? '' : 'disable')"
                 :name="plusIcon"
                 class="button"
-                @click="plus"
+                @click="onClick('plus')"
                 @mousedown.prevent.stop="onMouseDown($event, 'plus')"
                 @mouseup.prevent.stop="onMouseUp"
                 @mouseout.prevent.stop="onMouseUp"
@@ -109,23 +109,42 @@ class NumInput {
             this.filteredValue = newValue;
     }
 
+    onClick(way) {
+        if (this.clickRepeat)
+            return;
+
+        if (way == 'plus') {
+            this.plus();
+        } else {
+            this.minus();
+        }
+    }
+
     onMouseDown(event, way) {
         this.startClickRepeat = true;
         this.clickRepeat = false;
 
         if (event.button == 0) {
             (async() => {
-                await utils.sleep(300);
-                if (this.startClickRepeat) {
-                    this.clickRepeat = true;
-                    while (this.clickRepeat) {
-                        if (way == 'plus') {
-                            this.plus();
-                        } else {
-                            this.minus();
+                if (this.inRepeatFunc)
+                    return;
+
+                this.inRepeatFunc = true;
+                try {
+                    await utils.sleep(300);
+                    if (this.startClickRepeat) {
+                        this.clickRepeat = true;
+                        while (this.clickRepeat) {
+                            if (way == 'plus') {
+                                this.plus();
+                            } else {
+                                this.minus();
+                            }
+                            await utils.sleep(200);
                         }
-                        await utils.sleep(50);
                     }
+                } finally {
+                    this.inRepeatFunc = false;
                 }
             })();
         }
@@ -135,7 +154,12 @@ class NumInput {
         if (this.inTouch)
             return;
         this.startClickRepeat = false;
-        this.clickRepeat = false;
+        if (this.clickRepeat) {
+            (async() => {
+                await utils.sleep(50);
+                this.clickRepeat = false;
+            })();
+        }
     }
 
     onTouchStart(event, way) {
