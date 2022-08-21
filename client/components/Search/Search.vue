@@ -82,13 +82,13 @@
             <div v-else class="q-my-sm" />
 
             <!-- Формирование списка ------------------------------------------------------------------------>
-            <div v-for="item in tableData" :key="item.key" :class="{'odd-author': item.num % 2}" style="font-size: 120%">
-                <div class="row items-center q-ml-md q-my-sm no-wrap">
+            <div v-for="item in tableData" :key="item.key" class="column" :class="{'odd-author': item.num % 2}" style="font-size: 120%">
+                <div class="row items-center q-ml-md q-my-xs no-wrap">
                     <div class="clickable q-mr-sm q-pa-xs">
-                        <div v-if="!isExpanded(item.author)" @click="expandAuthor(item.author, true)">
+                        <div v-if="!isExpanded(item)" @click="expandAuthor(item, true)">
                             <q-icon name="la la-plus-square" size="24px" />
                         </div>
-                        <div v-else @click="expandAuthor(item.author, false)">
+                        <div v-else @click="expandAuthor(item, false)">
                             <q-icon name="la la-minus-square" size="24px" />
                         </div>
                     </div>
@@ -96,6 +96,10 @@
                     <div class="clickable" style="font-weight: bold" @click="authorClick(item.author)">
                         {{ item.name }}
                     </div>
+                </div>
+
+                <div v-if="isExpanded(item) && item.books">
+                    {{ item.books[0] }}
                 </div>
             </div>
             <!-- Формирование списка конец ------------------------------------------------------------------>
@@ -111,6 +115,7 @@
 <script>
 //-----------------------------------------------------------------------------
 import vueComponent from '../vueComponent.js';
+const { reactive } = require('@vue/reactivity');
 
 import PageScroller from './PageScroller/PageScroller.vue';
 import * as utils from '../../share/utils';
@@ -154,13 +159,10 @@ const componentOptions = {
         totalFound() {
             this.updatePageCount();
         },
-        expanded: {
-            deep: true,
-            handler(newValue) {
-                const newSettings = _.cloneDeep(this.settings);
-                newSettings.expanded = _.cloneDeep(newValue);
-                this.commit('setSettings', newSettings);
-            },
+        expanded(newValue) {
+            const newSettings = _.cloneDeep(this.settings);
+            newSettings.expanded = _.cloneDeep(newValue);
+            this.commit('setSettings', newSettings);
         },
     },
 };
@@ -303,19 +305,44 @@ class Search {
         this.author = `=${author}`;
     }
 
-    isExpanded(author) {
-        return this.expanded.indexOf(author) >= 0;
+    isExpanded(item) {
+        return this.expanded.indexOf(item.author) >= 0;
     }
 
-    expandAuthor(author, expand = true) {
+    expandAuthor(item, expand = true) {
+        const expanded = _.cloneDeep(this.expanded);
+        const author = item.author;
+
         if (expand) {
-            if (this.expanded.indexOf(author) < 0)
-                this.expanded.push(author);
+            if (expanded.indexOf(author) < 0) {
+                expanded.push(author);
+
+                this.getBooks(item);
+
+                if (expanded.length > 100) {
+                    expanded.shift();
+                }
+
+                this.expanded = expanded;
+            }
         } else {
-            const i = this.expanded.indexOf(author);
-            if (i >= 0)
-                this.expanded.splice(i, 1);            
+            const i = expanded.indexOf(author);
+            if (i >= 0) {
+                expanded.splice(i, 1);
+                this.expanded = expanded;
+            }
         }
+    }
+
+    async loadBooks() {
+    }
+
+    async getBooks(item) {
+        if (item.books)
+            return;
+        
+        await utils.sleep(1000);
+        item.books = [{name: 'book1'}];
     }
 
     async updateTableData() {
@@ -323,18 +350,27 @@ class Search {
 
         const authors = this.searchResult.author;
         if (authors.length == 1) {
-            this.expandAuthor(authors[0].author);
+            this.expandAuthor(authors[0]);
         }
+
+        const expandedSet = new Set(this.expanded);
 
         let num = 0;
         for (const rec of authors) {
-            result.push({
+            const item = reactive({
                 key: rec.id,
                 num,
                 author: rec.author,
                 name: rec.author.replace(/,/g, ', '),
+                book: false,
             });
             num++;
+
+            if (expandedSet.has(item.author)) {
+                this.getBooks(item);//no await
+            }
+
+            result.push(item);
         }
 
         this.tableData = result;
