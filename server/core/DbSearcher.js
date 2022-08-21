@@ -36,7 +36,7 @@ class DbSearcher {
             a = a.substring(1);
             where = `@@indexIter('value', (v) => {                    
                 const enru = new Set(${db.esc(enruArr)});
-                return !v || !enru.has(v[0].toLowerCase());
+                return !v || (!enru.has(v[0].toLowerCase()) && v.indexOf(${db.esc(a)}) >= 0);
             });`;
         } else {
             where = `@@dirtyIndexLR('value', ${db.esc(a)}, ${db.esc(a + maxUtf8Char)})`;
@@ -108,7 +108,7 @@ class DbSearcher {
         if (query.title && query.title !== '*') {
             const where = this.getWhere(query.title);
 
-            const titleRows = await db.select({
+            let titleRows = await db.select({
                 table: 'title',
                 map: `(r) => ({authorId: r.authorId})`,
                 where
@@ -119,8 +119,14 @@ class DbSearcher {
                 for (const id of row.authorId)
                     ids.add(id);
             }
-
             idsArr.push(ids);
+
+            //чистки памяти при тяжелых запросах
+            if (query.title[0] == '*') {
+                titleRows = null;
+                utils.freeMemory();
+                await db.freeMemory();
+            }
         }
 
         //жанры
@@ -258,7 +264,7 @@ class DbSearcher {
 
     async periodicCleanCache() {
         this.timer = null;
-        const cleanInterval = 30*1000;//this.config.cacheCleanInterval*60*1000;
+        const cleanInterval = 5*1000;//this.config.cacheCleanInterval*60*1000;
 
         try {
             const db = this.db;

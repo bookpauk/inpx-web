@@ -126,6 +126,7 @@ class DbCreator {
         }
 
         utils.freeMemory();
+        await db.freeMemory();
 
         //теперь можно создавать остальные поисковые таблицы
         const parseField = (fieldValue, fieldMap, fieldArr, authorIds) => {
@@ -232,10 +233,7 @@ class DbCreator {
         titleMap = null;
         genreMap = null;
 
-        for (let i = 0; i < 3; i++) {
-            utils.freeMemory();
-            await utils.sleep(1000);
-        }
+        utils.freeMemory();
 
         //config
         callback({job: 'config save', jobMessage: 'Сохранение конфигурации'});
@@ -289,7 +287,8 @@ class DbCreator {
 
                 await db.insert({table, rows: chunk});
 
-                await utils.sleep(100);
+                if (i % 10 == 0)
+                    await db.freeMemory();
             }
 
             nullArr();
