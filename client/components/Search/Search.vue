@@ -82,9 +82,20 @@
             <div v-else class="q-my-sm" />
 
             <!-- Формирование списка ------------------------------------------------------------------------>
-            <div v-for="item in tableData" :key="item.key" style="border-bottom: 1px solid #aaaaaa">
-                <div v-if="item.type == 'author'" class="q-my-sm q-ml-md clickable" style="font-size: 120%" @click="authorClick(item.value)">
-                    {{ item.key }} {{ item.name }}
+            <div v-for="item in tableData" :key="item.key" :class="{'odd-author': item.num % 2}" style="font-size: 120%">
+                <div class="row items-center q-ml-md q-my-sm no-wrap">
+                    <div class="clickable q-mr-sm q-pa-xs">
+                        <div v-if="!isExpanded(item.author)" @click="expandAuthor(item.author, true)">
+                            <q-icon name="la la-plus-square" size="24px" />
+                        </div>
+                        <div v-else @click="expandAuthor(item.author, false)">
+                            <q-icon name="la la-minus-square" size="24px" />
+                        </div>
+                    </div>
+
+                    <div class="clickable" style="font-weight: bold" @click="authorClick(item.author)">
+                        {{ item.name }}
+                    </div>
                 </div>
             </div>
             <!-- Формирование списка конец ------------------------------------------------------------------>
@@ -104,7 +115,7 @@ import vueComponent from '../vueComponent.js';
 import PageScroller from './PageScroller/PageScroller.vue';
 import * as utils from '../../share/utils';
 
-//import _ from 'lodash';
+import _ from 'lodash';
 
 const componentOptions = {
     components: {
@@ -132,13 +143,25 @@ const componentOptions = {
         page() {
             this.refresh();
         },
-        limit() {
+        limit(newValue) {
+            const newSettings = _.cloneDeep(this.settings);
+            newSettings.limit = newValue;
+            this.commit('setSettings', newSettings);
+
             this.updatePageCount();
             this.refresh();
         },
         totalFound() {
             this.updatePageCount();
-        }
+        },
+        expanded: {
+            deep: true,
+            handler(newValue) {
+                const newSettings = _.cloneDeep(this.settings);
+                newSettings.expanded = _.cloneDeep(newValue);
+                this.commit('setSettings', newSettings);
+            },
+        },
     },
 };
 class Search {
@@ -149,6 +172,7 @@ class Search {
     loadingMessage = '';
     page = 1;
     totalPages = 1;
+    expanded = [];
 
     //input field consts 
     inputMaxLength = 1000;
@@ -179,18 +203,33 @@ class Search {
 
     created() {
         this.commit = this.$store.commit;
+
+        this.loadSettings();
     }
 
     mounted() {
         this.api = this.$root.api;
 
-        this.$refs.authorInput.focus();
+        if (!this.$root.isMobileDevice)
+            this.$refs.authorInput.focus();
 
+        this.ready = true;
         this.refresh();//no await
+    }
+
+    loadSettings() {
+        const settings = this.settings;
+
+        this.limit = settings.limit;
+        this.expanded = _.cloneDeep(settings.expanded);
     }
 
     get config() {
         return this.$store.state.config;
+    }
+
+    get settings() {
+        return this.$store.state.settings;
     }
 
     makeTitle() {
@@ -260,21 +299,51 @@ class Search {
             this.page = 1;
     }
 
-    authorClick(authorName) {
-        this.author = `=${authorName}`;
+    authorClick(author) {
+        this.author = `=${author}`;
+    }
+
+    isExpanded(author) {
+        return this.expanded.indexOf(author) >= 0;
+    }
+
+    expandAuthor(author, expand = true) {
+        if (expand) {
+            if (this.expanded.indexOf(author) < 0)
+                this.expanded.push(author);
+        } else {
+            const i = this.expanded.indexOf(author);
+            if (i >= 0)
+                this.expanded.splice(i, 1);            
+        }
     }
 
     async updateTableData() {
         let result = [];
 
-        for (const rec of this.searchResult.author) {
-            result.push({key: rec.id, type: 'author', value: rec.author, name: rec.author.replace(/,/g, ', ')});
+        const authors = this.searchResult.author;
+        if (authors.length == 1) {
+            this.expandAuthor(authors[0].author);
+        }
+
+        let num = 0;
+        for (const rec of authors) {
+            result.push({
+                key: rec.id,
+                num,
+                author: rec.author,
+                name: rec.author.replace(/,/g, ', '),
+            });
+            num++;
         }
 
         this.tableData = result;
     }
 
     async refresh() {
+        if (!this.ready)
+            return;
+
         const offset = (this.page - 1)*this.limit;
 
         const newQuery = {
@@ -345,7 +414,10 @@ export default vueComponent(Search);
 }
 
 .clickable {
-    color: blue;
     cursor: pointer;
+}
+
+.odd-author {
+    background-color: #e7e7e7;
 }
 </style>

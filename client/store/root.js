@@ -1,6 +1,10 @@
 // initial state
 const state = {
     config: {},
+    settings: {
+        limit: 50,
+        expanded: [],
+    },
 };
 
 // getters
@@ -13,6 +17,9 @@ const actions = {};
 const mutations = {
     setConfig(state, value) {
         state.config = value;
+    },
+    setSettings(state, value) {
+        state.settings = value;
     },
 };
 
