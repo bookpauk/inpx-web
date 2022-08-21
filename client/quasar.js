@@ -21,7 +21,7 @@ import {QIcon} from 'quasar/src/components/icon';
 //import {QSeparator} from 'quasar/src/components/separator';
 //import {QList} from 'quasar/src/components/item';
 //import {QItem, QItemSection, QItemLabel} from 'quasar/src/components/item';
-//import {QTooltip} from 'quasar/src/components/tooltip';
+import {QTooltip} from 'quasar/src/components/tooltip';
 import {QSpinner} from 'quasar/src/components/spinner';
 //import {QTable, QTh, QTr, QTd} from 'quasar/src/components/table';
 //import {QCheckbox} from 'quasar/src/components/checkbox';
@@ -52,7 +52,7 @@ const components = {
     //QSeparator,
     //QList,
     //QItem, QItemSection, QItemLabel,
-    //QTooltip,
+    QTooltip,
     QSpinner,
     //QTable, QTh, QTr, QTd,
     //QCheckbox,

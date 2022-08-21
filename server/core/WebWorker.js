@@ -195,7 +195,13 @@ class WebWorker {
             totalFound: result.totalFound,
             inpxHash: (config.inpxHash ? config.inpxHash : ''),
         };
-    }    
+    }
+
+    async getBookList(authorId) {
+        this.checkMyState();
+
+        return await this.dbSearcher.getBookList(authorId);
+    }
 
     async logServerStats() {
         while (1) {// eslint-disable-line

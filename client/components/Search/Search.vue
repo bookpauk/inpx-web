@@ -83,23 +83,30 @@
 
             <!-- Формирование списка ------------------------------------------------------------------------>
             <div v-for="item in tableData" :key="item.key" class="column" :class="{'odd-author': item.num % 2}" style="font-size: 120%">
-                <div class="row items-center q-ml-md q-my-xs no-wrap">
-                    <div class="clickable q-mr-sm q-pa-xs">
-                        <div v-if="!isExpanded(item)" @click="expandAuthor(item, true)">
-                            <q-icon name="la la-plus-square" size="24px" />
-                        </div>
-                        <div v-else @click="expandAuthor(item, false)">
-                            <q-icon name="la la-minus-square" size="24px" />
-                        </div>
+                <div class="row items-center q-ml-md q-mr-xs no-wrap">
+                    <div style="width: 30px">
+                        <DivBtn v-if="tableData.length > 1" :icon-size="24" icon="la la-check-circle" @click="selectAuthor(item.author)">
+                            <q-tooltip :delay="1500" anchor="bottom right" content-style="font-size: 80%">
+                                Только этот автор
+                            </q-tooltip>
+                        </DivBtn>
                     </div>
 
-                    <div class="clickable" style="font-weight: bold" @click="authorClick(item.author)">
-                        {{ item.name }}
+                    <div class="row items-center clickable q-mr-sm q-pa-xs" @click="expandAuthor(item)">
+                        <div v-if="!isExpanded(item)">
+                            <q-icon name="la la-plus-square" size="28px" />
+                        </div>
+                        <div v-else>
+                            <q-icon name="la la-minus-square" size="28px" />
+                        </div>
+                        <div class="q-ml-xs" style="font-weight: bold">
+                            {{ item.name }}
+                        </div>
                     </div>
                 </div>
 
                 <div v-if="isExpanded(item) && item.books">
-                    {{ item.books[0] }}
+                    {{ item.books }}
                 </div>
             </div>
             <!-- Формирование списка конец ------------------------------------------------------------------>
@@ -118,6 +125,8 @@ import vueComponent from '../vueComponent.js';
 const { reactive } = require('@vue/reactivity');
 
 import PageScroller from './PageScroller/PageScroller.vue';
+import DivBtn from '../share/DivBtn.vue';
+
 import * as utils from '../../share/utils';
 
 import _ from 'lodash';
@@ -125,6 +134,7 @@ import _ from 'lodash';
 const componentOptions = {
     components: {
         PageScroller,
+        DivBtn
     },
     watch: {
         config() {
@@ -301,7 +311,7 @@ class Search {
             this.page = 1;
     }
 
-    authorClick(author) {
+    selectAuthor(author) {
         this.author = `=${author}`;
     }
 
@@ -309,11 +319,11 @@ class Search {
         return this.expanded.indexOf(item.author) >= 0;
     }
 
-    expandAuthor(item, expand = true) {
+    expandAuthor(item) {
         const expanded = _.cloneDeep(this.expanded);
         const author = item.author;
 
-        if (expand) {
+        if (!this.isExpanded(item)) {
             if (expanded.indexOf(author) < 0) {
                 expanded.push(author);
 
@@ -334,26 +344,39 @@ class Search {
         }
     }
 
-    async loadBooks() {
+    async loadBooks(authorId) {
+        let inSearch = true;
+        (async() => {
+            await utils.sleep(500);
+            if (inSearch)
+                this.loadingMessage = 'Загрузка списка книг...';
+        })();
+
+        try {
+            const result = await this.api.getBookList(authorId);
+
+            return result;
+        } catch (e) {
+            this.$root.stdDialog.alert(e.message, 'Ошибка');
+            return;
+        } finally {
+            inSearch = false;
+            this.loadingMessage = '';
+        }
     }
 
     async getBooks(item) {
         if (item.books)
             return;
-        
-        await utils.sleep(1000);
-        item.books = [{name: 'book1'}];
+
+        item.books = await this.loadBooks(item.key);
     }
 
     async updateTableData() {
         let result = [];
 
-        const authors = this.searchResult.author;
-        if (authors.length == 1) {
-            this.expandAuthor(authors[0]);
-        }
-
         const expandedSet = new Set(this.expanded);
+        const authors = this.searchResult.author;
 
         let num = 0;
         for (const rec of authors) {
@@ -372,6 +395,10 @@ class Search {
 
             result.push(item);
         }
+
+        if (result.length == 1 && !this.isExpanded(result[0])) {
+            this.expandAuthor(result[0]);
+        }        
 
         this.tableData = result;
     }

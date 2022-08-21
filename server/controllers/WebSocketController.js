@@ -4,7 +4,7 @@ const _ = require('lodash');
 const WorkerState = require('../core/WorkerState');//singleton
 const WebWorker = require('../core/WebWorker');//singleton
 const log = new (require('../core/AppLogger'))().log;//singleton
-//const utils = require('../core/utils');
+const utils = require('../core/utils');
 
 const cleanPeriod = 1*60*1000;//1 минута
 const closeSocketOnIdle = 5*60*1000;//5 минут
@@ -68,6 +68,8 @@ class WebSocketController {
                     await this.getWorkerState(req, ws); break;
                 case 'search':
                     await this.search(req, ws); break;
+                case 'get-book-list':
+                    await this.getBookList(req, ws); break;
 
                 default:
                     throw new Error(`Action not found: ${req.action}`);
@@ -119,6 +121,15 @@ class WebSocketController {
             throw new Error(`query is empty`);
 
         const result = await this.webWorker.search(req.query);
+
+        this.send(result, req, ws);
+    }
+
+    async getBookList(req, ws) {
+        if (!utils.hasProp(req, 'authorId'))
+            throw new Error(`authorId is empty`);
+
+        const result = await this.webWorker.getBookList(req.authorId);
 
         this.send(result, req, ws);
     }

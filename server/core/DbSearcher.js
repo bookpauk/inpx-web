@@ -193,7 +193,7 @@ class DbSearcher {
         //сначала попробуем найти в кеше
         const q = query;
         const keyArr = [q.author, q.series, q.title, q.genre, q.lang];
-        const keyStr = keyArr.join('');
+        const keyStr = `query-${keyArr.join('')}`;
         
         if (!keyStr) {//пустой запрос
             if (db.searchCache.authorIdsAll)
@@ -257,6 +257,42 @@ class DbSearcher {
             });
 
             return {result, totalFound};
+        } finally {
+            this.searchFlag--;
+        }
+    }
+
+    async getBookList(authorId) {
+        if (this.closed)
+            throw new Error('DbSearcher closed');
+
+        this.searchFlag++;
+
+        try {
+            const db = this.db;
+
+            //выборка автора по authorId
+            const rows = await db.select({
+                table: 'author',
+                map: `(r) => ({author: r.author, bookId: r.bookId})`,
+                where: `@@id(${db.esc(authorId)})`
+            });
+
+            let author = '';
+            let result = [];
+
+            if (rows.length) {
+                author = rows[0].author;
+
+                //выборка книг по bookId
+                result = await db.select({
+                    table: 'book',
+                    //map: `(r) => ({})`,
+                    where: `@@id(${db.esc(rows[0].bookId)})`,
+                });
+            }
+
+            return {author, books: result};
         } finally {
             this.searchFlag--;
         }
