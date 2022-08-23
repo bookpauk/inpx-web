@@ -111,7 +111,7 @@
                         </div>
                     </div>
 
-                    <div class="clickable q-ml-xs" style="font-weight: bold" @click="selectAuthor(item.author)">
+                    <div class="clickable q-ml-xs q-py-sm" style="font-weight: bold" @click="selectAuthor(item.author)">
                         {{ item.name }}                            
                     </div>
 
@@ -125,13 +125,16 @@
                         <div class="q-my-sm" @click="selectAuthor(row.title)">
                             {{ row.title }}
                         </div>
+                        <div>
+                            {{ row.src }}
+                        </div>
                     </div>
                 </div>
             </div>
             <!-- Формирование списка конец ------------------------------------------------------------------>
 
             <div v-if="pageCount > 1" class="row justify-center">
-                <PageScroller v-model="page" :total-pages="pageCount" />
+                <PageScroller v-model="page" :page-count="pageCount" />
             </div>
             <div v-else class="q-my-sm" />
         </div>
@@ -413,7 +416,7 @@ class Search {
 
             const rows = [];
             for (const book of filtered) {
-                rows.push({key: book.id, title: book.title});
+                rows.push({key: book.id, title: book.title, src: book});
             }
 
             const books = {
