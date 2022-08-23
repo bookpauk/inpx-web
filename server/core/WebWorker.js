@@ -119,7 +119,7 @@ class WebWorker {
 
             if (!await fs.pathExists(dbPath)) {
                 await this.createDb(dbPath);
-                await utils.freeMemory();
+                utils.freeMemory();
             }
 
             //загружаем БД

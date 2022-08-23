@@ -271,28 +271,59 @@ class DbSearcher {
         try {
             const db = this.db;
 
-            //выборка автора по authorId
-            const rows = await db.select({
-                table: 'author',
-                map: `(r) => ({author: r.author, bookId: r.bookId})`,
-                where: `@@id(${db.esc(authorId)})`
-            });
+            let result;
 
-            let author = '';
-            let result = [];
+            const key = `author_books-${authorId}`;
 
-            if (rows.length) {
-                author = rows[0].author;
+            const rows = await db.select({table: 'query_cache', where: `@@id(${db.esc(key)})`});
 
-                //выборка книг по bookId
-                result = await db.select({
-                    table: 'book',
-                    //map: `(r) => ({})`,
-                    where: `@@id(${db.esc(rows[0].bookId)})`,
+            if (rows.length) {//нашли в кеше
+                await db.insert({
+                    table: 'query_time',
+                    replace: true,
+                    rows: [{id: key, time: Date.now()}],
+                });
+
+                result = rows[0].value;
+            } else {//не нашли в кеше
+
+                //выборка автора по authorId
+                const rows = await db.select({
+                    table: 'author',
+                    map: `(r) => ({author: r.author, bookId: r.bookId})`,
+                    where: `@@id(${db.esc(authorId)})`
+                });
+
+                let author = '';
+                let books = [];
+
+                if (rows.length) {
+                    author = rows[0].author;
+
+                    //выборка книг по bookId
+                    books = await db.select({
+                        table: 'book',
+                        //map: `(r) => ({})`,
+                        where: `@@id(${db.esc(rows[0].bookId)})`,
+                    });
+                }
+
+                result = {author, books};
+
+                //кладем в кеш
+                await db.insert({
+                    table: 'query_cache',
+                    replace: true,
+                    rows: [{id: key, value: result}],
+                });
+                await db.insert({
+                    table: 'query_time',
+                    replace: true,
+                    rows: [{id: key, time: Date.now()}],
                 });
             }
 
-            return {author, books: result};
+            return result;
         } finally {
             this.searchFlag--;
         }
