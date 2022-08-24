@@ -123,10 +123,7 @@
                 <div v-if="isExpanded(item) && item.books">
                     <div v-for="row in item.books.rows" :key="row.key" class="book-row column">
                         <div class="q-my-sm" @click="selectAuthor(row.title)">
-                            {{ row.title }}
-                        </div>
-                        <div>
-                            {{ row.src }}
+                            {{ row.title }} {{ row.src.del }}
                         </div>
                     </div>
                 </div>
@@ -231,6 +228,8 @@ class Search {
         {label: '20', value: 20},
         {label: '50', value: 50},
         {label: '100', value: 100},
+        {label: '200', value: 200},
+        {label: '500', value: 500},
         {label: '1000', value: 1000},
     ];
 
@@ -380,7 +379,7 @@ class Search {
         try {
             const result = await this.api.getBookList(authorId);
 
-            return result.books;
+            return JSON.parse(result.books);
         } catch (e) {
             this.$root.stdDialog.alert(e.message, 'Ошибка');
         }
