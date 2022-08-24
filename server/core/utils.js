@@ -38,8 +38,6 @@ function hasProp(obj, prop) {
 function freeMemory() {
     if (global.gc) {
         global.gc();
-        global.gc();
-        global.gc();
     }
 }
 
