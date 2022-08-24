@@ -16,10 +16,10 @@ class DbCreator {
             callback(readState);
         };
 
-        //временная таблица
+        //временный массив
         let bookArr = [];
 
-        //поисковые таблицы, ниже сохраним в БД
+        //поисковые таблицы, позже сохраним в БД
         let authorMap = new Map();//авторы
         let authorArr = [];
         let seriesMap = new Map();//серии
