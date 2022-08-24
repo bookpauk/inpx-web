@@ -289,8 +289,7 @@ class DbSearcher {
 
                 //выборка автора по authorId
                 const rows = await db.select({
-                    table: 'author',
-                    map: `(r) => ({author: r.author, bookId: r.bookId})`,
+                    table: 'author_book',
                     where: `@@id(${db.esc(authorId)})`
                 });
 
@@ -299,13 +298,7 @@ class DbSearcher {
 
                 if (rows.length) {
                     author = rows[0].author;
-
-                    //выборка книг по bookId
-                    books = await db.select({
-                        table: 'book',
-                        //map: `(r) => ({})`,
-                        where: `@@id(${db.esc(rows[0].bookId)})`,
-                    });
+                    books = rows[0].books;
                 }
 
                 result = {author, books};

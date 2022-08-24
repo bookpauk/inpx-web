@@ -11,15 +11,13 @@ class DbCreator {
     async run(db, callback) {
         const config = this.config;
 
-        //book
-        await db.create({
-            table: 'book'
-        });
-
         callback({job: 'load inpx', jobMessage: 'Загрузка INPX'});
         const readFileCallback = async(readState) => {
             callback(readState);
         };
+
+        //временная таблица
+        let bookArr = [];
 
         //поисковые таблицы, ниже сохраним в БД
         let authorMap = new Map();//авторы
@@ -41,7 +39,6 @@ class DbCreator {
 
         //stuff
         let recsLoaded = 0;
-        let id = 0;
         let chunkNum = 0;
 
         const splitAuthor = (author) => {
@@ -58,7 +55,8 @@ class DbCreator {
 
         const parsedCallback = async(chunk) => {
             for (const rec of chunk) {
-                rec.id = ++id;
+                const id = bookArr.length;
+                bookArr.push(rec);
 
                 if (!rec.del) {
                     bookCount++;
@@ -97,8 +95,6 @@ class DbCreator {
                 }
             }
 
-            await db.insert({table: 'book', rows: chunk});
-            
             recsLoaded += chunk.length;
             callback({recsLoaded});
 
@@ -117,7 +113,7 @@ class DbCreator {
         callback({job: 'author sort', jobMessage: 'Сортировка'});
         authorArr.sort((a, b) => a.value.localeCompare(b.value));
 
-        id = 0;
+        let id = 0;
         authorMap = new Map();
         for (const authorRec of authorArr) {
             authorRec.id = ++id;
@@ -126,7 +122,6 @@ class DbCreator {
         }
 
         utils.freeMemory();
-        await db.freeMemory();
 
         //теперь можно создавать остальные поисковые таблицы
         const parseField = (fieldValue, fieldMap, fieldArr, authorIds) => {
@@ -169,10 +164,8 @@ class DbCreator {
             parseField(rec.title, titleMap, titleArr, authorIds);
 
             //жанры
-            if (!rec.genre)
-                rec.genre = emptyFieldValue;
-
-            const genre = rec.genre.split(',');
+            let genre = rec.genre || emptyFieldValue;
+            genre = rec.genre.split(',');
 
             for (const g of genre) {
                 let genreRec;
@@ -192,42 +185,57 @@ class DbCreator {
 
             //языки
             parseField(rec.lang, langMap, langArr, authorIds);
-        }
+        };
 
-        callback({job: 'search tables create', jobMessage: 'Создание поисковых таблиц'});
-
-        //парсинг 2
-        while (1) {// eslint-disable-line
-            //пробегаемся по сохраненным книгам
-            const rows = await db.select({
-                table: 'book',
-                where: `
-                    let iter = @getItem('book_parsing');
-                    if (!iter) {
-                        iter = @all();
-                        @setItem('book_parsing', iter);
-                    }
-
-                    const ids = new Set();
-                    let id = iter.next();
-                    while (!id.done && ids.size < 10000) {
-                        ids.add(id.value);
-                        id = iter.next();
-                    }
-
-                    return ids;
-                `
-            });
-
-            if (rows.length) {
-                for (const rec of rows)
+        const parseBookChunk = async(authorChunk) => {
+            const abRows = [];
+            for (const a of authorChunk) {
+                const aBooks = [];
+                for (const id of a.bookId) {
+                    const rec = bookArr[id];
                     parseBookRec(rec);
-            } else {
-                break;
+                    aBooks.push(rec);
+                }
+
+                abRows.push({id: a.id, author: a.author, books: JSON.stringify(aBooks)});
+
+                delete a.bookId;//в дальнейшем не понадобится, authorArr сохраняем без него
             }
+
+            await db.insert({
+                table: 'author_book',
+                rows: abRows,
+            });
+        };
+
+        callback({job: 'search tables create', jobMessage: 'Создание поисковых таблиц'});        
+
+        //парсинг 2, заполнение посиковых таблиц, сохранение author_book
+        await db.create({
+            table: 'author_book',
+        });
+
+        let idsLen = 0;
+        let aChunk = [];
+        for (const author of authorArr) {// eslint-disable-line
+            aChunk.push(author);
+            idsLen += author.bookId.length;
+
+            if (idsLen > 50000) {
+                await parseBookChunk(aChunk);
+                idsLen = 0;
+                aChunk = [];
+                utils.freeMemory();
+                await db.freeMemory();
+            }
+        }
+        if (aChunk.length) {
+            await parseBookChunk(aChunk);
+            aChunk = null;
         }
 
         //чистка памяти, ибо жрет как не в себя
+        bookArr = null;
         authorMap = null;
         seriesMap = null;
         titleMap = null;
@@ -297,23 +305,23 @@ class DbCreator {
         };
 
         //author
-        callback({job: 'author save', jobMessage: 'Сохранение авторов книг'});
+        callback({job: 'author save', jobMessage: 'Сохранение индекса авторов'});
         await saveTable('author', authorArr, () => {authorArr = null}, false);
 
         //series
-        callback({job: 'series save', jobMessage: 'Сохранение серий книг'});
+        callback({job: 'series save', jobMessage: 'Сохранение индекса серий'});
         await saveTable('series', seriesArr, () => {seriesArr = null});
 
         //title
-        callback({job: 'title save', jobMessage: 'Сохранение названий книг'});
+        callback({job: 'title save', jobMessage: 'Сохранение индекса названий'});
         await saveTable('title', titleArr, () => {titleArr = null});
 
         //genre
-        callback({job: 'genre save', jobMessage: 'Сохранение жанров'});
+        callback({job: 'genre save', jobMessage: 'Сохранение индекса жанров'});
         await saveTable('genre', genreArr, () => {genreArr = null});
 
         //lang
-        callback({job: 'lang save', jobMessage: 'Сохранение языков'});
+        callback({job: 'lang save', jobMessage: 'Сохранение индекса языков'});
         await saveTable('lang', langArr, () => {langArr = null});
 
         //кэш-таблицы запросов
