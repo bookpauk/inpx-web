@@ -123,7 +123,58 @@ class DbCreator {
 
         utils.freeMemory();
 
-        //теперь можно создавать остальные поисковые таблицы
+        const saveBookChunk = async(authorChunk) => {
+            const abRows = [];
+            for (const a of authorChunk) {
+                const aBooks = [];
+                for (const id of a.bookId) {
+                    const rec = bookArr[id];
+                    aBooks.push(rec);
+                }
+
+                abRows.push({id: a.id, author: a.author, books: JSON.stringify(aBooks)});
+
+                delete a.bookId;//в дальнейшем не понадобится, authorArr сохраняем без него
+            }
+
+            await db.insert({
+                table: 'author_book',
+                rows: abRows,
+            });
+        };
+
+        callback({job: 'search tables create', jobMessage: 'Создание поисковых таблиц'});        
+
+        //сохранение author_book
+        await db.create({
+            table: 'author_book',
+        });
+
+        let idsLen = 0;
+        let aChunk = [];
+        for (const author of authorArr) {// eslint-disable-line
+            aChunk.push(author);
+            idsLen += author.bookId.length;
+
+            if (idsLen > 10000) {
+                await saveBookChunk(aChunk);
+                idsLen = 0;
+                aChunk = [];
+                await utils.sleep(100);
+                utils.freeMemory();
+                await db.freeMemory();
+            }
+        }
+        if (aChunk.length) {
+            await saveBookChunk(aChunk);
+            aChunk = null;
+        }
+
+        //чистка памяти, ибо жрет как не в себя
+        bookArr = null;
+        utils.freeMemory();
+
+        //парсинг 2, подготовка
         const parseField = (fieldValue, fieldMap, fieldArr, authorIds) => {
             if (!fieldValue)
                 fieldValue = emptyFieldValue;
@@ -187,55 +238,43 @@ class DbCreator {
             parseField(rec.lang, langMap, langArr, authorIds);
         };
 
-        const parseBookChunk = async(authorChunk) => {
-            const abRows = [];
-            for (const a of authorChunk) {
-                const aBooks = [];
-                for (const id of a.bookId) {
-                    const rec = bookArr[id];
-                    parseBookRec(rec);
-                    aBooks.push(rec);
-                }
-
-                abRows.push({id: a.id, author: a.author, books: JSON.stringify(aBooks)});
-
-                delete a.bookId;//в дальнейшем не понадобится, authorArr сохраняем без него
-            }
-
-            await db.insert({
+        //парсинг 2, теперь можно создавать остальные поисковые таблицы
+        while (1) {// eslint-disable-line
+            const rows = await db.select({
                 table: 'author_book',
-                rows: abRows,
+                where: `
+                    let iter = @getItem('parse_book');
+                    if (!iter) {
+                        iter = @all();
+                        @setItem('parse_book', iter);
+                    }
+
+                    const ids = new Set();
+                    let id = iter.next();
+                    while (!id.done && ids.size < 10000) {
+                        ids.add(id.value);
+                        id = iter.next();
+                    }
+
+                    return ids;
+                `
             });
-        };
 
-        callback({job: 'search tables create', jobMessage: 'Создание поисковых таблиц'});        
+            if (rows.length) {
+                for (const row of rows) {
+                    const books = JSON.parse(row.books);
+                    for (const rec of books)
+                        parseBookRec(rec);
+                }
+            } else
+                break;
 
-        //парсинг 2, заполнение посиковых таблиц, сохранение author_book
-        await db.create({
-            table: 'author_book',
-        });
-
-        let idsLen = 0;
-        let aChunk = [];
-        for (const author of authorArr) {// eslint-disable-line
-            aChunk.push(author);
-            idsLen += author.bookId.length;
-
-            if (idsLen > 50000) {
-                await parseBookChunk(aChunk);
-                idsLen = 0;
-                aChunk = [];
-                utils.freeMemory();
-                await db.freeMemory();
-            }
-        }
-        if (aChunk.length) {
-            await parseBookChunk(aChunk);
-            aChunk = null;
+            await utils.sleep(100);
+            utils.freeMemory();
+            await db.freeMemory();
         }
 
         //чистка памяти, ибо жрет как не в себя
-        bookArr = null;
         authorMap = null;
         seriesMap = null;
         titleMap = null;
