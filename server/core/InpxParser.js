@@ -89,7 +89,7 @@ class InpxParser {
         const rows = inpBuf.toString().split('\n');
 
         for (const row of rows) {
-            let line = `${row}`; //копируем строку, немного эффективнее используется память в итоге
+            let line = row;
             if (!line)
                 continue;
 
