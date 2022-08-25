@@ -76,9 +76,7 @@ class DbSearcher {
                     db.searchCache.authorIdsAll.push(row.id);
                 }
             } else {//оптимизация
-                for (const id of db.searchCache.authorIdsAll) {
-                    authorIds.add(id);
-                }
+                authorIds = new Set(db.searchCache.authorIdsAll);
             }
         }
 
@@ -202,31 +200,34 @@ class DbSearcher {
                 result = await this.selectAuthorIds(query);
 
         } else {//непустой запрос
-            const key = JSON.stringify(keyArr);
+            if (this.config.queryCacheEnabled) {
+                const key = JSON.stringify(keyArr);
+                const rows = await db.select({table: 'query_cache', where: `@@id(${db.esc(key)})`});
 
-            const rows = await db.select({table: 'query_cache', where: `@@id(${db.esc(key)})`});
+                if (rows.length) {//нашли в кеше
+                    await db.insert({
+                        table: 'query_time',
+                        replace: true,
+                        rows: [{id: key, time: Date.now()}],
+                    });
 
-            if (rows.length) {//нашли в кеше
-                await db.insert({
-                    table: 'query_time',
-                    replace: true,
-                    rows: [{id: key, time: Date.now()}],
-                });
+                    result = rows[0].value;
+                } else {//не нашли в кеше, ищем в поисковых таблицах
+                    result = await this.selectAuthorIds(query);
 
-                result = rows[0].value;
-            } else {//не нашли в кеше, ищем в поисковых таблицах
+                    await db.insert({
+                        table: 'query_cache',
+                        replace: true,
+                        rows: [{id: key, value: result}],
+                    });
+                    await db.insert({
+                        table: 'query_time',
+                        replace: true,
+                        rows: [{id: key, time: Date.now()}],
+                    });
+                }
+            } else {
                 result = await this.selectAuthorIds(query);
-
-                await db.insert({
-                    table: 'query_cache',
-                    replace: true,
-                    rows: [{id: key, value: result}],
-                });
-                await db.insert({
-                    table: 'query_time',
-                    replace: true,
-                    rows: [{id: key, time: Date.now()}],
-                });
             }
         }
 
@@ -262,6 +263,26 @@ class DbSearcher {
         }
     }
 
+    async selectBookList(authorId) {
+        const db = this.db;
+
+        //выборка автора по authorId
+        const rows = await db.select({
+            table: 'author_book',
+            where: `@@id(${db.esc(authorId)})`
+        });
+
+        let author = '';
+        let books = [];
+
+        if (rows.length) {
+            author = rows[0].author;
+            books = rows[0].books;
+        }
+
+        return {author, books};
+    }
+
     async getBookList(authorId) {
         if (this.closed)
             throw new Error('DbSearcher closed');
@@ -273,47 +294,35 @@ class DbSearcher {
 
             let result;
 
-            const key = `author_books-${authorId}`;
+            if (this.config.queryCacheEnabled) {
+                const key = `author_books-${authorId}`;
+                const rows = await db.select({table: 'query_cache', where: `@@id(${db.esc(key)})`});
 
-            const rows = await db.select({table: 'query_cache', where: `@@id(${db.esc(key)})`});
+                if (rows.length) {//нашли в кеше
+                    await db.insert({
+                        table: 'query_time',
+                        replace: true,
+                        rows: [{id: key, time: Date.now()}],
+                    });
 
-            if (rows.length) {//нашли в кеше
-                await db.insert({
-                    table: 'query_time',
-                    replace: true,
-                    rows: [{id: key, time: Date.now()}],
-                });
+                    result = rows[0].value;
+                } else {//не нашли в кеше
+                    result = await this.selectBookList(authorId);
 
-                result = rows[0].value;
-            } else {//не нашли в кеше
-
-                //выборка автора по authorId
-                const rows = await db.select({
-                    table: 'author_book',
-                    where: `@@id(${db.esc(authorId)})`
-                });
-
-                let author = '';
-                let books = [];
-
-                if (rows.length) {
-                    author = rows[0].author;
-                    books = rows[0].books;
+                    //кладем в кеш
+                    await db.insert({
+                        table: 'query_cache',
+                        replace: true,
+                        rows: [{id: key, value: result}],
+                    });
+                    await db.insert({
+                        table: 'query_time',
+                        replace: true,
+                        rows: [{id: key, time: Date.now()}],
+                    });
                 }
-
-                result = {author, books};
-
-                //кладем в кеш
-                await db.insert({
-                    table: 'query_cache',
-                    replace: true,
-                    rows: [{id: key, value: result}],
-                });
-                await db.insert({
-                    table: 'query_time',
-                    replace: true,
-                    rows: [{id: key, time: Date.now()}],
-                });
+            } else {
+                result = await this.selectBookList(authorId);
             }
 
             return result;
@@ -324,7 +333,7 @@ class DbSearcher {
 
     async periodicCleanCache() {
         this.timer = null;
-        const cleanInterval = 5*1000;//this.config.cacheCleanInterval*60*1000;
+        const cleanInterval = this.config.cacheCleanInterval*60*1000;
 
         try {
             const db = this.db;
