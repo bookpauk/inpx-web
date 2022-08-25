@@ -1,7 +1,7 @@
 const InpxParser = require('./InpxParser');
 const utils = require('./utils');
 
-const emptyFieldValue = '@';
+const emptyFieldValue = '?';
 
 class DbCreator {
     constructor(config) {
