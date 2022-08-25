@@ -8,11 +8,11 @@
                 </div>
             </div>
         </div>
-        <div v-show="getBooksMessage" class="fit row justify-center items-center" style="position: absolute; background-color: rgba(0, 0, 0, 0.2); z-index: 1">
+        <div v-show="loadingMessage2" class="fit row justify-center items-center" style="position: absolute; background-color: rgba(0, 0, 0, 0.2); z-index: 1">
             <div class="bg-white row justify-center items-center q-px-lg" style="min-width: 180px; height: 50px; border-radius: 10px; box-shadow: 2px 2px 10px #333333">
                 <q-spinner color="primary" size="2em" />
                 <div class="q-ml-sm">
-                    {{ getBooksMessage }}
+                    {{ loadingMessage2 }}
                 </div>
             </div>
         </div>
@@ -115,15 +115,15 @@
                         {{ item.name }}                            
                     </div>
 
-                    <div v-if="item.books" class="q-ml-sm" style="font-weight: bold">
-                        ({{ item.books.rows.length }})
+                    <div class="q-ml-sm" style="font-weight: bold">
+                        {{ getBookCount(item) }}
                     </div>                    
                 </div>
 
                 <div v-if="isExpanded(item) && item.books">
-                    <div v-for="row in item.books.rows" :key="row.key" class="book-row column">
-                        <div class="q-my-sm" @click="selectAuthor(row.title)">
-                            {{ row.title }} {{ row.src.del }}
+                    <div v-for="book in item.books" :key="book.key" class="book-row column">
+                        <div class="q-my-sm" @click="selectAuthor(book.title)">
+                            {{ book.title }} {{ book.src.del }}
                         </div>
                     </div>
                 </div>
@@ -159,6 +159,9 @@ const componentOptions = {
         config() {
             this.makeTitle();
         },
+        settings() {
+            this.loadSettings();
+        },
         author() {
             this.refresh();
         },
@@ -178,20 +181,16 @@ const componentOptions = {
             this.refresh();
         },
         limit(newValue) {
-            const newSettings = _.cloneDeep(this.settings);
-            newSettings.limit = newValue;
-            this.commit('setSettings', newSettings);
+            this.setSetting('limit', newValue);
 
             this.updatePageCount();
             this.refresh();
         },
+        showDeleted(newValue) {
+            this.setSetting('showDeleted', newValue);
+        },
         totalFound() {
             this.updatePageCount();
-        },
-        expanded(newValue) {
-            const newSettings = _.cloneDeep(this.settings);
-            newSettings.expanded = _.cloneDeep(newValue);
-            this.commit('setSettings', newSettings);
         },
     },
 };
@@ -201,10 +200,9 @@ class Search {
     projectName = '';
 
     loadingMessage = '';
-    getBooksMessage = '';
+    loadingMessage2 = '';
     page = 1;
     pageCount = 1;
-    expanded = [];
 
     //input field consts 
     inputMaxLength = 1000;
@@ -216,7 +214,11 @@ class Search {
     title = '';
     genre = '';
     lang = '';
-    limit = 50;
+    limit = 50;//settings
+
+    //settings
+    expanded = [];
+    showDeleted = false;
 
     //stuff
     queryFound = -1;
@@ -257,6 +259,7 @@ class Search {
 
         this.limit = settings.limit;
         this.expanded = _.cloneDeep(settings.expanded);
+        this.showDeleted = settings.showDeleted;
     }
 
     get config() {
@@ -351,6 +354,12 @@ class Search {
         return this.expanded.indexOf(item.author) >= 0;
     }
 
+    setSetting(name, newValue) {
+        const newSettings = _.cloneDeep(this.settings);
+        newSettings[name] = _.cloneDeep(newValue);
+        this.commit('setSettings', newSettings);
+    }
+
     expandAuthor(item) {
         const expanded = _.cloneDeep(this.expanded);
         const author = item.author;
@@ -364,15 +373,32 @@ class Search {
                 expanded.shift();
             }
 
-            this.expanded = expanded;
+            this.setSetting('expanded', expanded);
             this.ignoreScroll();
         } else {
             const i = expanded.indexOf(author);
             if (i >= 0) {
                 expanded.splice(i, 1);
-                this.expanded = expanded;
+                this.setSetting('expanded', expanded);
             }
         }
+    }
+
+    getBookCount(item) {
+        let result = '';
+        if (item.bookCount === undefined)
+            return result;
+
+        if (this.showDeleted) {
+            result = item.bookCount + item.bookDelCount;
+        } else {
+            result = item.bookCount;
+        }
+
+        if (item.books && item.books.length < result)
+            result = `${item.books.length}/${result}`;
+
+        return `(${result})`;
     }
 
     async loadBooks(author, authorId) {
@@ -403,7 +429,7 @@ class Search {
                 (async() => {
                     await utils.sleep(500);
                     if (this.getBooksFlag > 0)
-                        this.getBooksMessage = 'Загрузка списка книг...';
+                        this.loadingMessage2 = 'Загрузка списка книг...';
                 })();
             }
 
@@ -413,22 +439,16 @@ class Search {
 
             filtered.sort((a, b) => a.title.localeCompare(b.title));
 
-            const rows = [];
+            const books = [];
             for (const book of filtered) {
-                rows.push({key: book.id, title: book.title, src: book});
+                books.push({key: book.id, title: book.title, src: book});
             }
-
-            const books = {
-                totalCount: loadedBooks.length,
-                filteredCount: filtered.length,
-                rows,
-            };
 
             item.books = books;
         } finally {
             this.getBooksFlag--;
             if (this.getBooksFlag == 0)
-                this.getBooksMessage = '';
+                this.loadingMessage2 = '';
         }
     }
 
@@ -445,6 +465,8 @@ class Search {
                 num,
                 author: rec.author,
                 name: rec.author.replace(/,/g, ', '),
+                bookCount: rec.bookCount,
+                bookDelCount: rec.bookDelCount,
                 book: false,
             });
             num++;

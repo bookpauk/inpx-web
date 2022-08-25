@@ -252,7 +252,7 @@ class DbSearcher {
             //выборка найденных авторов
             let result = await db.select({
                 table: 'author',
-                map: `(r) => ({id: r.id, author: r.author})`,
+                map: `(r) => ({id: r.id, author: r.author, bookCount: r.bookCount, bookDelCount: r.bookDelCount})`,
                 where: `@@id(${db.esc(authorIds.slice(offset, offset + limit))})`
             });
 

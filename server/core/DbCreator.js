@@ -82,7 +82,7 @@ class DbCreator {
                         const authorTmpId = authorMap.get(value);
                         authorRec = authorArr[authorTmpId];
                     } else {
-                        authorRec = {tmpId: authorArr.length, author: a, value, bookId: []};
+                        authorRec = {tmpId: authorArr.length, author: a, value, bookCount: 0, bookDelCount: 0, bookId: []};
                         authorArr.push(authorRec);
                         authorMap.set(value, authorRec.tmpId);
 
@@ -93,6 +93,13 @@ class DbCreator {
                     //это нужно для того, чтобы имя автора начиналось с заглавной
                     if (a[0].toUpperCase() === a[0])
                         authorRec.author = a;
+
+                    //счетчики
+                    if (!rec.del) {
+                        authorRec.bookCount++;
+                    } else {
+                        authorRec.bookDelCount++;
+                    }
 
                     //ссылки на книги
                     authorRec.bookId.push(id);
