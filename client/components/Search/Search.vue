@@ -32,7 +32,7 @@
                         </div>
                     </div>
                     
-                    <q-btn class="q-ml-md" round dense color="secondary" icon="la la-cog" @click="settingsDialogVisible = true" />
+                    <DivBtn class="q-ml-md text-white bg-secondary" :size="32" :icon-size="24" icon="la la-cog" round @click="settingsDialogVisible = true" />
                 </div>
                 <div class="row q-mx-md q-mb-sm items-center">
                     <q-input
@@ -62,7 +62,8 @@
                         @click="selectLang"
                     />
                     <div class="q-mx-xs" />                
-                    <q-btn round dense color="grey-13" icon="la la-question" @click="showSearchHelp" />
+
+                    <DivBtn class="text-white bg-grey-13" :size="32" :icon-size="24" icon="la la-question" round @click="showSearchHelp" />
 
                     <div class="q-mx-xs" />
                     <div class="row items-center q-mt-xs">

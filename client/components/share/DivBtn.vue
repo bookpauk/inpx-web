@@ -1,7 +1,9 @@
 <template>
-    <div ref="btn" class="clickable row justify-center items-center">
-        <q-icon :name="icon" :size="`${iconSize}px`" />
-        <slot></slot>
+    <div ref="btn" class="button clickable row justify-center items-center no-wrap" @click="clickEffect">
+        <div :class="{'button-pressed': pressed}">
+            <q-icon :name="icon" :size="`${iconSize}px`" />
+            <slot></slot>
+        </div>
     </div>
 </template>
 
@@ -9,7 +11,7 @@
 //-----------------------------------------------------------------------------
 import vueComponent from '../vueComponent.js';
 
-//import * as utils from '../../share/utils';
+import * as utils from '../../share/utils';
 
 const componentOptions = {
     watch: {
@@ -25,7 +27,10 @@ class DivBtn {
         icon: { type: String, default: '' },
         iconSize: { type: Number, default: 14 },
         round: { type: Boolean },
+        pad: { type: Number, default: 0 },
     };
+
+    pressed = false;
 
     created() {
     }
@@ -35,10 +40,22 @@ class DivBtn {
     }
 
     updateSizes() {
-        this.$refs.btn.style.width = `${this.size}px`;
-        this.$refs.btn.style.height = `${this.size}px`;
+        const style = this.$refs.btn.style;
+        style.minWidth = `${this.size}px`;
+        style.height = `${this.size}px`;
+        if (this.pad) {
+            style.paddingLeft = `${this.pad}px`;
+            style.paddingRight = `${this.pad + 5}px`;
+        }
+
         if (this.round)
-            this.$refs.btn.style.borderRadius = `${this.size}px`;
+            style.borderRadius = `${this.size}px`;
+    }
+
+    async clickEffect() {
+        this.pressed = true;
+        await utils.sleep(100);
+        this.pressed = false;
     }
 }
 
@@ -47,8 +64,22 @@ export default vueComponent(DivBtn);
 </script>
 
 <style scoped>
-.clickable-icon {
-    cursor: pointer;
+.button {
+    position: relative;
+    box-shadow: 0.5px 1px 3px #333333;
 }
 
+.button:hover {
+    opacity: 0.8;
+    transition: opacity 0.2s linear;
+}
+
+.button-pressed {
+    margin-left: 2px;
+    margin-top: 2px;
+}
+
+.clickable {
+    cursor: pointer;
+}
 </style>
