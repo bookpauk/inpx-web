@@ -8,6 +8,7 @@ class DbCreator {
         this.config = config;
     }
 
+    //процедура формировани БД несколько усложнена, в целях экономии памяти
     async run(db, callback) {
         const config = this.config;
 
@@ -16,8 +17,11 @@ class DbCreator {
             callback(readState);
         };
 
-        //временный массив
-        let bookArr = [];
+        //временная таблица
+        await db.create({
+            table: 'book',
+            cacheSize: 5,
+        });        
 
         //поисковые таблицы, позже сохраним в БД
         let authorMap = new Map();//авторы
@@ -53,10 +57,10 @@ class DbCreator {
             return result;
         }
 
+        let id = 0;
         const parsedCallback = async(chunk) => {
             for (const rec of chunk) {
-                const id = bookArr.length;
-                bookArr.push(rec);
+                rec.id = ++id;
 
                 if (!rec.del) {
                     bookCount++;
@@ -95,6 +99,8 @@ class DbCreator {
                 }
             }
 
+            await db.insert({table: 'book', rows: chunk});
+
             recsLoaded += chunk.length;
             callback({recsLoaded});
 
@@ -113,7 +119,7 @@ class DbCreator {
         callback({job: 'author sort', jobMessage: 'Сортировка'});
         authorArr.sort((a, b) => a.value.localeCompare(b.value));
 
-        let id = 0;
+        id = 0;
         authorMap = new Map();
         for (const authorRec of authorArr) {
             authorRec.id = ++id;
@@ -123,12 +129,27 @@ class DbCreator {
 
         utils.freeMemory();
 
+        //подготовка к сохранению author_book
         const saveBookChunk = async(authorChunk) => {
+            const ids = [];
+            for (const a of authorChunk) {
+                for (const id of a.bookId) {
+                    ids.push(id);
+                }
+            }
+
+            ids.sort();// обязательно, иначе будет тормозить - особенности JembaDb
+
+            const rows = await db.select({table: 'book', where: `@@id(${db.esc(ids)})`});
+            const bookArr = new Map();
+            for (const row of rows)
+                bookArr.set(row.id, row);
+
             const abRows = [];
             for (const a of authorChunk) {
                 const aBooks = [];
                 for (const id of a.bookId) {
-                    const rec = bookArr[id];
+                    const rec = bookArr.get(id);
                     aBooks.push(rec);
                 }
 
@@ -156,7 +177,7 @@ class DbCreator {
             aChunk.push(author);
             idsLen += author.bookId.length;
 
-            if (idsLen > 10000) {
+            if (idsLen > 50000) {//константа выяснена эмпирическим путем "память/скорость"
                 await saveBookChunk(aChunk);
                 idsLen = 0;
                 aChunk = [];
@@ -171,7 +192,8 @@ class DbCreator {
         }
 
         //чистка памяти, ибо жрет как не в себя
-        bookArr = null;
+        await db.drop({table: 'book'});
+        await db.freeMemory();
         utils.freeMemory();
 
         //парсинг 2, подготовка
@@ -334,8 +356,10 @@ class DbCreator {
 
                 await db.insert({table, rows: chunk});
 
-                if (i % 10 == 0)
+                if (i % 5 == 0) {
                     await db.freeMemory();
+                    await utils.sleep(100);
+                }
             }
 
             nullArr();
