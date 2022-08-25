@@ -4,6 +4,7 @@ const state = {
     settings: {
         limit: 50,
         expanded: [],
+        showCounts: true,
         showDeleted: false,
     },
 };

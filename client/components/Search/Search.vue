@@ -107,14 +107,14 @@
                         {{ item.name }}                            
                     </div>
 
-                    <div class="q-ml-sm" style="font-weight: bold">
+                    <div class="q-ml-sm" style="font-weight: bold; color: #555">
                         {{ getBookCount(item) }}
                     </div>                    
                 </div>
 
                 <div v-if="isExpanded(item) && item.books">
                     <div v-for="book in item.books" :key="book.key" class="book-row column">
-                        <div class="q-my-sm" @click="selectAuthor(book.title)">
+                        <div class="q-my-sm" @click="selectTitle(book.title)">
                             {{ book.title }} {{ book.src.del }}
                         </div>
                     </div>
@@ -148,6 +148,7 @@
                     />
                 </div>
 
+                <q-checkbox v-model="showCounts" size="36px" label="Показывать количество" />
                 <q-checkbox v-model="showDeleted" size="36px" label="Показывать удаленные" />
             </div>
 
@@ -210,6 +211,9 @@ const componentOptions = {
             this.updatePageCount();
             this.refresh();
         },
+        showCounts(newValue) {
+            this.setSetting('showCounts', newValue);
+        },
         showDeleted(newValue) {
             this.setSetting('showDeleted', newValue);
         },
@@ -243,6 +247,7 @@ class Search {
 
     //settings
     expanded = [];
+    showCounts = true;
     showDeleted = false;
 
     //stuff
@@ -375,6 +380,10 @@ class Search {
         this.scrollToTop();
     }
 
+    selectTitle(title) {
+        this.title = `=${title}`;
+    }
+
     isExpanded(item) {
         return this.expanded.indexOf(item.author) >= 0;
     }
@@ -411,7 +420,7 @@ class Search {
 
     getBookCount(item) {
         let result = '';
-        if (item.bookCount === undefined)
+        if (!this.showCounts || item.bookCount === undefined)
             return result;
 
         if (this.showDeleted) {
@@ -420,8 +429,10 @@ class Search {
             result = item.bookCount;
         }
 
-        if (item.books && item.books.length < result)
+        if (item.books)
             result = `${item.books.length}/${result}`;
+        else 
+            result = `#/${result}`;
 
         return `(${result})`;
     }
