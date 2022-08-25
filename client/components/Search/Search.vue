@@ -19,8 +19,8 @@
 
         <div ref="scroller" class="col fit column no-wrap" style="overflow: auto; position: relative" @scroll="onScroll">
             <div ref="toolPanel" class="tool-panel column bg-green-11" style="position: sticky; top: 0; z-index: 10;">
-                <div class="header q-mx-md q-mt-xs row items-center justify-between">
-                    <div class="row items-center q-mr-xs" style="font-size: 150%;">
+                <div class="header q-mx-md q-mt-xs row items-center">
+                    <div class="row items-center" style="font-size: 150%;">
                         <div class="q-py-xs q-px-sm bg-green-12" style="border: 1px solid #aaaaaa; border-radius: 6px">
                             {{ projectName }}
                         </div>
@@ -31,16 +31,8 @@
                             {{ collection }}
                         </div>
                     </div>
-                    <div class="row items-center" style="font-size: 120%;">
-                        <div class="q-mr-xs">
-                            На странице
-                        </div>
-                        <q-select
-                            v-model="limit" :options="limitOptions" class="bg-white"
-                            dropdown-icon="la la-angle-down la-sm"
-                            outlined dense emit-value map-options
-                        />
-                    </div>
+                    
+                    <q-btn class="q-ml-md" round dense color="secondary" icon="la la-cog" @click="settingsDialogVisible = true" />
                 </div>
                 <div class="row q-mx-md q-mb-sm items-center">
                     <q-input
@@ -70,7 +62,7 @@
                         @click="selectLang"
                     />
                     <div class="q-mx-xs" />                
-                    <q-btn round dense style="height: 20px" color="grey-13" icon="la la-question" @click="showSearchHelp" />
+                    <q-btn round dense color="grey-13" icon="la la-question" @click="showSearchHelp" />
 
                     <div class="q-mx-xs" />
                     <div class="row items-center q-mt-xs">
@@ -135,6 +127,36 @@
             </div>
             <div v-else class="q-my-sm" />
         </div>
+
+        <Dialog v-model="settingsDialogVisible">
+            <template #header>
+                <div class="row items-center">
+                    <q-icon class="q-mr-sm" name="la la-cog" size="28px"></q-icon>
+                    Настройки
+                </div>
+            </template>
+
+            <div class="q-mx-md column" style="min-width: 300px; font-size: 120%;">
+                <div class="row items-center q-ml-sm">
+                    <div class="q-mr-sm">
+                        Результатов на странице
+                    </div>
+                    <q-select
+                        v-model="limit" :options="limitOptions" class="bg-white"
+                        dropdown-icon="la la-angle-down la-sm"
+                        outlined dense emit-value map-options
+                    />
+                </div>
+
+                <q-checkbox v-model="showDeleted" size="36px" label="Показывать удаленные" />
+            </div>
+
+            <template #footer>
+                <q-btn class="q-px-md q-ml-sm" color="primary" dense no-caps @click="settingsDialogVisible = false">
+                    OK
+                </q-btn>
+            </template>
+        </Dialog>
     </div>
 </template>
 
@@ -145,6 +167,7 @@ import { reactive } from 'vue';
 
 import PageScroller from './PageScroller/PageScroller.vue';
 import DivBtn from '../share/DivBtn.vue';
+import Dialog from '../share/Dialog.vue';
 
 import * as utils from '../../share/utils';
 
@@ -153,6 +176,7 @@ import _ from 'lodash';
 const componentOptions = {
     components: {
         PageScroller,
+        Dialog,
         DivBtn
     },
     watch: {
@@ -201,6 +225,7 @@ class Search {
 
     loadingMessage = '';
     loadingMessage2 = '';
+    settingsDialogVisible = false;
     page = 1;
     pageCount = 1;
 

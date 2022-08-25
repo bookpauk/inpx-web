@@ -24,7 +24,7 @@ import {QIcon} from 'quasar/src/components/icon';
 import {QTooltip} from 'quasar/src/components/tooltip';
 import {QSpinner} from 'quasar/src/components/spinner';
 //import {QTable, QTh, QTr, QTd} from 'quasar/src/components/table';
-//import {QCheckbox} from 'quasar/src/components/checkbox';
+import {QCheckbox} from 'quasar/src/components/checkbox';
 import {QSelect} from 'quasar/src/components/select';
 //import {QColor} from 'quasar/src/components/color';
 //import {QPopupProxy} from 'quasar/src/components/popup-proxy';
@@ -55,7 +55,7 @@ const components = {
     QTooltip,
     QSpinner,
     //QTable, QTh, QTr, QTd,
-    //QCheckbox,
+    QCheckbox,
     QSelect,
     //QColor,
     //QPopupProxy,
