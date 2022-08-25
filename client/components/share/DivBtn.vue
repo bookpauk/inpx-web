@@ -1,6 +1,6 @@
 <template>
-    <div ref="btn" class="button clickable row justify-center items-center no-wrap" @click="clickEffect">
-        <div :class="{'button-pressed': pressed}">
+    <div ref="btn" class="button clickable row justify-center items-center" @click="clickEffect">
+        <div class="row justify-center items-center no-wrap" :class="{'button-pressed': pressed}">
             <q-icon :name="icon" :size="`${iconSize}px`" />
             <slot></slot>
         </div>
@@ -24,10 +24,11 @@ class DivBtn {
     _options = componentOptions;
     _props = {
         size: { type: Number, default: 24 },
+        minWidth: { type: Number, default: 0 },
+        height: { type: Number, default: 0 },
         icon: { type: String, default: '' },
         iconSize: { type: Number, default: 14 },
         round: { type: Boolean },
-        pad: { type: Number, default: 0 },
     };
 
     pressed = false;
@@ -41,8 +42,8 @@ class DivBtn {
 
     updateSizes() {
         const style = this.$refs.btn.style;
-        style.minWidth = `${this.size}px`;
-        style.height = `${this.size}px`;
+        style.minWidth = `${(this.minWidth ? this.minWidth : this.size)}px`;
+        style.height = `${(this.height ? this.height : this.size)}px`;
         if (this.pad) {
             style.paddingLeft = `${this.pad}px`;
             style.paddingRight = `${this.pad + 5}px`;
@@ -50,6 +51,8 @@ class DivBtn {
 
         if (this.round)
             style.borderRadius = `${this.size}px`;
+        else
+            style.borderRadius = `${this.size/10}px`;
     }
 
     async clickEffect() {
