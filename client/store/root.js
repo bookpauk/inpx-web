@@ -6,6 +6,7 @@ const state = {
         expanded: [],
         showCounts: true,
         showDeleted: false,
+        abCacheEnabled: true,
     },
 };
 

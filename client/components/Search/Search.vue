@@ -151,6 +151,7 @@
 
                 <q-checkbox v-model="showCounts" size="36px" label="Показывать количество" />
                 <q-checkbox v-model="showDeleted" size="36px" label="Показывать удаленные" />
+                <q-checkbox v-model="abCacheEnabled" size="36px" label="Кешировать запросы" />
             </div>
 
             <template #footer>
@@ -168,6 +169,7 @@ import vueComponent from '../vueComponent.js';
 import { reactive } from 'vue';
 
 import PageScroller from './PageScroller/PageScroller.vue';
+import authorBooksStorage from './authorBooksStorage';
 import DivBtn from '../share/DivBtn.vue';
 import Dialog from '../share/Dialog.vue';
 
@@ -218,6 +220,9 @@ const componentOptions = {
         showDeleted(newValue) {
             this.setSetting('showDeleted', newValue);
         },
+        abCacheEnabled(newValue) {
+            this.setSetting('abCacheEnabled', newValue);
+        },
         totalFound() {
             this.updatePageCount();
         },
@@ -250,11 +255,13 @@ class Search {
     expanded = [];
     showCounts = true;
     showDeleted = false;
+    abCacheEnabled = true;
 
     //stuff
     queryFound = -1;
     totalFound = 0;
     bookRowsOnPage = 100;
+    inpxHash = '';
 
     limitOptions = [
         {label: '10', value: 10},
@@ -276,13 +283,17 @@ class Search {
     }
 
     mounted() {
-        this.api = this.$root.api;
+        (async() => {
+            await authorBooksStorage.init();
 
-        if (!this.$root.isMobileDevice)
-            this.$refs.authorInput.focus();
+            this.api = this.$root.api;
 
-        this.ready = true;
-        this.refresh();//no await
+            if (!this.$root.isMobileDevice)
+                this.$refs.authorInput.focus();
+
+            this.ready = true;
+            this.refresh();//no await
+        })();
     }
 
     loadSettings() {
@@ -290,7 +301,9 @@ class Search {
 
         this.limit = settings.limit;
         this.expanded = _.cloneDeep(settings.expanded);
+        this.showCounts = settings.showCounts;
         this.showDeleted = settings.showDeleted;
+        this.abCacheEnabled = settings.abCacheEnabled;
     }
 
     get config() {
@@ -438,9 +451,23 @@ class Search {
         return `(${result})`;
     }
 
-    async loadBooks(author, authorId) {
+    async loadBooks(authorId) {
         try {
-            const result = await this.api.getBookList(authorId);
+            let result;
+
+            const key = `${authorId}-${this.inpxHash}`;
+
+            if (this.abCacheEnabled) {
+                const data = await authorBooksStorage.getData(key);
+                if (data) {
+                    result = JSON.parse(data);
+                } else {
+                    result = await this.api.getBookList(authorId);
+                    await authorBooksStorage.setData(key, JSON.stringify(result));
+                }
+            } else {
+                result = await this.api.getBookList(authorId);
+            }
 
             return JSON.parse(result.books);
         } catch (e) {
@@ -470,7 +497,7 @@ class Search {
                 })();
             }
 
-            const loadedBooks = await this.loadBooks(item.author, item.key);
+            const loadedBooks = await this.loadBooks(item.key);
 
             const filtered = this.filterBooks(loadedBooks);
 
@@ -561,6 +588,7 @@ class Search {
 
                     this.queryFound = result.author.length;
                     this.totalFound = result.totalFound;
+                    this.inpxHash = result.inpxHash;
 
                     this.searchResult = result;
                     await this.updateTableData();
