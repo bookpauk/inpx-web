@@ -1,7 +1,7 @@
 <template>
     <div ref="btn" class="button clickable row justify-center items-center" @click="clickEffect">
         <div class="row justify-center items-center no-wrap" :class="{'button-pressed': pressed}">
-            <q-icon :name="icon" :size="`${iconSize}px`" />
+            <i :class="icon" :style="`font-size: ${iconSize}px; margin-top: ${imt}px`" />
             <slot></slot>
         </div>
     </div>
@@ -29,6 +29,7 @@ class DivBtn {
         icon: { type: String, default: '' },
         iconSize: { type: Number, default: 14 },
         round: { type: Boolean },
+        imt:  { type: Number, default: 0 },// icon margin top
     };
 
     pressed = false;

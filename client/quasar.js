@@ -10,6 +10,7 @@ const config = {};
 //import {QDrawer} from 'quasar/src/components/drawer';
 
 //import {QCircularProgress} from 'quasar/src/components/circular-progress';
+import {QLinearProgress} from 'quasar/src/components/linear-progress';
 import {QInput} from 'quasar/src/components/input';
 import {QBtn} from 'quasar/src/components/btn';
 //import {QBtnGroup} from 'quasar/src/components/btn-group';
@@ -41,6 +42,7 @@ const components = {
     //QDrawer,
 
     //QCircularProgress,
+    QLinearProgress,
     QInput,
     QBtn,
     //QBtnGroup,

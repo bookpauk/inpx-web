@@ -12,10 +12,8 @@ class DbCreator {
     async run(db, callback) {
         const config = this.config;
 
-        callback({job: 'load inpx', jobMessage: 'Загрузка INPX'});
-        const readFileCallback = async(readState) => {
-            callback(readState);
-        };
+        callback({jobStepCount: 5});
+        callback({job: 'load inpx', jobMessage: 'Загрузка INPX', jobStep: 1, progress: 0});
 
         //временная таблица
         await db.create({
@@ -43,6 +41,7 @@ class DbCreator {
 
         //stuff
         let recsLoaded = 0;
+        callback({recsLoaded});
         let chunkNum = 0;
 
         const splitAuthor = (author) => {
@@ -56,6 +55,17 @@ class DbCreator {
 
             return result;
         }
+
+        let totalFiles = 0;
+        const readFileCallback = async(readState) => {
+            callback(readState);
+
+            if (readState.totalFiles)
+                totalFiles = readState.totalFiles;
+
+            if (totalFiles)
+                callback({progress: (readState.current || 0)/totalFiles});
+        };
 
         let id = 0;
         const parsedCallback = async(chunk) => {
@@ -123,7 +133,8 @@ class DbCreator {
 
         //отсортируем авторов и выдадим им правильные id
         //порядок id соответствует ASC-сортировке по author.toLowerCase
-        callback({job: 'author sort', jobMessage: 'Сортировка'});
+        callback({job: 'author sort', jobMessage: 'Сортировка авторов', jobStep: 2, progress: 0});
+        await utils.sleep(100);
         authorArr.sort((a, b) => a.value.localeCompare(b.value));
 
         id = 0;
@@ -137,7 +148,9 @@ class DbCreator {
         utils.freeMemory();
 
         //подготовка к сохранению author_book
-        const saveBookChunk = async(authorChunk) => {
+        const saveBookChunk = async(authorChunk, callback) => {
+            callback(0);
+
             const ids = [];
             for (const a of authorChunk) {
                 for (const id of a.bookId) {
@@ -147,7 +160,11 @@ class DbCreator {
 
             ids.sort();// обязательно, иначе будет тормозить - особенности JembaDb
 
+            callback(0.1);
             const rows = await db.select({table: 'book', where: `@@id(${db.esc(ids)})`});
+            callback(0.6);
+            await utils.sleep(100);
+
             const bookArr = new Map();
             for (const row of rows)
                 bookArr.set(row.id, row);
@@ -165,13 +182,15 @@ class DbCreator {
                 delete a.bookId;//в дальнейшем не понадобится, authorArr сохраняем без него
             }
 
+            callback(0.7);
             await db.insert({
                 table: 'author_book',
                 rows: abRows,
             });
+            callback(1);
         };
 
-        callback({job: 'search tables create', jobMessage: 'Создание поисковых таблиц'});        
+        callback({job: 'book sort', jobMessage: 'Сортировка книг', jobStep: 3, progress: 0});
 
         //сохранение author_book
         await db.create({
@@ -180,12 +199,19 @@ class DbCreator {
 
         let idsLen = 0;
         let aChunk = [];
-        for (const author of authorArr) {// eslint-disable-line
+        let prevI = 0;
+        for (let i = 0; i < authorArr.length; i++) {// eslint-disable-line
+            const author = authorArr[i];
+
             aChunk.push(author);
             idsLen += author.bookId.length;
 
             if (idsLen > 50000) {//константа выяснена эмпирическим путем "память/скорость"
-                await saveBookChunk(aChunk);
+                await saveBookChunk(aChunk, (p) => {
+                    callback({progress: (prevI + (i - prevI)*p)/authorArr.length});
+                });
+
+                prevI = i;
                 idsLen = 0;
                 aChunk = [];
                 await utils.sleep(100);
@@ -194,9 +220,11 @@ class DbCreator {
             }
         }
         if (aChunk.length) {
-            await saveBookChunk(aChunk);
+            await saveBookChunk(aChunk, () => {});
             aChunk = null;
         }
+
+        callback({progress: 1});
 
         //чистка памяти, ибо жрет как не в себя
         await db.drop({table: 'book'});
@@ -267,7 +295,10 @@ class DbCreator {
             parseField(rec.lang, langMap, langArr, authorIds);
         };
 
+        callback({job: 'search tables create', jobMessage: 'Создание поисковых таблиц', jobStep: 4, progress: 0});
+
         //парсинг 2, теперь можно создавать остальные поисковые таблицы
+        let proc = 0;
         while (1) {// eslint-disable-line
             const rows = await db.select({
                 table: 'author_book',
@@ -295,6 +326,9 @@ class DbCreator {
                     for (const rec of books)
                         parseBookRec(rec);
                 }
+
+                proc += rows.length;
+                callback({progress: proc/authorArr.length});
             } else
                 break;
 
@@ -312,7 +346,7 @@ class DbCreator {
         utils.freeMemory();
 
         //config
-        callback({job: 'config save', jobMessage: 'Сохранение конфигурации'});
+        callback({job: 'config save', jobMessage: 'Сохранение конфигурации', jobStep: 5, progress: 0});
         await db.create({
             table: 'config'
         });
@@ -367,6 +401,8 @@ class DbCreator {
                     await db.freeMemory();
                     await utils.sleep(100);
                 }
+
+                callback({progress: i/arr.length});                
             }
 
             nullArr();
@@ -375,23 +411,23 @@ class DbCreator {
         };
 
         //author
-        callback({job: 'author save', jobMessage: 'Сохранение индекса авторов'});
+        callback({job: 'author save', jobMessage: 'Сохранение индекса авторов', jobStep: 6, progress: 0});
         await saveTable('author', authorArr, () => {authorArr = null}, false);
 
         //series
-        callback({job: 'series save', jobMessage: 'Сохранение индекса серий'});
+        callback({job: 'series save', jobMessage: 'Сохранение индекса серий', jobStep: 7, progress: 0});
         await saveTable('series', seriesArr, () => {seriesArr = null});
 
         //title
-        callback({job: 'title save', jobMessage: 'Сохранение индекса названий'});
+        callback({job: 'title save', jobMessage: 'Сохранение индекса названий', jobStep: 8, progress: 0});
         await saveTable('title', titleArr, () => {titleArr = null});
 
         //genre
-        callback({job: 'genre save', jobMessage: 'Сохранение индекса жанров'});
+        callback({job: 'genre save', jobMessage: 'Сохранение индекса жанров', jobStep: 9, progress: 0});
         await saveTable('genre', genreArr, () => {genreArr = null});
 
         //lang
-        callback({job: 'lang save', jobMessage: 'Сохранение индекса языков'});
+        callback({job: 'lang save', jobMessage: 'Сохранение индекса языков', jobStep: 10, progress: 0});
         await saveTable('lang', langArr, () => {langArr = null});
 
         //кэш-таблицы запросов

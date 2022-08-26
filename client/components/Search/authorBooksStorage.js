@@ -2,7 +2,7 @@ import localForage from 'localforage';
 //import _ from 'lodash';
 import * as utils from '../../share/utils';
 
-const maxDataSize = 100*1024*1024;
+const maxDataSize = 100*1024*1024;//100 Mb
 
 const abStore = localForage.createInstance({
     name: 'authorBooksStorage'

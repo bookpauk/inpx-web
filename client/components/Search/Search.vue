@@ -32,7 +32,7 @@
                         </div>
                     </div>
                     
-                    <DivBtn class="q-ml-md text-white bg-secondary" :size="32" :icon-size="24" icon="la la-cog" round @click="settingsDialogVisible = true" />
+                    <DivBtn class="q-ml-md text-white bg-secondary" :size="30" :icon-size="24" :imt="1" icon="la la-cog" round @click="settingsDialogVisible = true" />
                 </div>
                 <div class="row q-mx-md q-mb-sm items-center">
                     <q-input
@@ -63,7 +63,7 @@
                     />
                     <div class="q-mx-xs" />                
 
-                    <DivBtn class="text-white bg-grey-13" :size="32" :icon-size="24" icon="la la-question" round @click="showSearchHelp" />
+                    <DivBtn class="text-white bg-grey-13" :size="30" :icon-size="24" icon="la la-question" round @click="showSearchHelp" />
 
                     <div class="q-mx-xs" />
                     <div class="row items-center q-mt-xs">

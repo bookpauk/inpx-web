@@ -46,7 +46,7 @@ class InpxParser {
             }            
 
             //плюс 3 файла .info
-            await readFileCallback({total: inpFiles.length + 3});
+            await readFileCallback({totalFiles: inpFiles.length + 3});
 
             let current = 0;
             //info
