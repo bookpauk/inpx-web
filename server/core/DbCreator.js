@@ -18,7 +18,7 @@ class DbCreator {
         //временная таблица
         await db.create({
             table: 'book',
-            cacheSize: 5,
+            cacheSize: (config.lowMemoryMode ? 5 : 500),
         });        
 
         //поисковые таблицы, позже сохраним в БД
@@ -121,7 +121,7 @@ class DbCreator {
             recsLoaded += chunk.length;
             callback({recsLoaded});
 
-            if (chunkNum++ % 10 == 0)
+            if (chunkNum++ % 10 == 0 && config.lowMemoryMode)
                 utils.freeMemory();
         };
 
@@ -333,8 +333,10 @@ class DbCreator {
                 break;
 
             await utils.sleep(100);
-            utils.freeMemory();
-            await db.freeMemory();
+            if (config.lowMemoryMode) {
+                utils.freeMemory();
+                await db.freeMemory();
+            }
         }
 
         //чистка памяти, ибо жрет как не в себя
@@ -408,6 +410,7 @@ class DbCreator {
             nullArr();
             await db.close({table});
             utils.freeMemory();
+            await db.freeMemory();
         };
 
         //author

@@ -19,9 +19,9 @@
 
         <div ref="scroller" class="col fit column no-wrap" style="overflow: auto; position: relative" @scroll="onScroll">
             <div ref="toolPanel" class="tool-panel column bg-green-11" style="position: sticky; top: 0; z-index: 10;">
-                <div class="header q-mx-md q-mt-xs row items-center">
+                <div class="header q-mx-md q-mb-xs q-mt-sm row items-center">
                     <div class="row items-center" style="font-size: 150%;">
-                        <div class="q-py-xs q-px-sm bg-green-12" style="border: 1px solid #aaaaaa; border-radius: 6px">
+                        <div class="q-px-sm q-py-xs bg-green-12" style="border: 1px solid #aaaaaa; border-radius: 6px">
                             {{ projectName }}
                         </div>
                         <div class="q-ml-md q-mr-xs">

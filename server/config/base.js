@@ -20,6 +20,7 @@ module.exports = {
     maxFilesDirSize: 1024*1024*1024,//1Gb
     queryCacheEnabled: true,
     cacheCleanInterval: 60,//minutes
+    lowMemoryMode: false,
 
     webConfigParams: ['name', 'version', 'branch'],
 

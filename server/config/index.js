@@ -8,7 +8,8 @@ const propsToSave = [
     'maxFilesDirSize',
     'queryCacheEnabled',
     'cacheCleanInterval',
-    'server',    
+    'lowMemoryMode',
+    'server',
 ];
 
 let instance = null;
