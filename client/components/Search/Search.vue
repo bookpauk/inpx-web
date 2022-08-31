@@ -160,6 +160,8 @@
                 </q-btn>
             </template>
         </Dialog>
+
+        <SelectGenreDialog v-model="selectGenreDialogVisible" v-model:genre="genre" :genre-tree="genreTree" />
     </div>
 </template>
 
@@ -169,6 +171,7 @@ import vueComponent from '../vueComponent.js';
 import { reactive } from 'vue';
 
 import PageScroller from './PageScroller/PageScroller.vue';
+import SelectGenreDialog from './SelectGenreDialog/SelectGenreDialog.vue';
 import authorBooksStorage from './authorBooksStorage';
 import DivBtn from '../share/DivBtn.vue';
 import Dialog from '../share/Dialog.vue';
@@ -180,6 +183,7 @@ import _ from 'lodash';
 const componentOptions = {
     components: {
         PageScroller,
+        SelectGenreDialog,
         Dialog,
         DivBtn
     },
@@ -236,6 +240,8 @@ class Search {
     loadingMessage = '';
     loadingMessage2 = '';
     settingsDialogVisible = false;
+    selectGenreDialogVisible = false;
+
     page = 1;
     pageCount = 1;
 
@@ -262,6 +268,8 @@ class Search {
     totalFound = 0;
     bookRowsOnPage = 100;
     inpxHash = '';
+    genreTree = [];
+    genreTreeInpxHash = '';
 
     limitOptions = [
         {label: '10', value: 10},
@@ -338,7 +346,7 @@ class Search {
     }
 
     selectGenre() {
-        this.$root.stdDialog.alert('Выбор жанра');
+        this.selectGenreDialogVisible = true;
     }    
 
     selectLang() {
@@ -455,9 +463,8 @@ class Search {
         try {
             let result;
 
-            const key = `${authorId}-${this.inpxHash}`;
-
             if (this.abCacheEnabled) {
+                const key = `${authorId}-${this.inpxHash}`;
                 const data = await authorBooksStorage.getData(key);
                 if (data) {
                     result = JSON.parse(data);
@@ -513,6 +520,33 @@ class Search {
             this.getBooksFlag--;
             if (this.getBooksFlag == 0)
                 this.loadingMessage2 = '';
+        }
+    }
+
+    async updateGenreTreeIfNeeded() {
+        try {
+            if (this.genreTreeInpxHash !== this.inpxHash) {
+                let result;
+
+                if (this.abCacheEnabled) {
+                    const key = `genre-tree-${this.inpxHash}`;
+                    const data = await authorBooksStorage.getData(key);
+                    if (data) {
+                        result = JSON.parse(data);
+                    } else {
+                        result = await this.api.getGenreTree();
+
+                        await authorBooksStorage.setData(key, JSON.stringify(result));
+                    }
+                } else {
+                    result = await this.api.getGenreTree();
+                }
+
+                this.genreTree = result.genreTree;
+                this.genreTreeInpxHash = result.inpxHash;
+            }
+        } catch (e) {
+            this.$root.stdDialog.alert(e.message, 'Ошибка');
         }
     }
 
@@ -591,6 +625,7 @@ class Search {
                     this.inpxHash = result.inpxHash;
 
                     this.searchResult = result;
+                    await this.updateGenreTreeIfNeeded();
                     await this.updateTableData();
                     this.scrollToTop();
                 } catch (e) {

@@ -275,7 +275,10 @@ class DbCreator {
             let genre = rec.genre || emptyFieldValue;
             genre = rec.genre.split(',');
 
-            for (const g of genre) {
+            for (let g of genre) {
+                if (!g)
+                    g = emptyFieldValue;
+
                 let genreRec;
                 if (genreMap.has(g)) {
                     const genreId = genreMap.get(g);

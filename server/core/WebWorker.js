@@ -1,5 +1,6 @@
 const os = require('os');
 const fs = require('fs-extra');
+const _ = require('lodash');
 
 const WorkerState = require('./WorkerState');
 const { JembaDbThread } = require('jembadb');
@@ -9,6 +10,7 @@ const DbSearcher = require('./DbSearcher');
 const ayncExit = new (require('./AsyncExit'))();
 const log = new (require('./AppLogger'))().log;//singleton
 const utils = require('./utils');
+const genreTree = require('./genres');
 
 //server states
 const ssNormal = 'normal';
@@ -201,6 +203,43 @@ class WebWorker {
         this.checkMyState();
 
         return await this.dbSearcher.getBookList(authorId);
+    }
+
+    async getGenreTree() {
+        this.checkMyState();
+
+        const config = await this.dbConfig();
+
+        let result;
+        const db = this.db;
+        if (!db.wwCache.genres) {
+            const genres = _.cloneDeep(genreTree);
+            const last = genres[genres.length - 1];
+
+            const genreValues = new Set();
+            for (const section of genres) {
+                for (const g of section.value)
+                    genreValues.add(g.value);
+            }
+
+            //добавим к жанрам те, что нашлись при парсинге
+            const rows = await db.select({table: 'genre', map: `(r) => ({value: r.value})`});
+            for (const row of rows) {
+                if (!genreValues.has(row.value))
+                    last.value.push({name: row.value, value: row.value});
+            }
+
+            result = {
+                genreTree: genres,
+                inpxHash: (config.inpxHash ? config.inpxHash : ''),
+            };
+
+            db.wwCache.genres = result;
+        } else {
+            result = db.wwCache.genres;
+        }
+
+        return result;
     }
 
     async logServerStats() {

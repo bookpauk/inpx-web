@@ -70,6 +70,8 @@ class WebSocketController {
                     await this.search(req, ws); break;
                 case 'get-book-list':
                     await this.getBookList(req, ws); break;
+                case 'get-genre-tree':
+                    await this.getGenreTree(req, ws); break;
 
                 default:
                     throw new Error(`Action not found: ${req.action}`);
@@ -130,6 +132,12 @@ class WebSocketController {
             throw new Error(`authorId is empty`);
 
         const result = await this.webWorker.getBookList(req.authorId);
+
+        this.send(result, req, ws);
+    }
+
+    async getGenreTree(req, ws) {
+        const result = await this.webWorker.getGenreTree();
 
         this.send(result, req, ws);
     }
