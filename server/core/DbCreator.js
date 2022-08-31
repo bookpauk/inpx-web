@@ -314,8 +314,10 @@ class DbCreator {
 
                     const ids = new Set();
                     let id = iter.next();
-                    while (!id.done && ids.size < 10000) {
+                    while (!id.done) {
                         ids.add(id.value);
+                        if (ids.size >= 10000)
+                            break;
                         id = iter.next();
                     }
 
