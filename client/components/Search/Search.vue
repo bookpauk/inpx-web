@@ -118,6 +118,9 @@
                         <div class="q-my-sm" @click="selectTitle(book.title)">
                             {{ book.title }} {{ book.src.del }}
                         </div>
+                        <!--div>
+                            {{ item.key }} {{ book.src }}
+                        </div-->
                     </div>
                 </div>
             </div>

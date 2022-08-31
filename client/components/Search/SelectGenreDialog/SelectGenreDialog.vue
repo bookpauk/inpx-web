@@ -1,5 +1,5 @@
 <template>
-    <Dialog v-model="dialogVisible">
+    <Dialog ref="dialog" v-model="dialogVisible">
         <template #header>
             <div class="row items-center">
                 <div style="font-size: 130%">
@@ -8,12 +8,11 @@
             </div>
         </template>
 
-        <div class="col column" style="height: 500px; min-width: 400px">
-            <div class="row items-center top-panel bg-grey-3">
-                <q-input ref="search" v-model="search" class="col" outlined dense bg-color="white" placeholder="Найти" clearable />
-            </div>
-
+        <div ref="box" class="col column" style="width: 350px">
             <div class="col fit tree">
+                <div class="row items-center top-panel bg-grey-3">
+                    <q-input ref="search" v-model="search" class="col" outlined dense bg-color="white" placeholder="Найти" clearable />
+                </div>
                 <div v-show="nodes.length" class="checkbox-tick-all">
                     <q-checkbox v-model="tickAll" size="36px" label="Выбрать все" @update:model-value="makeTickAll" />
                 </div>
@@ -88,7 +87,12 @@ class GenreSelectDialog {
     created() {
     }
 
+    mounted() {
+    }
+
     async init() {
+        await this.$refs.dialog.waitShown();
+        this.$refs.box.style.height = `${document.body.clientHeight - 160}px`;
     }
 
     get nodes() {
