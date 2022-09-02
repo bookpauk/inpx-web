@@ -138,7 +138,7 @@
 
         <Dialog v-model="settingsDialogVisible">
             <template #header>
-                <div class="row items-center">
+                <div class="row items-center" style="font-size: 130%">
                     <q-icon class="q-mr-sm" name="la la-cog" size="28px"></q-icon>
                     Настройки
                 </div>
