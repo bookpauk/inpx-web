@@ -223,10 +223,26 @@ class WebWorker {
             }
 
             //добавим к жанрам те, что нашлись при парсинге
+            const genreParsed = new Set();
             const rows = await db.select({table: 'genre', map: `(r) => ({value: r.value})`});
             for (const row of rows) {
+                genreParsed.add(row.value);
+
                 if (!genreValues.has(row.value))
                     last.value.push({name: row.value, value: row.value});
+            }
+
+            //уберем те, которые не нашлись при парсинге
+            for (let j = 0; j < genres.length; j++) {
+                const section = genres[j];
+                for (let i = 0; i < section.value.length; i++) {
+                    const g = section.value[i];
+                    if (!genreParsed.has(g.value))
+                        section.value.splice(i--, 1);
+                }
+
+                if (!section.value.length)
+                    genres.splice(j--, 1);
             }
 
             result = {

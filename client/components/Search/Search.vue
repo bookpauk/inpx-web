@@ -51,14 +51,18 @@
                     />
                     <div class="q-mx-xs" />
                     <q-input
-                        v-model="genre" :maxlength="inputMaxLength" :debounce="inputDebounce"
-                        class="bg-white q-mt-xs" style="width: 200px;" label="Жанр" stack-label outlined dense clearable readonly
+                        v-model="genreNames" :maxlength="inputMaxLength" :debounce="inputDebounce"
+                        class="bg-white q-mt-xs" input-style="cursor: pointer" style="width: 200px;" label="Жанр" stack-label outlined dense clearable readonly
                         @click="selectGenre"
-                    />
+                    >
+                        <q-tooltip v-if="genreNames" :delay="500" anchor="bottom right" content-style="font-size: 80%" max-width="400px">
+                            {{ genreNames }}
+                        </q-tooltip>                    
+                    </q-input>
                     <div class="q-mx-xs" />
                     <q-input
                         v-model="lang" :maxlength="inputMaxLength" :debounce="inputDebounce"
-                        class="bg-white q-mt-xs" style="width: 80px;" label="Язык" stack-label outlined dense clearable readonly
+                        class="bg-white q-mt-xs" input-style="cursor: pointer" style="width: 80px;" label="Язык" stack-label outlined dense clearable readonly
                         @click="selectLang"
                     />
                     <div class="q-mx-xs" />                
@@ -323,6 +327,20 @@ class Search {
 
     get settings() {
         return this.$store.state.settings;
+    }
+
+    get genreNames() {
+        let result = [];
+        const genre = new Set(this.genre.split(','));
+
+        for (const section of this.genreTree) {
+            for (const g of section.value)
+                if (genre.has(g.value))
+                    result.push(g.name);
+
+        }
+
+        return result.join(', ');
     }
 
     makeTitle() {
