@@ -8,28 +8,26 @@
             </div>
         </template>
 
-        <div ref="box" class="col column" style="width: 350px">
-            <div class="col fit tree">
-                <div class="row items-center top-panel bg-grey-3">
-                    <q-input ref="search" v-model="search" class="col" outlined dense bg-color="white" placeholder="Найти" clearable />
-                </div>
-                <div v-show="nodes.length" class="checkbox-tick-all">
-                    <q-checkbox v-model="tickAll" size="36px" label="Выбрать/снять все" @update:model-value="makeTickAll" toggle-order="ft" />
-                </div>
-                <q-tree
-                    v-model:ticked="ticked"
-                    v-model:expanded="expanded"
-                    class="q-my-xs"
-                    :nodes="nodes"
-                    node-key="key"
-                    tick-strategy="leaf"
-                    selected-color="black"
-                    :filter="search"
-                    no-nodes-label="Жанров нет"
-                    no-results-label="Ничего не найдено"
-                >
-                </q-tree>
+        <div ref="box" class="column overflow-auto no-wrap" style="width: 350px; padding: 0px 10px 10px 10px;">
+            <div class="row items-center top-panel bg-grey-3">
+                <q-input ref="search" v-model="search" class="col" outlined dense bg-color="white" placeholder="Найти" clearable />
             </div>
+            <div v-show="nodes.length" class="checkbox-tick-all">
+                <q-checkbox v-model="tickAll" size="36px" label="Выбрать/снять все" toggle-order="ft" @update:model-value="makeTickAll" />
+            </div>
+            <q-tree
+                v-model:ticked="ticked"
+                v-model:expanded="expanded"
+                class="q-my-xs"
+                :nodes="nodes"
+                node-key="key"
+                tick-strategy="leaf"
+                selected-color="black"
+                :filter="search"
+                no-nodes-label="Жанров нет"
+                no-results-label="Ничего не найдено"
+            >
+            </q-tree>
         </div>
 
         <template #footer>
@@ -91,8 +89,8 @@ class GenreSelectDialog {
     }
 
     async init() {
-        await this.$refs.dialog.waitShown();
-        this.$refs.box.style.height = `${document.body.clientHeight - 160}px`;
+        //await this.$refs.dialog.waitShown();
+        //this.$refs.box.style.height = `${document.body.clientHeight - 160}px`;
     }
 
     get nodes() {
@@ -164,14 +162,8 @@ export default vueComponent(GenreSelectDialog);
 
 <style scoped>
 .top-panel {
-    height: 50px;
-    border-bottom: 1px solid gray;
-    padding: 0 10px 0 12px;
-}
-
-.tree {
-    padding: 0px 10px 10px 10px;
-    overflow: auto;
+    border-radius: 10px;
+    padding: 5px;
 }
 
 .checkbox-tick-all {

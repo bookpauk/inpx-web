@@ -12,7 +12,7 @@
                 </div>
             </div>
 
-            <div class="col q-mx-md">
+            <div class="col column q-mx-md">
                 <slot></slot>
             </div>
 
