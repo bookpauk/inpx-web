@@ -66,7 +66,7 @@ export default vueComponent(Dialog);
 
 <style scoped>
 .header {
-    height: 50px;
+    min-height: 40px;
 }
 
 .caption {
