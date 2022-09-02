@@ -14,7 +14,7 @@
                     <q-input ref="search" v-model="search" class="col" outlined dense bg-color="white" placeholder="Найти" clearable />
                 </div>
                 <div v-show="nodes.length" class="checkbox-tick-all">
-                    <q-checkbox v-model="tickAll" size="36px" label="Выбрать все" @update:model-value="makeTickAll" />
+                    <q-checkbox v-model="tickAll" size="36px" label="Выбрать/снять все" @update:model-value="makeTickAll" toggle-order="ft" />
                 </div>
                 <q-tree
                     v-model:ticked="ticked"
@@ -123,6 +123,7 @@ class GenreSelectDialog {
             this.ticked = newTicked;
         } else {
             this.ticked = [];
+            this.tickAll = false;
         }
     }
 
@@ -136,7 +137,12 @@ class GenreSelectDialog {
                 break;
             }
         }
-        this.tickAll = newTickAll;
+
+        if (this.ticked.length && !newTickAll) {
+            this.tickAll = undefined;
+        } else {
+            this.tickAll = newTickAll;
+        }
     }
 
     updateTicked() {
