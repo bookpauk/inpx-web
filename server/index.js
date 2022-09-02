@@ -14,6 +14,7 @@ const maxPayloadSize = 50;//in MB
 let log;
 let config;
 let argv;
+let branch = '';
 const argvStrings = ['lib-dir', 'inpx'];
 
 function showHelp() {
@@ -39,6 +40,7 @@ async function init() {
     //configManager.userConfigFile = argv.config;
     await configManager.load();
     config = configManager.config;
+    branch = config.branch;
 
     //logger
     const appLogger = new (require('./core/AppLogger'))();//singleton
@@ -142,7 +144,7 @@ async function main() {
         });
     }
 
-    server.listen(serverConfig.port, serverConfig.ip, function() {
+    server.listen(serverConfig.port, serverConfig.ip, () => {
         log(`Server is ready on http://${serverConfig.ip}:${serverConfig.port}`);
     });
 }
@@ -169,9 +171,10 @@ function initStatic(app, config) {// eslint-disable-line
         await main();
     } catch (e) {
         if (log)
-            log(LM_FATAL, e.stack);
+            log(LM_FATAL, (branch == 'development' ? e.stack : e.message));
         else
-            console.error(e.stack);
+            console.error(branch == 'development' ? e.stack : e.message);
+
         ayncExit.exit(1);
     }
 })();
