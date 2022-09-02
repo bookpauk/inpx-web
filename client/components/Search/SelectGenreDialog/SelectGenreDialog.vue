@@ -89,8 +89,9 @@ class GenreSelectDialog {
     }
 
     async init() {
-        //await this.$refs.dialog.waitShown();
-        //this.$refs.box.style.height = `${document.body.clientHeight - 160}px`;
+        await this.$refs.dialog.waitShown();
+        //чтобы не скакало при поиске
+        this.$refs.box.style.height = `${document.body.clientHeight - 160}px`;
     }
 
     get nodes() {
