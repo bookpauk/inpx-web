@@ -8,7 +8,7 @@
             </div>
         </template>
 
-        <div ref="box" class="column q-mt-xs overflow-auto no-wrap" style="width: 350px; padding: 0px 10px 10px 10px;">
+        <div ref="box" class="column q-mt-xs overflow-auto no-wrap" style="width: 370px; padding: 0px 10px 10px 10px;">
             <div class="row items-center top-panel bg-grey-3">
                 <q-input ref="search" v-model="search" class="col" outlined dense bg-color="white" placeholder="Найти" clearable />
             </div>

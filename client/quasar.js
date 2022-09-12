@@ -33,8 +33,9 @@ import {QDialog} from 'quasar/src/components/dialog';
 //import {QChip} from 'quasar/src/components/chip';
 import {QTree} from 'quasar/src/components/tree';
 //import {QVirtualScroll} from 'quasar/src/components/virtual-scroll';
-
 //import {QExpansionItem} from 'quasar/src/components/expansion-item';
+import {QOptionGroup} from 'quasar/src/components/option-group';
+
 
 const components = {
     //QLayout,
@@ -66,6 +67,7 @@ const components = {
     QTree,
     //QExpansionItem,
     //QVirtualScroll,
+    QOptionGroup,
 };
 
 //directives 

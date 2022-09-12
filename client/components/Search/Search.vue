@@ -29,7 +29,11 @@
                         </div>
                     </div>
                     
-                    <DivBtn class="q-mx-md text-white bg-secondary" :size="30" :icon-size="24" :imt="1" icon="la la-cog" round @click="settingsDialogVisible = true" />
+                    <DivBtn class="q-mx-md text-white bg-secondary" :size="30" :icon-size="24" :imt="1" icon="la la-cog" round @click="settingsDialogVisible = true">
+                        <q-tooltip :delay="1500" anchor="bottom middle" content-style="font-size: 80%" max-width="400px">
+                            Настройки
+                        </q-tooltip>
+                    </DivBtn>
 
                     <div class="col"></div>
                     <div class="q-px-sm q-py-xs bg-green-12" style="border: 1px solid #aaaaaa; border-radius: 6px">
@@ -57,19 +61,33 @@
                         class="bg-white q-mt-xs" input-style="cursor: pointer" style="width: 200px;" label="Жанр" stack-label outlined dense clearable readonly
                         @click="selectGenre"
                     >
-                        <q-tooltip v-if="genreNames" :delay="500" anchor="bottom right" content-style="font-size: 80%" max-width="400px">
+                        <q-tooltip v-if="genreNames" :delay="500" anchor="bottom middle" content-style="font-size: 80%" max-width="400px">
                             {{ genreNames }}
-                        </q-tooltip>                    
+                        </q-tooltip>
                     </q-input>
                     <div class="q-mx-xs" />
                     <q-input
                         v-model="lang" :maxlength="inputMaxLength" :debounce="inputDebounce"
                         class="bg-white q-mt-xs" input-style="cursor: pointer" style="width: 80px;" label="Язык" stack-label outlined dense clearable readonly
                         @click="selectLang"
-                    />
-                    <div class="q-mx-xs" />                
+                    >
+                        <q-tooltip v-if="lang" :delay="500" anchor="bottom middle" content-style="font-size: 80%" max-width="400px">
+                            {{ lang }}
+                        </q-tooltip>
+                    </q-input>
 
-                    <DivBtn class="text-white bg-grey-13" :size="30" :icon-size="24" icon="la la-question" round @click="showSearchHelp" />
+                    <div class="q-mx-xs" />
+                    <DivBtn class="text-white bg-grey-13" :size="30" :icon-size="24" icon="la la-broom" round @click="setDefaults">
+                        <q-tooltip :delay="1500" anchor="bottom middle" content-style="font-size: 80%" max-width="400px">
+                            Сбросить поиск
+                        </q-tooltip>
+                    </DivBtn>
+                    <div class="q-mx-xs" />
+                    <DivBtn class="text-white bg-grey-13" :size="30" :icon-size="24" icon="la la-question" round @click="showSearchHelp">
+                        <q-tooltip :delay="1500" anchor="bottom middle" content-style="font-size: 80%" max-width="400px">
+                            Подсказка
+                        </q-tooltip>
+                    </DivBtn>
 
                     <div class="q-mx-xs" />
                     <div class="row items-center q-mt-xs">
@@ -93,7 +111,7 @@
                 <div class="row items-center q-ml-md q-mr-xs no-wrap">
                     <!--div style="min-width: 35px">
                         <DivBtn v-if="tableData.length > 1" :icon-size="24" icon="la la-check-circle" @click="selectAuthor(item.author)">
-                            <q-tooltip :delay="1500" anchor="bottom right" content-style="font-size: 80%">
+                            <q-tooltip :delay="1500" anchor="bottom middle" content-style="font-size: 80%">
                                 Только этот автор
                             </q-tooltip>
                         </DivBtn>
@@ -171,6 +189,7 @@
         </Dialog>
 
         <SelectGenreDialog v-model="selectGenreDialogVisible" v-model:genre="genre" :genre-tree="genreTree" />
+        <SelectLangDialog v-model="selectLangDialogVisible" v-model:lang="lang" :lang-list="langList" :lang-default="langDefault" />        
     </div>
 </template>
 
@@ -181,6 +200,8 @@ import { reactive } from 'vue';
 
 import PageScroller from './PageScroller/PageScroller.vue';
 import SelectGenreDialog from './SelectGenreDialog/SelectGenreDialog.vue';
+import SelectLangDialog from './SelectLangDialog/SelectLangDialog.vue';
+
 import authorBooksStorage from './authorBooksStorage';
 import DivBtn from '../share/DivBtn.vue';
 import Dialog from '../share/Dialog.vue';
@@ -193,6 +214,7 @@ const componentOptions = {
     components: {
         PageScroller,
         SelectGenreDialog,
+        SelectLangDialog,
         Dialog,
         DivBtn
     },
@@ -250,6 +272,7 @@ class Search {
     loadingMessage2 = '';
     settingsDialogVisible = false;
     selectGenreDialogVisible = false;
+    selectLangDialogVisible = false;
 
     page = 1;
     pageCount = 1;
@@ -271,6 +294,7 @@ class Search {
     showCounts = true;
     showDeleted = false;
     abCacheEnabled = true;
+    langDefault = '';
 
     //stuff
     queryFound = -1;
@@ -278,6 +302,7 @@ class Search {
     bookRowsOnPage = 100;
     inpxHash = '';
     genreTree = [];
+    langList = [];
     genreTreeInpxHash = '';
 
     limitOptions = [
@@ -308,6 +333,10 @@ class Search {
             if (!this.$root.isMobileDevice)
                 this.$refs.authorInput.focus();
 
+            this.setDefaults();
+
+            //query from url parse
+
             this.ready = true;
             this.refresh();//no await
         })();
@@ -321,6 +350,7 @@ class Search {
         this.showCounts = settings.showCounts;
         this.showDeleted = settings.showDeleted;
         this.abCacheEnabled = settings.abCacheEnabled;
+        this.langDefault = settings.langDefault;
     }
 
     get config() {
@@ -373,7 +403,7 @@ class Search {
     }    
 
     selectLang() {
-        this.$root.stdDialog.alert('Выбор языка');
+        this.selectLangDialogVisible = true;
     }
     
     onScroll() {
@@ -434,9 +464,7 @@ class Search {
     }
 
     setSetting(name, newValue) {
-        const newSettings = _.cloneDeep(this.settings);
-        newSettings[name] = _.cloneDeep(newValue);
-        this.commit('setSettings', newSettings);
+        this.commit('setSettings', {[name]: _.cloneDeep(newValue)});
     }
 
     expandAuthor(item) {
@@ -566,6 +594,7 @@ class Search {
                 }
 
                 this.genreTree = result.genreTree;
+                this.langList = result.langList;
                 this.genreTreeInpxHash = result.inpxHash;
             }
         } catch (e) {
@@ -604,6 +633,14 @@ class Search {
         }        
 
         this.tableData = result;
+    }
+
+    setDefaults() {
+        this.author = '';
+        this.series = '';
+        this.title = '';
+        this.genre = '';
+        this.lang = this.langDefault;
     }
 
     async refresh() {

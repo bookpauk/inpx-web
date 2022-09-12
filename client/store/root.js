@@ -7,6 +7,7 @@ const state = {
         showCounts: true,
         showDeleted: false,
         abCacheEnabled: true,
+        langDefault: '',
     },
 };
 
@@ -22,7 +23,7 @@ const mutations = {
         state.config = value;
     },
     setSettings(state, value) {
-        state.settings = value;
+        state.settings = Object.assign({}, state.settings, value);
     },
 };
 

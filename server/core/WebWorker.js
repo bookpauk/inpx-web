@@ -224,7 +224,7 @@ class WebWorker {
 
             //добавим к жанрам те, что нашлись при парсинге
             const genreParsed = new Set();
-            const rows = await db.select({table: 'genre', map: `(r) => ({value: r.value})`});
+            let rows = await db.select({table: 'genre', map: `(r) => ({value: r.value})`});
             for (const row of rows) {
                 genreParsed.add(row.value);
 
@@ -245,8 +245,13 @@ class WebWorker {
                     genres.splice(j--, 1);
             }
 
+            // langs
+            rows = await db.select({table: 'lang', map: `(r) => ({value: r.value})`});
+            const langs = rows.map(r => r.value);            
+
             result = {
                 genreTree: genres,
+                langList: langs,
                 inpxHash: (config.inpxHash ? config.inpxHash : ''),
             };
 
