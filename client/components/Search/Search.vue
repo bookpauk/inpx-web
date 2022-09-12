@@ -21,10 +21,7 @@
             <div ref="toolPanel" class="tool-panel column bg-green-11" style="position: sticky; top: 0; z-index: 10;">
                 <div class="header q-mx-md q-mb-xs q-mt-sm row items-center">
                     <div class="row items-center" style="font-size: 150%;">
-                        <div class="q-px-sm q-py-xs bg-green-12" style="border: 1px solid #aaaaaa; border-radius: 6px">
-                            {{ projectName }}
-                        </div>
-                        <div class="q-ml-md q-mr-xs">
+                        <div class="q-mr-xs">
                             Коллекция
                         </div>
                         <div class="clickable" @click="showCollectionInfo">
@@ -32,7 +29,12 @@
                         </div>
                     </div>
                     
-                    <DivBtn class="q-ml-md text-white bg-secondary" :size="30" :icon-size="24" :imt="1" icon="la la-cog" round @click="settingsDialogVisible = true" />
+                    <DivBtn class="q-mx-md text-white bg-secondary" :size="30" :icon-size="24" :imt="1" icon="la la-cog" round @click="settingsDialogVisible = true" />
+
+                    <div class="col"></div>
+                    <div class="q-px-sm q-py-xs bg-green-12" style="border: 1px solid #aaaaaa; border-radius: 6px">
+                        {{ projectName }}
+                    </div>
                 </div>
                 <div class="row q-mx-md q-mb-sm items-center">
                     <q-input
