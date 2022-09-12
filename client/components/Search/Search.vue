@@ -77,13 +77,13 @@
                     </q-input>
 
                     <div class="q-mx-xs" />
-                    <DivBtn class="text-white bg-grey-13" :size="30" :icon-size="24" icon="la la-broom" round @click="setDefaults">
+                    <DivBtn class="text-white q-mt-xs bg-grey-13" :size="30" :icon-size="24" icon="la la-broom" round @click="setDefaults">
                         <q-tooltip :delay="1500" anchor="bottom middle" content-style="font-size: 80%" max-width="400px">
                             Сбросить поиск
                         </q-tooltip>
                     </DivBtn>
                     <div class="q-mx-xs" />
-                    <DivBtn class="text-white bg-grey-13" :size="30" :icon-size="24" icon="la la-question" round @click="showSearchHelp">
+                    <DivBtn class="text-white q-mt-xs bg-grey-13" :size="30" :icon-size="24" icon="la la-question" round @click="showSearchHelp">
                         <q-tooltip :delay="1500" anchor="bottom middle" content-style="font-size: 80%" max-width="400px">
                             Подсказка
                         </q-tooltip>
