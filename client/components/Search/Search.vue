@@ -101,10 +101,9 @@
                 </div>
             </div>
 
-            <div v-show="pageCount > 1" class="row justify-center">
-                <PageScroller v-model="search.page" :page-count="pageCount" />
+            <div class="row justify-center" style="min-height: 48px">
+                <PageScroller v-show="pageCount > 1" v-model="search.page" :page-count="pageCount" />
             </div>
-            <div v-show="pageCount <= 1" class="q-my-sm" />
 
             <!-- Формирование списка ------------------------------------------------------------------------>
             <div v-for="item in tableData" :key="item.key" class="column" :class="{'odd-author': item.num % 2}" style="font-size: 120%">
@@ -150,10 +149,9 @@
             </div>
             <!-- Формирование списка конец ------------------------------------------------------------------>
 
-            <div v-show="pageCount > 1" class="row justify-center">
-                <PageScroller v-model="search.page" :page-count="pageCount" />
+            <div class="row justify-center">
+                <PageScroller v-show="pageCount > 1" v-model="search.page" :page-count="pageCount" />
             </div>
-            <div v-show="pageCount <= 1" class="q-my-sm" />
         </div>
 
         <Dialog v-model="settingsDialogVisible">
@@ -295,6 +293,7 @@ class Search {
     limit = 50;
 
     //stuff
+    refreshing = false;
     queryFound = -1;
     totalFound = 0;
     bookRowsOnPage = 100;
@@ -318,6 +317,10 @@ class Search {
 
     created() {
         this.commit = this.$store.commit;
+
+        /*this.refresh = _.debounce(() => {
+            this.refreshDebounced();
+        }, 1000);*/
 
         this.loadSettings();
     }
@@ -369,7 +372,6 @@ class Search {
             for (const g of section.value)
                 if (genre.has(g.value))
                     result.push(g.name);
-
         }
 
         return result.join(', ');
@@ -380,6 +382,7 @@ class Search {
         this.collection = collection[0].trim();
 
         this.projectName = `${this.config.name} v${this.config.version}`;
+        this.$root.setAppTitle(`Коллекция ${this.collection}`);
     }
 
     showSearchHelp() {
@@ -729,9 +732,13 @@ class Search {
                     this.inpxHash = result.inpxHash;
 
                     this.searchResult = result;
-                    await this.updateGenreTreeIfNeeded();
-                    await this.updateTableData();
-                    this.scrollToTop();
+
+                    await utils.sleep(1);
+                    if (!this.queryExecute) {
+                        await this.updateGenreTreeIfNeeded();
+                        await this.updateTableData();
+                        this.scrollToTop();
+                    }
                 } catch (e) {
                     this.$root.stdDialog.alert(e.message, 'Ошибка');
                 } finally {
