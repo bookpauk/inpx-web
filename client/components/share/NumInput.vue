@@ -49,17 +49,18 @@ import * as utils from '../../share/utils';
 
 const componentOptions = {
     watch: {
-        filteredValue: function(newValue) {
-            if (this.validate(newValue)) {
-                this.error = false;
-                this.$emit('update:modelValue', this.string2number(newValue));
-            } else {
-                this.error = true;
-            }
+        filteredValue() {
+            this.checkErrorAndEmit(true);
         },
-        modelValue: function(newValue) {
+        modelValue(newValue) {
             this.filteredValue = newValue;
         },
+        min() {
+            this.checkErrorAndEmit();
+        },
+        max() {
+            this.checkErrorAndEmit();
+        }
     }
 };
 class NumInput {
@@ -95,6 +96,16 @@ class NumInput {
         if (n > this.max)
             return false;
         return true;
+    }
+
+    checkErrorAndEmit(emit = false) {
+        if (this.validate(this.filteredValue)) {
+            this.error = false;
+            if (emit)
+                this.$emit('update:modelValue', this.string2number(this.filteredValue));
+        } else {
+            this.error = true;
+        }
     }
 
     plus() {

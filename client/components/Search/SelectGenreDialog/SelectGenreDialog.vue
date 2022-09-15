@@ -86,6 +86,7 @@ class GenreSelectDialog {
     }
 
     mounted() {
+        this.updateTicked();
     }
 
     async init() {

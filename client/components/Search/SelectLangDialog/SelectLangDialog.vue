@@ -96,6 +96,7 @@ class SelectLangDialog {
     }
 
     mounted() {
+        this.updateTicked();
     }
 
     async init() {

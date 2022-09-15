@@ -42,17 +42,17 @@
                 </div>
                 <div class="row q-mx-md q-mb-sm items-center">
                     <q-input
-                        ref="authorInput" v-model="author" :maxlength="5000" :debounce="inputDebounce"
+                        ref="authorInput" v-model="search.author" :maxlength="5000" :debounce="inputDebounce"
                         class="bg-white q-mt-xs" style="width: 300px;" label="Автор" stack-label outlined dense clearable
                     />
                     <div class="q-mx-xs" />
                     <q-input
-                        v-model="series" :maxlength="inputMaxLength" :debounce="inputDebounce"
+                        v-model="search.series" :maxlength="inputMaxLength" :debounce="inputDebounce"
                         class="bg-white q-mt-xs" style="width: 200px;" label="Серия" stack-label outlined dense clearable
                     />
                     <div class="q-mx-xs" />
                     <q-input
-                        v-model="title" :maxlength="inputMaxLength" :debounce="inputDebounce"
+                        v-model="search.title" :maxlength="inputMaxLength" :debounce="inputDebounce"
                         class="bg-white q-mt-xs" style="width: 200px;" label="Название" stack-label outlined dense clearable
                     />
                     <div class="q-mx-xs" />
@@ -67,12 +67,12 @@
                     </q-input>
                     <div class="q-mx-xs" />
                     <q-input
-                        v-model="lang" :maxlength="inputMaxLength" :debounce="inputDebounce"
+                        v-model="search.lang" :maxlength="inputMaxLength" :debounce="inputDebounce"
                         class="bg-white q-mt-xs" input-style="cursor: pointer" style="width: 80px;" label="Язык" stack-label outlined dense clearable readonly
                         @click="selectLang"
                     >
-                        <q-tooltip v-if="lang" :delay="500" anchor="bottom middle" content-style="font-size: 80%" max-width="400px">
-                            {{ lang }}
+                        <q-tooltip v-if="search.lang" :delay="500" anchor="bottom middle" content-style="font-size: 80%" max-width="400px">
+                            {{ search.lang }}
                         </q-tooltip>
                     </q-input>
 
@@ -101,10 +101,10 @@
                 </div>
             </div>
 
-            <div v-if="pageCount > 1" class="row justify-center">
-                <PageScroller v-model="page" :page-count="pageCount" />
+            <div v-show="pageCount > 1" class="row justify-center">
+                <PageScroller v-model="search.page" :page-count="pageCount" />
             </div>
-            <div v-else class="q-my-sm" />
+            <div v-show="pageCount <= 1" class="q-my-sm" />
 
             <!-- Формирование списка ------------------------------------------------------------------------>
             <div v-for="item in tableData" :key="item.key" class="column" :class="{'odd-author': item.num % 2}" style="font-size: 120%">
@@ -150,10 +150,10 @@
             </div>
             <!-- Формирование списка конец ------------------------------------------------------------------>
 
-            <div v-if="pageCount > 1" class="row justify-center">
-                <PageScroller v-model="page" :page-count="pageCount" />
+            <div v-show="pageCount > 1" class="row justify-center">
+                <PageScroller v-model="search.page" :page-count="pageCount" />
             </div>
-            <div v-else class="q-my-sm" />
+            <div v-show="pageCount <= 1" class="q-my-sm" />
         </div>
 
         <Dialog v-model="settingsDialogVisible">
@@ -188,8 +188,8 @@
             </template>
         </Dialog>
 
-        <SelectGenreDialog v-model="selectGenreDialogVisible" v-model:genre="genre" :genre-tree="genreTree" />
-        <SelectLangDialog v-model="selectLangDialogVisible" v-model:lang="lang" :lang-list="langList" :lang-default="langDefault" />        
+        <SelectGenreDialog v-model="selectGenreDialogVisible" v-model:genre="search.genre" :genre-tree="genreTree" />
+        <SelectLangDialog v-model="selectLangDialogVisible" v-model:lang="search.lang" :lang-list="langList" :lang-default="langDefault" />        
     </div>
 </template>
 
@@ -207,6 +207,7 @@ import DivBtn from '../share/DivBtn.vue';
 import Dialog from '../share/Dialog.vue';
 
 import * as utils from '../../share/utils';
+import diffUtils from '../../share/diffUtils';
 
 import _ from 'lodash';
 
@@ -225,29 +226,17 @@ const componentOptions = {
         settings() {
             this.loadSettings();
         },
-        author() {
-            this.refresh();
-        },
-        series() {
-            this.refresh();
-        },
-        title() {
-            this.refresh();
-        },
-        genre() {
-            this.refresh();
-        },
-        lang() {
-            this.refresh();
-        },
-        page() {
-            this.refresh();
+        search: {
+            handler(newValue) {
+                this.limit = newValue.limit;
+                this.refresh();
+            },
+            deep: true,
         },
         limit(newValue) {
             this.setSetting('limit', newValue);
 
             this.updatePageCount();
-            this.refresh();
         },
         showCounts(newValue) {
             this.setSetting('showCounts', newValue);
@@ -260,6 +249,12 @@ const componentOptions = {
         },
         totalFound() {
             this.updatePageCount();
+        },
+        $route(to) {
+            this.updateQueryFromRoute(to);
+        },
+        langDefault() {
+            this.updateQueryFromRoute(this.$route);
         },
     },
 };
@@ -274,7 +269,6 @@ class Search {
     selectGenreDialogVisible = false;
     selectLangDialogVisible = false;
 
-    page = 1;
     pageCount = 1;
 
     //input field consts 
@@ -282,12 +276,15 @@ class Search {
     inputDebounce = 200;
 
     //search fields
-    author = '';
-    series = '';
-    title = '';
-    genre = '';
-    lang = '';
-    limit = 50;//settings
+    search = {
+        author: '',
+        series: '',
+        title: '',
+        genre: '',
+        lang: '',
+        page: 1,
+        limit: 50,
+    };
 
     //settings
     expanded = [];
@@ -295,6 +292,7 @@ class Search {
     showDeleted = false;
     abCacheEnabled = true;
     langDefault = '';
+    limit = 50;
 
     //stuff
     queryFound = -1;
@@ -334,8 +332,10 @@ class Search {
                 this.$refs.authorInput.focus();
 
             this.setDefaults();
+            this.updateQueryFromRoute(this.$route);
 
-            //query from url parse
+            //чтоб не вызывался лишний refresh
+            await utils.sleep(100);
 
             this.ready = true;
             this.refresh();//no await
@@ -345,7 +345,7 @@ class Search {
     loadSettings() {
         const settings = this.settings;
 
-        this.limit = settings.limit;
+        this.search.limit = settings.limit;
         this.expanded = _.cloneDeep(settings.expanded);
         this.showCounts = settings.showCounts;
         this.showDeleted = settings.showDeleted;
@@ -363,7 +363,7 @@ class Search {
 
     get genreNames() {
         let result = [];
-        const genre = new Set(this.genre.split(','));
+        const genre = new Set(this.search.genre.split(','));
 
         for (const section of this.genreTree) {
             for (const g of section.value)
@@ -444,19 +444,28 @@ class Search {
     }
 
     updatePageCount() {
+        const prevPageCount = this.pageCount;
+
         this.pageCount = Math.ceil(this.totalFound/this.limit);
         this.pageCount = (this.pageCount < 1 ? 1 : this.pageCount);
-        if (this.page > this.pageCount)
-            this.page = 1;
+
+        if (this.prevPage && prevPageCount == 1 && this.pageCount > 1 && this.prevPage <= this.pageCount) {
+            this.search.page = this.prevPage;
+        }
+
+        if (this.search.page > this.pageCount) {
+            this.prevPage = this.search.page;
+            this.search.page = 1;
+        }
     }
 
     selectAuthor(author) {
-        this.author = `=${author}`;
+        this.search.author = `=${author}`;
         this.scrollToTop();
     }
 
     selectTitle(title) {
-        this.title = `=${title}`;
+        this.search.title = `=${title}`;
     }
 
     isExpanded(item) {
@@ -636,28 +645,63 @@ class Search {
     }
 
     setDefaults() {
-        this.author = '';
-        this.series = '';
-        this.title = '';
-        this.genre = '';
-        this.lang = this.langDefault;
+        this.search = Object.assign({}, this.search, {
+            author: '',
+            series: '',
+            title: '',
+            genre: '',
+            lang: this.langDefault,
+        });
+    }
+
+    async updateQueryFromRoute(to) {
+        if (this.routeUpdating)
+            return;
+
+        const query = to.query;
+
+        this.search = Object.assign({}, this.search, {
+            author: query.author || '',
+            series: query.series || '',
+            title: query.title || '',
+            genre: query.genre || '',
+            lang: (query.lang == 'default' ? this.langDefault : query.lang || ''),
+            page: parseInt(query.page, 10) || 1,
+        });
+    }
+
+    updateRouteQuery() {
+        this.routeUpdating = true;
+        try {
+            const oldQuery = this.$route.query;
+            const query = _.pickBy(this.search);
+            delete query.limit;
+            if (this.search.lang == this.langDefault)
+                query.lang = 'default'
+
+            const diff = diffUtils.getObjDiff(oldQuery, query);
+            if (!diffUtils.isEmptyObjDiff(diff)) {
+                this.$router.replace({query});
+            }
+        } finally {
+            (async() => {
+                await utils.sleep(100);
+                this.routeUpdating = false;
+            })();
+        }
     }
 
     async refresh() {
         if (!this.ready)
             return;
 
-        const offset = (this.page - 1)*this.limit;
+        this.updateRouteQuery();
 
-        const newQuery = {
-            author: this.author,
-            series: this.series,
-            title: this.title,
-            genre: this.genre,
-            lang:  this.lang,
-            limit: this.limit,
-            offset,
-        };
+        const offset = (this.search.page - 1)*this.limit;
+
+        const newQuery = _.cloneDeep(this.search);
+        newQuery.limit = this.limit;
+        newQuery.offset = offset;
 
         this.queryExecute = newQuery;
 
