@@ -36,7 +36,7 @@
                     </DivBtn>
 
                     <div class="col"></div>
-                    <div class="q-px-sm q-py-xs bg-green-12" style="border: 1px solid #aaaaaa; border-radius: 6px">
+                    <div class="q-px-sm q-py-xs bg-green-12 clickable2" style="border: 1px solid #aaaaaa; border-radius: 6px" @click="openReleasePage">
                         {{ projectName }}
                     </div>
                 </div>
@@ -375,6 +375,10 @@ class Search {
         }
 
         return result.join(', ');
+    }
+
+    openReleasePage() {
+        window.open('https://github.com/bookpauk/inpx-web', '_blank');
     }
 
     makeTitle() {
