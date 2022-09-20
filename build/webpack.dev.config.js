@@ -39,6 +39,6 @@ module.exports = merge(baseWpConfig, {
             template: `${clientDir}/index.html.template`,
             filename: `${publicDir}/index.html`
         }),
-        new CopyWebpackPlugin({patterns: [{from: `${clientDir}/assets/*`, to: `${publicDir}/`}]})
+        new CopyWebpackPlugin({patterns: [{context: `${clientDir}/assets`, from: `${clientDir}/assets/*`, to: `${publicDir}/`}]})
     ]
 });
