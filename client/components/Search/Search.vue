@@ -150,6 +150,9 @@
             </div>
             <!-- Формирование списка конец ------------------------------------------------------------------>
 
+            <div v-show="hiddenCount" class="q-ml-lg q-py-sm clickable2 text-red" style="font-size: 120%" @click="showHiddenHelp">
+                +{{ hiddenCount }} результатов скрыты
+            </div>
             <div class="row justify-center">
                 <PageScroller v-show="pageCount > 1" v-model="search.page" :page-count="pageCount" />
             </div>
@@ -304,6 +307,7 @@ class Search {
     langList = [];
     genreTreeInpxHash = '';
     cachedAuthors = {};
+    hiddenCount = 0;
 
     limitOptions = [
         {label: '10', value: 10},
@@ -394,6 +398,12 @@ class Search {
     Здесь должна быть подсказка<br>
 </p>
             `, 'Подсказка', {iconName: 'la la-info-circle'});
+    }
+
+    showHiddenHelp() {
+        this.$root.stdDialog.alert(`
+            Книги этих авторов помечены как удаленные. Для того, чтобы их увидеть, необходимо установить опцию "Показывать удаленные" в настройках.
+        `, 'Пояснение', {iconName: 'la la-info-circle'});
     }
 
     showCollectionInfo() {
@@ -508,19 +518,13 @@ class Search {
 
     getBookCount(item) {
         let result = '';
-        if (!this.showCounts || item.bookCount === undefined)
+        if (!this.showCounts || item.count === undefined)
             return result;
 
-        if (this.showDeleted) {
-            result = item.bookCount + item.bookDelCount;
-        } else {
-            result = item.bookCount;
-        }
-
         if (item.books)
-            result = `${item.books.length}/${result}`;
+            result = `${item.books.length}/${item.count}`;
         else 
-            result = `#/${result}`;
+            result = `#/${item.count}`;
 
         return `(${result})`;
     }
@@ -713,16 +717,22 @@ class Search {
             return;
 
         let num = 0;
+        this.hiddenCount = 0;
         for (const rec of authors) {
             this.cachedAuthors[rec.author] = rec;
+
+            const count = (this.showDeleted ? rec.bookCount + rec.bookDelCount : rec.bookCount);
+            if (!count) {
+                this.hiddenCount++;
+                continue;
+            }
 
             const item = reactive({
                 key: rec.id,
                 num,
                 author: rec.author,
                 name: rec.author.replace(/,/g, ', '),
-                bookCount: rec.bookCount,
-                bookDelCount: rec.bookDelCount,
+                count,
                 book: false,
             });
             num++;
