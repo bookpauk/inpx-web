@@ -139,7 +139,8 @@
                 <div v-if="isExpanded(item) && item.books">
                     <div v-for="book in item.books" :key="book.key" class="book-row column">
                         <div class="q-my-sm" @click="selectTitle(book.title)">
-                            {{ book.title }} {{ book.src.lang }} {{ book.src.del }}
+                            {{ book.title }}
+                            <br>{{ book.src }}
                         </div>
                         <!--div>
                             {{ item.key }} {{ book.src }}
@@ -302,6 +303,7 @@ class Search {
     genreTree = [];
     langList = [];
     genreTreeInpxHash = '';
+    cachedAuthors = {};
 
     limitOptions = [
         {label: '10', value: 10},
@@ -712,6 +714,8 @@ class Search {
 
         let num = 0;
         for (const rec of authors) {
+            this.cachedAuthors[rec.author] = rec;
+
             const item = reactive({
                 key: rec.id,
                 num,
@@ -724,7 +728,10 @@ class Search {
             num++;
 
             if (expandedSet.has(item.author)) {
-                this.getBooks(item);//no await
+                if (authors.length > 1)
+                    this.getBooks(item);//no await
+                else 
+                    await this.getBooks(item);
             }
 
             result.push(item);
@@ -790,6 +797,26 @@ class Search {
 
         this.updateRouteQuery();
 
+        //оптимизация
+        if (this.abCacheEnabled && this.search.author && this.search.author[0] == '=') {
+            const authorSearch = this.search.author.substring(1);
+            const author = this.cachedAuthors[authorSearch];
+
+            if (author) {
+                const key = `${author.id}-${this.inpxHash}`;
+                let data = await authorBooksStorage.getData(key);
+
+                if (data) {
+                    this.queryFound = 1;
+                    this.totalFound = 1;
+                    this.searchResult = {author: [author]};
+                    await this.updateTableData();
+                    return;
+                }
+            }
+        }
+
+        //параметры запроса
         const offset = (this.search.page - 1)*this.limit;
 
         const newQuery = _.cloneDeep(this.search);
@@ -872,6 +899,6 @@ export default vueComponent(Search);
 }
 
 .book-row {
-    margin-left: 100px;
+    margin-left: 50px;
 }
 </style>
