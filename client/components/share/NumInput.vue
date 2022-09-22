@@ -10,6 +10,16 @@
         <slot></slot>
         <template #prepend>
             <q-icon
+                v-show="mmButtons"
+                style="font-size: 100%"
+                v-ripple="modelValue != min" 
+                :class="(modelValue != min ? '' : 'disable')" 
+                name="la la-angle-double-left" 
+                class="button" 
+                @click="toMin"
+            />
+
+            <q-icon
                 v-ripple="validate(modelValue - step)" 
                 :class="(validate(modelValue - step) ? '' : 'disable')" 
                 :name="minusIcon" 
@@ -37,6 +47,17 @@
                 @touchend.stop="onTouchEnd"
                 @touchcancel.prevent.stop="onTouchEnd"
             />
+
+            <q-icon
+                v-show="mmButtons"
+                style="font-size: 100%"
+                v-ripple="modelValue != max" 
+                :class="(modelValue != max ? '' : 'disable')" 
+                name="la la-angle-double-right" 
+                class="button" 
+                @click="toMax"
+            />
+
         </template>
     </q-input>
 </template>
@@ -74,6 +95,7 @@ class NumInput {
         disable: Boolean,
         minusIcon: {type: String, default: 'la la-minus-circle'},
         plusIcon: {type: String, default: 'la la-plus-circle'},
+        mmButtons: Boolean,
     };
 
     filteredValue = 0;
@@ -188,6 +210,14 @@ class NumInput {
         this.inTouch = false;
         this.onMouseUp();
     }
+
+    toMin() {
+        this.filteredValue = this.min;
+    }
+
+    toMax() {
+        this.filteredValue = this.max;
+    }
 }
 
 export default vueComponent(NumInput);
@@ -202,7 +232,9 @@ export default vueComponent(NumInput);
 
 .button {
     font-size: 130%;
-    border-radius: 20px;
+    border-radius: 15px;
+    width: 30px;
+    height: 30px;
     color: #bbb;
     cursor: pointer;
 }

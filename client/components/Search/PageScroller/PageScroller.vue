@@ -6,7 +6,7 @@
         <div class="bg-white">
             <NumInput 
                 v-model="page" :min="1" :max="pageCount"
-                style="width: 140px" minus-icon="la la-chevron-circle-left" plus-icon="la la-chevron-circle-right" :disable="disable"
+                style="width: 200px" minus-icon="la la-chevron-circle-left" plus-icon="la la-chevron-circle-right" :disable="disable" mm-buttons
             />
         </div>
         <div class="q-ml-xs">

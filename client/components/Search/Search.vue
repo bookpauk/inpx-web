@@ -318,10 +318,6 @@ class Search {
     created() {
         this.commit = this.$store.commit;
 
-        /*this.refresh = _.debounce(() => {
-            this.refreshDebounced();
-        }, 1000);*/
-
         this.loadSettings();
     }
 
