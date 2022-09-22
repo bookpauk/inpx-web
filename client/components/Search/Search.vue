@@ -139,7 +139,7 @@
                 <div v-if="isExpanded(item) && item.books">
                     <div v-for="book in item.books" :key="book.key" class="book-row column">
                         <div class="q-my-sm" @click="selectTitle(book.title)">
-                            {{ book.title }} {{ book.src.del }}
+                            {{ book.title }} {{ book.src.lang }} {{ book.src.del }}
                         </div>
                         <!--div>
                             {{ item.key }} {{ book.src }}
@@ -241,6 +241,7 @@ const componentOptions = {
         },
         showDeleted(newValue) {
             this.setSetting('showDeleted', newValue);
+            this.updateTableData();
         },
         abCacheEnabled(newValue) {
             this.setSetting('abCacheEnabled', newValue);
@@ -546,7 +547,94 @@ class Search {
     }
 
     filterBooks(loadedBooks) {
-        return loadedBooks;
+        const s = this.search;
+
+        const emptyFieldValue = '?';
+        const ruAlphabet = 'абвгдеёжзийклмнопрстуфхцчшщъыьэюя';
+        const enAlphabet = 'abcdefghijklmnopqrstuvwxyz';
+        const enru = new Set((ruAlphabet + enAlphabet).split(''));
+
+        const splitAuthor = (author) => {
+            if (!author) {
+                author = emptyFieldValue;
+            }
+
+            const result = author.split(',');
+            if (result.length > 1)
+                result.push(author);
+
+            return result;
+        };
+
+        const filterBySearch = (bookValue, searchValue) => {
+            if (!searchValue)
+                return true;
+
+            bookValue = bookValue.toLowerCase();
+            searchValue = searchValue.toLowerCase();
+
+            //особая обработка префиксов
+            if (searchValue[0] == '=') {
+
+                searchValue = searchValue.substring(1);
+                return bookValue == searchValue;
+            } else if (searchValue[0] == '*') {
+
+                searchValue = searchValue.substring(1);
+                return bookValue.indexOf(searchValue) >= 0;
+            } else if (searchValue[0] == '#') {
+
+                searchValue = searchValue.substring(1);
+                return !bookValue || (!enru.has(bookValue[0]) && bookValue.indexOf(searchValue) >= 0);
+            } else {
+
+                return bookValue.indexOf(searchValue) == 0;
+            }
+        };
+
+        return loadedBooks.filter((book) => {
+            //author
+            let authorFound = false;
+            const authors = splitAuthor(book.author);
+            for (const a of authors) {
+                if (filterBySearch(a, s.author)) {
+                    authorFound = true;
+                    break;
+                }
+            }
+
+            //genre
+            let genreFound = !s.genre;
+            if (!genreFound) {
+                const searchGenres = new Set(s.genre.split(','));
+                const bookGenres = book.genre.split(',');
+
+                for (let g of bookGenres) {
+                    if (!g)
+                        g = emptyFieldValue;
+
+                    if (searchGenres.has(g)) {
+                        genreFound = true;
+                        break;
+                    }
+                }
+            }
+
+            //lang
+            let langFound = !s.lang;
+            if (!langFound) {
+                const searchLang = new Set(s.lang.split(','));
+                langFound = searchLang.has(book.lang || emptyFieldValue);
+            }
+
+            return (this.showDeleted || !book.del)
+                && authorFound
+                && filterBySearch(book.series, s.series)
+                && filterBySearch(book.title, s.title)
+                && genreFound
+                && langFound
+            ;
+        });
     }
 
     async getBooks(item) {
@@ -619,6 +707,8 @@ class Search {
 
         const expandedSet = new Set(this.expanded);
         const authors = this.searchResult.author;
+        if (!authors)
+            return;
 
         let num = 0;
         for (const rec of authors) {
