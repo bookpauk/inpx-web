@@ -131,7 +131,7 @@
                         </div>
                     </div>
 
-                    <div class="clickable q-ml-xs q-py-sm" style="font-weight: bold" @click="selectAuthor(item.author)">
+                    <div class="clickable2 q-ml-xs q-py-sm text-green-10 text-bold" @click="selectAuthor(item.author)">
                         {{ item.name }}                            
                     </div>
 
@@ -140,10 +140,15 @@
                     </div>                    
                 </div>
 
+                <div v-if="item.bookLoading" class="book-row">
+                    Загрузка
+                    <q-icon class="la la-spinner icon-rotate text-blue-8" size="28px" />
+                </div>
+
                 <div v-if="isExpanded(item) && item.books">
                     <div v-for="book in item.books" :key="book.key" class="book-row column">
                         <div v-if="book.type == 'series'" class="column">
-                            <div class="row items-center q-mr-xs no-wrap">
+                            <div class="row items-center q-mr-xs no-wrap text-grey-9">
                                 <div class="row items-center clickable2 q-py-xs no-wrap" @click="expandSeries(book)">
                                     <div style="min-width: 30px">
                                         <div v-if="!isExpandedSeries(book)">
@@ -161,12 +166,10 @@
                             </div>
 
                             <div v-if="isExpandedSeries(book) && book.books" class="book-row column">
-                                <BookView v-for="subbook in book.books" :key="subbook.key" :book="subbook" @book-event="bookEvent" />
+                                <BookView v-for="subbook in book.books" :key="subbook.key" :book="subbook" :genre-tree="genreTree" @book-event="bookEvent" />
                             </div>
                         </div>
-                        <div v-else>
-                            <BookView :book="book" @book-event="bookEvent" />
-                        </div>
+                        <BookView v-else :book="book" :genre-tree="genreTree" @book-event="bookEvent" />
                     </div>
                 </div>
             </div>
@@ -179,6 +182,7 @@
             <div class="row justify-center">
                 <PageScroller v-show="pageCount > 1" v-model="search.page" :page-count="pageCount" />
             </div>
+            <div v-show="pageCount <= 1" class="q-mt-lg" />
         </div>
 
         <Dialog v-model="settingsDialogVisible">
@@ -236,6 +240,8 @@ import * as utils from '../../share/utils';
 import diffUtils from '../../share/diffUtils';
 
 import _ from 'lodash';
+
+const maxItemCount = 500;//выше этого значения показываем "Загрузка"
 
 const componentOptions = {
     components: {
@@ -487,7 +493,7 @@ class Search {
     }
 
     get hiddenResultsMessage() {
-        return `+${this.hiddenCount} результат${utils.wordEnding(this.hiddenCount)} скрыты`;
+        return `+${this.hiddenCount} результат${utils.wordEnding(this.hiddenCount)} скрыт${utils.wordEnding(this.hiddenCount, 2)}`;
     }
 
     updatePageCount() {
@@ -506,13 +512,37 @@ class Search {
         }
     }
 
+    getBookCount(item) {
+        let result = '';
+        if (!this.showCounts || item.count === undefined)
+            return result;
+
+        if (item.books) {
+            let count = 0;
+            for (const book of item.books) {
+                if (book.type == 'series')
+                    count += book.books.length;
+                else
+                    count++;
+            }
+
+            result = `${count}/${item.count}`;
+        } else 
+            result = `#/${item.count}`;
+
+        return `(${result})`;
+    }
+
     selectAuthor(author) {
         this.search.author = `=${author}`;
+        this.search.series = '';
+        this.search.title = '';
         this.scrollToTop();
     }
 
     selectSeries(series) {
         this.search.series = `=${series}`;
+        this.search.title = '';
     }
 
     bookEvent(event) {
@@ -535,14 +565,14 @@ class Search {
         this.commit('setSettings', {[name]: _.cloneDeep(newValue)});
     }
 
-    expandAuthor(item) {
+    async expandAuthor(item) {
         const expanded = _.cloneDeep(this.expanded);
         const key = item.author;
 
         if (!this.isExpanded(item)) {
             expanded.push(key);
 
-            this.getBooks(item);
+            await this.getBooks(item);
 
             if (expanded.length > 100) {
                 expanded.shift();
@@ -579,19 +609,6 @@ class Search {
                 this.setSetting('expandedSeries', expandedSeries);
             }
         }
-    }
-
-    getBookCount(item) {
-        let result = '';
-        if (!this.showCounts || item.count === undefined)
-            return result;
-
-        if (item.books)
-            result = `${item.books.length}/${item.count}`;
-        else 
-            result = `#/${item.count}`;
-
-        return `(${result})`;
     }
 
     async loadBooks(authorId) {
@@ -709,13 +726,20 @@ class Search {
     }
 
     async getBooks(item) {
-        if (item.books)
+        if (item.books) {
+            if (item.count > maxItemCount) {
+                item.bookLoading = true;
+                await utils.sleep(1);//для перерисовки списка
+                item.bookLoading = false;
+            }
             return;
+        }
 
         if (!this.getBooksFlag)
             this.getBooksFlag = 0;
 
         this.getBooksFlag++;
+        item.bookLoading = true;
 
         try {
             if (this.getBooksFlag == 1) {
@@ -736,6 +760,12 @@ class Search {
                     type: 'book',
                     title: book.title,
                     series: book.series,
+                    serno: book.serno,
+                    genre: book.genre,
+                    size: book.size,
+                    ext: book.ext,
+
+                    src: book,
                 }
             };
 
@@ -751,6 +781,7 @@ class Search {
                             key: `${item.author}-${book.series}`,
                             type: 'series',
                             series: book.series,
+
                             books: [],
                         });
 
@@ -766,22 +797,32 @@ class Search {
             //сортировка
             books.sort((a, b) => {
                 if (a.type == 'series') {
-                    if (b.type == 'series')
-                        return a.key.localeCompare(b.key);
-                    else
-                        return -1;
+                    return (b.type == 'series' ? a.key.localeCompare(b.key) : -1);
                 } else {
-                    if (b.type == 'book')
-                        return a.title.localeCompare(b.title);
-                    else
-                        return 1;
+                    return (b.type == 'book' ? a.title.localeCompare(b.title) : 1);
                 }
             });
 
             //сортировка внутри серий
+            for (const book of books) {
+                if (book.type == 'series') {
+                    book.books.sort((a, b) => {
+                        const dserno = (a.serno || Number.MAX_VALUE) - (b.serno || Number.MAX_VALUE);
+                        const dtitle = a.title.localeCompare(b.title);
+                        const dext = a.ext.localeCompare(b.ext);
+                        return (dserno ? dserno : (dtitle ? dtitle : dext));
+                    });
+                }
+            }
+
+            if (books.length == 1 && books[0].type == 'series' && !this.isExpandedSeries(books[0])) {
+                this.expandSeries(books[0]);
+            }
 
             item.books = books;
+            await this.$nextTick();
         } finally {
+            item.bookLoading = false;
             this.getBooksFlag--;
             if (this.getBooksFlag == 0)
                 this.loadingMessage2 = '';
@@ -842,11 +883,12 @@ class Search {
                 name: rec.author.replace(/,/g, ', '),
                 count,
                 book: false,
+                bookLoading: false,
             });
             num++;
 
             if (expandedSet.has(item.author)) {
-                if (authors.length > 1)
+                if (authors.length > 1 || item.count > maxItemCount)
                     this.getBooks(item);//no await
                 else 
                     await this.getBooks(item);
@@ -857,7 +899,7 @@ class Search {
 
         if (result.length == 1 && !this.isExpanded(result[0])) {
             this.expandAuthor(result[0]);
-        }        
+        }
 
         this.tableData = result;
     }

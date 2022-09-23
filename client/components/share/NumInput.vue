@@ -11,8 +11,8 @@
         <template #prepend>
             <q-icon
                 v-show="mmButtons"
-                style="font-size: 100%"
                 v-ripple="modelValue != min" 
+                style="font-size: 100%"
                 :class="(modelValue != min ? '' : 'disable')" 
                 name="la la-angle-double-left" 
                 class="button" 
@@ -50,14 +50,13 @@
 
             <q-icon
                 v-show="mmButtons"
-                style="font-size: 100%"
                 v-ripple="modelValue != max" 
+                style="font-size: 100%"
                 :class="(modelValue != max ? '' : 'disable')" 
                 name="la la-angle-double-right" 
                 class="button" 
                 @click="toMax"
             />
-
         </template>
     </q-input>
 </template>
