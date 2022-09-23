@@ -44,17 +44,29 @@
                     <q-input
                         ref="authorInput" v-model="search.author" :maxlength="5000" :debounce="inputDebounce"
                         class="bg-white q-mt-xs" style="width: 300px;" label="Автор" stack-label outlined dense clearable
-                    />
+                    >
+                        <q-tooltip v-if="search.author" :delay="500" anchor="bottom middle" content-style="font-size: 80%" max-width="400px">
+                            {{ search.author }}
+                        </q-tooltip>
+                    </q-input>
                     <div class="q-mx-xs" />
                     <q-input
                         v-model="search.series" :maxlength="inputMaxLength" :debounce="inputDebounce"
                         class="bg-white q-mt-xs" style="width: 200px;" label="Серия" stack-label outlined dense clearable
-                    />
+                    >
+                        <q-tooltip v-if="search.series" :delay="500" anchor="bottom middle" content-style="font-size: 80%" max-width="400px">
+                            {{ search.series }}
+                        </q-tooltip>
+                    </q-input>
                     <div class="q-mx-xs" />
                     <q-input
                         v-model="search.title" :maxlength="inputMaxLength" :debounce="inputDebounce"
                         class="bg-white q-mt-xs" style="width: 200px;" label="Название" stack-label outlined dense clearable
-                    />
+                    >
+                        <q-tooltip v-if="search.title" :delay="500" anchor="bottom middle" content-style="font-size: 80%" max-width="400px">
+                            {{ search.title }}
+                        </q-tooltip>
+                    </q-input>
                     <div class="q-mx-xs" />
                     <q-input
                         v-model="genreNames" :maxlength="inputMaxLength" :debounce="inputDebounce"
@@ -108,14 +120,6 @@
             <!-- Формирование списка ------------------------------------------------------------------------>
             <div v-for="item in tableData" :key="item.key" class="column" :class="{'odd-author': item.num % 2}" style="font-size: 120%">
                 <div class="row items-center q-ml-md q-mr-xs no-wrap">
-                    <!--div style="min-width: 35px">
-                        <DivBtn v-if="tableData.length > 1" :icon-size="24" icon="la la-check-circle" @click="selectAuthor(item.author)">
-                            <q-tooltip :delay="1500" anchor="bottom middle" content-style="font-size: 80%">
-                                Только этот автор
-                            </q-tooltip>
-                        </DivBtn>
-                    </div-->
-
                     <div class="row items-center clickable2 q-py-xs no-wrap" @click="expandAuthor(item)">
                         <div style="min-width: 30px">
                             <div v-if="!isExpanded(item)">
@@ -138,21 +142,40 @@
 
                 <div v-if="isExpanded(item) && item.books">
                     <div v-for="book in item.books" :key="book.key" class="book-row column">
-                        <div class="q-my-sm" @click="selectTitle(book.title)">
-                            {{ book.title }}
-                            <br>{{ book.src }}
+                        <div v-if="book.type == 'series'" class="column">
+                            <div class="row items-center q-mr-xs no-wrap">
+                                <div class="row items-center clickable2 q-py-xs no-wrap" @click="expandSeries(book)">
+                                    <div style="min-width: 30px">
+                                        <div v-if="!isExpandedSeries(book)">
+                                            <q-icon name="la la-plus-square" size="28px" />
+                                        </div>
+                                        <div v-else>
+                                            <q-icon name="la la-minus-square" size="28px" />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="clickable2 q-ml-xs q-py-sm" style="font-weight: bold" @click="selectSeries(book.series)">
+                                    Серия: {{ book.series }}
+                                </div>
+                            </div>
+
+                            <div v-if="isExpandedSeries(book) && book.books" class="book-row column">
+                                <BookView v-for="subbook in book.books" :key="subbook.key" :book="subbook" @book-event="bookEvent" />
+                            </div>
                         </div>
-                        <!--div>
-                            {{ item.key }} {{ book.src }}
-                        </div-->
+                        <div v-else>
+                            <BookView :book="book" @book-event="bookEvent" />
+                        </div>
                     </div>
                 </div>
             </div>
             <!-- Формирование списка конец ------------------------------------------------------------------>
 
             <div v-show="hiddenCount" class="q-ml-lg q-py-sm clickable2 text-red" style="font-size: 120%" @click="showHiddenHelp">
-                +{{ hiddenCount }} результатов скрыты
+                {{ hiddenResultsMessage }}
             </div>
+
             <div class="row justify-center">
                 <PageScroller v-show="pageCount > 1" v-model="search.page" :page-count="pageCount" />
             </div>
@@ -203,6 +226,7 @@ import { reactive } from 'vue';
 import PageScroller from './PageScroller/PageScroller.vue';
 import SelectGenreDialog from './SelectGenreDialog/SelectGenreDialog.vue';
 import SelectLangDialog from './SelectLangDialog/SelectLangDialog.vue';
+import BookView from './BookView/BookView.vue';
 
 import authorBooksStorage from './authorBooksStorage';
 import DivBtn from '../share/DivBtn.vue';
@@ -218,6 +242,7 @@ const componentOptions = {
         PageScroller,
         SelectGenreDialog,
         SelectLangDialog,
+        BookView,
         Dialog,
         DivBtn
     },
@@ -291,6 +316,7 @@ class Search {
 
     //settings
     expanded = [];
+    expandedSeries = [];
     showCounts = true;
     showDeleted = false;
     abCacheEnabled = true;
@@ -353,6 +379,7 @@ class Search {
 
         this.search.limit = settings.limit;
         this.expanded = _.cloneDeep(settings.expanded);
+        this.expandedSeries = _.cloneDeep(settings.expandedSeries);
         this.showCounts = settings.showCounts;
         this.showDeleted = settings.showDeleted;
         this.abCacheEnabled = settings.abCacheEnabled;
@@ -459,6 +486,10 @@ class Search {
         return `Найден${utils.wordEnding(this.totalFound, 2)} ${this.totalFound} автор${utils.wordEnding(this.totalFound)}`;
     }
 
+    get hiddenResultsMessage() {
+        return `+${this.hiddenCount} результат${utils.wordEnding(this.hiddenCount)} скрыты`;
+    }
+
     updatePageCount() {
         const prevPageCount = this.pageCount;
 
@@ -480,12 +511,24 @@ class Search {
         this.scrollToTop();
     }
 
-    selectTitle(title) {
-        this.search.title = `=${title}`;
+    selectSeries(series) {
+        this.search.series = `=${series}`;
+    }
+
+    bookEvent(event) {
+        switch (event.action) {
+            case 'titleClick':
+                this.search.title = `=${event.book.title}`;
+                break;
+        }
     }
 
     isExpanded(item) {
         return this.expanded.indexOf(item.author) >= 0;
+    }
+
+    isExpandedSeries(seriesItem) {
+        return this.expandedSeries.indexOf(seriesItem.key) >= 0;
     }
 
     setSetting(name, newValue) {
@@ -494,24 +537,46 @@ class Search {
 
     expandAuthor(item) {
         const expanded = _.cloneDeep(this.expanded);
-        const author = item.author;
+        const key = item.author;
 
         if (!this.isExpanded(item)) {
-            expanded.push(author);
+            expanded.push(key);
 
             this.getBooks(item);
 
-            if (expanded.length > 10) {
+            if (expanded.length > 100) {
                 expanded.shift();
             }
 
             this.setSetting('expanded', expanded);
             this.ignoreScroll();
         } else {
-            const i = expanded.indexOf(author);
+            const i = expanded.indexOf(key);
             if (i >= 0) {
                 expanded.splice(i, 1);
                 this.setSetting('expanded', expanded);
+            }
+        }
+    }
+
+    expandSeries(seriesItem) {
+        const expandedSeries = _.cloneDeep(this.expandedSeries);
+        const key = seriesItem.key;
+
+        if (!this.isExpandedSeries(seriesItem)) {
+            expandedSeries.push(key);
+
+            if (expandedSeries.length > 100) {
+                expandedSeries.shift();
+            }
+
+            this.setSetting('expandedSeries', expandedSeries);
+            this.ignoreScroll();
+        } else {
+            const i = expandedSeries.indexOf(key);
+            if (i >= 0) {
+                expandedSeries.splice(i, 1);
+                this.setSetting('expandedSeries', expandedSeries);
             }
         }
     }
@@ -665,12 +730,55 @@ class Search {
 
             const filtered = this.filterBooks(loadedBooks);
 
-            filtered.sort((a, b) => a.title.localeCompare(b.title));
+            const prepareBook = (book) => {
+                return {
+                    key: book.id,
+                    type: 'book',
+                    title: book.title,
+                    series: book.series,
+                }
+            };
 
+            //объединение по сериям
             const books = [];
+            const seriesIndex = {};
             for (const book of filtered) {
-                books.push({key: book.id, title: book.title, src: book});
+                if (book.series) {
+                    let index = seriesIndex[book.series];
+                    if (index === undefined) {
+                        index = books.length;
+                        books.push({
+                            key: `${item.author}-${book.series}`,
+                            type: 'series',
+                            series: book.series,
+                            books: [],
+                        });
+
+                        seriesIndex[book.series] = index;
+                    }
+
+                    books[index].books.push(prepareBook(book));
+                } else {
+                    books.push(prepareBook(book));
+                }
             }
+
+            //сортировка
+            books.sort((a, b) => {
+                if (a.type == 'series') {
+                    if (b.type == 'series')
+                        return a.key.localeCompare(b.key);
+                    else
+                        return -1;
+                } else {
+                    if (b.type == 'book')
+                        return a.title.localeCompare(b.title);
+                    else
+                        return 1;
+                }
+            });
+
+            //сортировка внутри серий
 
             item.books = books;
         } finally {
@@ -909,6 +1017,6 @@ export default vueComponent(Search);
 }
 
 .book-row {
-    margin-left: 50px;
+    margin-left: 70px;
 }
 </style>

@@ -4,6 +4,7 @@ const state = {
     settings: {
         limit: 50,
         expanded: [],
+        expandedSeries: [],
         showCounts: true,
         showDeleted: false,
         abCacheEnabled: true,
