@@ -1,5 +1,6 @@
 <template>
     <div class="root column fit" style="position: relative">
+        <a ref="download" style="display: none;"></a>
         <div v-show="loadingMessage" class="fit row justify-center items-center" style="position: absolute; background-color: rgba(0, 0, 0, 0.2); z-index: 2">
             <div class="bg-white row justify-center items-center q-px-lg" style="min-width: 180px; height: 50px; border-radius: 10px; box-shadow: 2px 2px 10px #333333">
                 <q-icon class="la la-spinner icon-rotate text-blue-8" size="28px" />
@@ -554,16 +555,36 @@ class Search {
     }
 
     async download(book, copy = false) {
-        try {
+        let downloadFlag = true;
+        (async() => {
+            await utils.sleep(200);
+            if (downloadFlag)
+                this.loadingMessage2 = 'Подготовка файла...';
+        })();
+
+        try {            
             const bookPath = `${book.folder}/${book.file}.${book.ext}`;
+
             const response = await this.api.getBookLink(bookPath);
+            
+            const href = `${window.location.origin}${response.link}`;
 
             if (!copy) {
-                //
+                const d = this.$refs.download;
+                d.href = href;
+
+                d.click();
+            } else {
+                if (utils.copyTextToClipboard(href))
+                    this.$root.notify.success('Ссылка успешно скопирована');
+                else
+                    this.$root.notify.error('Копирование ссылки не удалось');
             }
-console.log(response);
         } catch(e) {
             this.$root.stdDialog.alert(e.message, 'Ошибка');
+        } finally {
+            downloadFlag = false;
+            this.loadingMessage2 = '';
         }
     }
 

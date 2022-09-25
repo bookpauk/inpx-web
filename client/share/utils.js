@@ -42,3 +42,15 @@ export function wordEnding(num, type = 0) {
         return endings[type][num % 10];
     }
 }
+
+export async function copyTextToClipboard(text) {
+    let result = false;
+    try {
+        await navigator.clipboard.writeText(text);
+        result = true;
+    } catch (e) {
+        //
+    }
+
+    return result;
+}
