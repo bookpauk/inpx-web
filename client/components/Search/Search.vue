@@ -142,7 +142,9 @@
 
                 <div v-if="item.bookLoading" class="book-row row items-center">
                     <q-icon class="la la-spinner icon-rotate text-blue-8" size="28px" />
-                    <div class="q-ml-xs">Обработка...</div>
+                    <div class="q-ml-xs">
+                        Обработка...
+                    </div>
                 </div>
 
                 <div v-if="isExpanded(item) && item.books">
@@ -327,7 +329,7 @@ class Search {
     showDeleted = false;
     abCacheEnabled = true;
     langDefault = '';
-    limit = 50;
+    limit = 20;
 
     //stuff
     refreshing = false;
@@ -563,6 +565,57 @@ class Search {
 
     setSetting(name, newValue) {
         this.commit('setSettings', {[name]: _.cloneDeep(newValue)});
+    }
+
+    setDefaults() {
+        this.search = Object.assign({}, this.search, {
+            author: '',
+            series: '',
+            title: '',
+            genre: '',
+            lang: this.langDefault,
+        });
+    }
+
+    async updateQueryFromRoute(to) {
+        if (this.routeUpdating)
+            return;
+
+        const query = to.query;
+
+        this.search = Object.assign({}, this.search, {
+            author: query.author || '',
+            series: query.series || '',
+            title: query.title || '',
+            genre: query.genre || '',
+            lang: (query.lang == 'default' ? this.langDefault : query.lang || ''),
+            page: parseInt(query.page, 10) || 1,
+            limit: parseInt(query.limit, 10) || 20,
+        });
+
+        if (this.search.limit > 1000)
+            this.search.limit = 1000;
+    }
+
+    updateRouteQuery() {
+        this.routeUpdating = true;
+        try {
+            const oldQuery = this.$route.query;
+            const query = _.pickBy(this.search);
+
+            if (this.search.lang == this.langDefault)
+                query.lang = 'default'
+
+            const diff = diffUtils.getObjDiff(oldQuery, query);
+            if (!diffUtils.isEmptyObjDiff(diff)) {
+                this.$router.replace({query});
+            }
+        } finally {
+            (async() => {
+                await utils.sleep(100);
+                this.routeUpdating = false;
+            })();
+        }
     }
 
     async expandAuthor(item) {
@@ -905,53 +958,6 @@ class Search {
         this.tableData = result;
     }
 
-    setDefaults() {
-        this.search = Object.assign({}, this.search, {
-            author: '',
-            series: '',
-            title: '',
-            genre: '',
-            lang: this.langDefault,
-        });
-    }
-
-    async updateQueryFromRoute(to) {
-        if (this.routeUpdating)
-            return;
-
-        const query = to.query;
-
-        this.search = Object.assign({}, this.search, {
-            author: query.author || '',
-            series: query.series || '',
-            title: query.title || '',
-            genre: query.genre || '',
-            lang: (query.lang == 'default' ? this.langDefault : query.lang || ''),
-            page: parseInt(query.page, 10) || 1,
-        });
-    }
-
-    updateRouteQuery() {
-        this.routeUpdating = true;
-        try {
-            const oldQuery = this.$route.query;
-            const query = _.pickBy(this.search);
-            delete query.limit;
-            if (this.search.lang == this.langDefault)
-                query.lang = 'default'
-
-            const diff = diffUtils.getObjDiff(oldQuery, query);
-            if (!diffUtils.isEmptyObjDiff(diff)) {
-                this.$router.replace({query});
-            }
-        } finally {
-            (async() => {
-                await utils.sleep(100);
-                this.routeUpdating = false;
-            })();
-        }
-    }
-
     async refresh() {
         if (!this.ready)
             return;
@@ -978,10 +984,9 @@ class Search {
         }
 
         //параметры запроса
-        const offset = (this.search.page - 1)*this.limit;
+        const offset = (this.search.page - 1)*this.search.limit;
 
         const newQuery = _.cloneDeep(this.search);
-        newQuery.limit = this.limit;
         newQuery.offset = offset;
 
         this.queryExecute = newQuery;
