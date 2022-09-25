@@ -1,7 +1,9 @@
 const os = require('os');
+const path = require('path');
 const fs = require('fs-extra');
 const _ = require('lodash');
 
+const ZipReader = require('./ZipReader');
 const WorkerState = require('./WorkerState');
 const { JembaDbThread } = require('jembadb');
 const DbCreator = require('./DbCreator');
@@ -263,6 +265,95 @@ class WebWorker {
         return result;
     }
 
+    async extractBook(bookPath) {
+        const tempDir = this.config.tempDir;
+        const outFile = `${tempDir}/${utils.randomHexString(30)}`;
+
+        const folder = path.dirname(bookPath);
+        const file = path.basename(bookPath);
+
+        const zipReader = new ZipReader();
+        await zipReader.open(folder);
+
+        try {
+            await zipReader.extractToFile(file, outFile);
+            return outFile;
+        } finally {
+            zipReader.close();
+        }
+    }
+
+    async restoreBook(bookPath) {
+        const db = this.db;
+        const publicDir = this.config.publicDir;
+
+        const extractedFile = await this.extractBook(bookPath);
+
+        const hash = await utils.getFileHash(extractedFile, 'sha256', 'hex');
+        const link = `/files/${hash}`;
+        const publicPath = `${publicDir}${link}`;
+
+        if (!await fs.pathExists(publicPath)) {
+            await fs.move(extractedFile, publicPath);
+        } else {
+            await fs.remove(extractedFile);
+        }
+
+        await db.insert({
+            table: 'file_hash',
+            replace: true,
+            rows: [
+                {id: bookPath, hash},
+                {id: hash, bookPath}
+            ]
+        });
+
+        return link;
+    }
+
+    async getBookLink(bookPath) {
+        this.checkMyState();
+
+        const db = this.db;
+        const publicDir = this.config.publicDir;
+        let link = '';
+
+        //найдем хеш
+        const rows = await db.select({table: 'file_hash', where: `@@id(${db.esc(bookPath)})`});
+        if (rows.length) {//хеш найден по bookPath
+            const hash = rows[0].hash;
+            link = `/files/${hash}`;
+            const publicPath = `${publicDir}${link}`;
+
+            if (!await fs.pathExists(publicPath)) {
+                link = '';
+            }
+        }
+
+        if (!link) {
+            link = await this.restoreBook(bookPath)
+        }
+
+        if (!link)
+            throw new Error('404 Файл не найден');
+
+        return {link};
+    }
+
+    async restoreBookFile(publicPath) {
+        const db = this.db;
+        const hash = path.basename(publicPath);
+
+        //найдем bookPath
+        const rows = await db.select({table: 'file_hash', where: `@@id(${db.esc(hash)})`});        
+        if (rows.length) {//bookPath найден по хешу
+            const bookPath = rows[0].bookPath;
+            await this.restoreBook(bookPath);
+        } else {//bookPath не найден
+            throw new Error('404 Файл не найден');
+        }
+    }
+
     async logServerStats() {
         while (1) {// eslint-disable-line
             try {
@@ -274,7 +365,7 @@ class WebWorker {
             } catch (e) {
                 log(LM_ERR, e.message);
             }
-            await utils.sleep(5000);
+            await utils.sleep(5*1000);
         }
     }
 }

@@ -442,6 +442,9 @@ class DbCreator {
         await db.create({table: 'query_cache'});
         await db.create({table: 'query_time'});
 
+        //кэш-таблица имен файлов и их хешей
+        await db.create({table: 'file_hash'});
+
         callback({job: 'done', jobMessage: ''});
     }
 }

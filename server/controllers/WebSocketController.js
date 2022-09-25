@@ -72,6 +72,8 @@ class WebSocketController {
                     await this.getBookList(req, ws); break;
                 case 'get-genre-tree':
                     await this.getGenreTree(req, ws); break;
+                case 'get-book-link':
+                    await this.getBookLink(req, ws); break;
 
                 default:
                     throw new Error(`Action not found: ${req.action}`);
@@ -138,6 +140,15 @@ class WebSocketController {
 
     async getGenreTree(req, ws) {
         const result = await this.webWorker.getGenreTree();
+
+        this.send(result, req, ws);
+    }
+
+    async getBookLink(req, ws) {
+        if (!utils.hasProp(req, 'bookPath'))
+            throw new Error(`bookPath is empty`);
+
+        const result = await this.webWorker.getBookLink(req.bookPath);
 
         this.send(result, req, ws);
     }

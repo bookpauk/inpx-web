@@ -89,6 +89,10 @@ function intersectSet(arrSet) {
     return result;
 }
 
+function randomHexString(len) {
+    return crypto.randomBytes(len).toString('hex')
+}
+
 module.exports = {
     sleep,
     versionText,
@@ -99,4 +103,5 @@ module.exports = {
     getFileHash,
     getBufHash,
     intersectSet,
+    randomHexString,
 };

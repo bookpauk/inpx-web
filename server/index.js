@@ -149,19 +149,42 @@ async function main() {
     });
 }
 
-function initStatic(app, config) {// eslint-disable-line
-    //загрузка файлов в /files
-    //TODO
+function initStatic(app, config) {
+    const WebWorker = require('./core/WebWorker');//singleton
+    const webWorker = new WebWorker(config);
 
+    //загрузка или восстановление файлов в /files, при необходимости
+    app.use(async(req, res, next) => {
+        if ((req.method !== 'GET' && req.method !== 'HEAD') ||
+            !(req.path.indexOf('/files/') === 0)
+            ) {
+            return next();
+        }
+
+        const publicPath = `${config.publicDir}${req.path}`;
+
+        //восстановим
+        try {
+            if (!await fs.pathExists(publicPath)) {
+                await webWorker.restoreBookFile(publicPath);
+            }
+        } catch(e) {
+            log(LM_ERR, `static::restoreBookFile ${req.path} > ${e.message}`);
+        }
+
+        return next();
+    });
+
+    //заголовки при отдаче
+    const filesDir = `${config.publicDir}/files`;
     app.use(express.static(config.publicDir, {
         maxAge: '30d',
 
-        /*setHeaders: (res, filePath) => {
+        setHeaders: (res, filePath) => {
             if (path.dirname(filePath) == filesDir) {
-                res.set('Content-Type', 'application/xml');
                 res.set('Content-Encoding', 'gzip');
             }
-        },*/
+        },
     }));
 }
 
