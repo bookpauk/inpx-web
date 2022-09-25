@@ -169,7 +169,7 @@ function initStatic(app, config) {
                 await webWorker.restoreBookFile(publicPath);
             }
         } catch(e) {
-            log(LM_ERR, `static::restoreBookFile ${req.path} > ${e.message}`);
+            //quiet
         }
 
         return next();

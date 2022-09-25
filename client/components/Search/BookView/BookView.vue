@@ -89,9 +89,11 @@ class BookView {
     }
 
     download() {
+        this.$emit('bookEvent', {action: 'download', book: this.book});
     }
 
     copyLink() {
+        this.$emit('bookEvent', {action: 'copyLink', book: this.book});
     }
 }
 

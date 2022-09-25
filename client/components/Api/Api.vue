@@ -166,6 +166,16 @@ class Api {
         return response;
     }    
 
+    async getBookLink(bookPath) {
+        const response = await this.request({action: 'get-book-link', bookPath});
+
+        if (response.error) {
+            throw new Error(response.error);
+        }
+
+        return response;
+    }
+
     async getConfig() {
         const response = await this.request({action: 'get-config'});
 

@@ -80,7 +80,7 @@ class InpxParser {
             }
             
         } finally {
-            zipReader.close();
+            await zipReader.close();
         }
     }
 

@@ -46,9 +46,9 @@ class ZipReader {
         await this.zip.extract(null, outputDir);
     }
 
-    close() {
+    async close() {
         if (this.zip) {
-            this.zip.close();
+            await this.zip.close();
             this.zip = null;
             this.zipEntries = undefined;
         }
