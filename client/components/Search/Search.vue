@@ -2,7 +2,7 @@
     <div class="root column fit" style="position: relative">
         <div v-show="loadingMessage" class="fit row justify-center items-center" style="position: absolute; background-color: rgba(0, 0, 0, 0.2); z-index: 2">
             <div class="bg-white row justify-center items-center q-px-lg" style="min-width: 180px; height: 50px; border-radius: 10px; box-shadow: 2px 2px 10px #333333">
-                <q-spinner color="primary" size="2em" />
+                <q-icon class="la la-spinner icon-rotate text-blue-8" size="28px" />
                 <div class="q-ml-sm">
                     {{ loadingMessage }}
                 </div>
@@ -10,7 +10,7 @@
         </div>
         <div v-show="loadingMessage2" class="fit row justify-center items-center" style="position: absolute; background-color: rgba(0, 0, 0, 0.2); z-index: 1">
             <div class="bg-white row justify-center items-center q-px-lg" style="min-width: 180px; height: 50px; border-radius: 10px; box-shadow: 2px 2px 10px #333333">
-                <q-spinner color="primary" size="2em" />
+                <q-icon class="la la-spinner icon-rotate text-blue-8" size="28px" />
                 <div class="q-ml-sm">
                     {{ loadingMessage2 }}
                 </div>
@@ -140,9 +140,9 @@
                     </div>                    
                 </div>
 
-                <div v-if="item.bookLoading" class="book-row">
-                    Загрузка
+                <div v-if="item.bookLoading" class="book-row row items-center">
                     <q-icon class="la la-spinner icon-rotate text-blue-8" size="28px" />
+                    <div class="q-ml-xs">Обработка...</div>
                 </div>
 
                 <div v-if="isExpanded(item) && item.books">
@@ -739,7 +739,8 @@ class Search {
             this.getBooksFlag = 0;
 
         this.getBooksFlag++;
-        item.bookLoading = true;
+        if (item.count > maxItemCount)
+            item.bookLoading = true;
 
         try {
             if (this.getBooksFlag == 1) {

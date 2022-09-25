@@ -2,7 +2,7 @@
 const state = {
     config: {},
     settings: {
-        limit: 50,
+        limit: 20,
         expanded: [],
         expandedSeries: [],
         showCounts: true,
