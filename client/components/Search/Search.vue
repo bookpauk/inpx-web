@@ -208,6 +208,7 @@
                 </div>
 
                 <q-checkbox v-model="showCounts" size="36px" label="Показывать количество" />
+                <q-checkbox v-model="showGenres" size="36px" label="Показывать жанры" />
                 <q-checkbox v-model="showDeleted" size="36px" label="Показывать удаленные" />
                 <q-checkbox v-model="abCacheEnabled" size="36px" label="Кешировать запросы" />
             </div>
@@ -276,6 +277,9 @@ const componentOptions = {
         showCounts(newValue) {
             this.setSetting('showCounts', newValue);
         },
+        showGenres(newValue) {
+            this.setSetting('showGenres', newValue);
+        },
         showDeleted(newValue) {
             this.setSetting('showDeleted', newValue);
             this.updateTableData();
@@ -326,6 +330,7 @@ class Search {
     expanded = [];
     expandedSeries = [];
     showCounts = true;
+    showGenres = true;
     showDeleted = false;
     abCacheEnabled = true;
     langDefault = '';
@@ -389,6 +394,7 @@ class Search {
         this.expanded = _.cloneDeep(settings.expanded);
         this.expandedSeries = _.cloneDeep(settings.expandedSeries);
         this.showCounts = settings.showCounts;
+        this.showGenres = settings.showGenres;
         this.showDeleted = settings.showDeleted;
         this.abCacheEnabled = settings.abCacheEnabled;
         this.langDefault = settings.langDefault;

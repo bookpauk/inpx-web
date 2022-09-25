@@ -6,6 +6,7 @@ const state = {
         expanded: [],
         expandedSeries: [],
         showCounts: true,
+        showGenres: true,
         showDeleted: false,
         abCacheEnabled: true,
         langDefault: '',

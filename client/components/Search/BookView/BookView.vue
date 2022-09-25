@@ -17,7 +17,7 @@
             <q-icon name="la la-copy" size="20px" />
         </div>
 
-        <div class="q-ml-sm">
+        <div v-if="showGenres" class="q-ml-sm">
             {{ bookGenre }}
         </div>
 
@@ -33,6 +33,9 @@ const componentOptions = {
     components: {
     },
     watch: {
+        settings() {
+            this.loadSettings();
+        },
     }
 };
 class BookView {
@@ -42,7 +45,20 @@ class BookView {
         genreTree: Array,
     };
 
+    showGenres = true;
+
     created() {
+        this.loadSettings();
+    }
+
+    loadSettings() {
+        const settings = this.settings;
+
+        this.showGenres = settings.showGenres;
+    }
+
+    get settings() {
+        return this.$store.state.settings;
     }
 
     get bookSize() {
