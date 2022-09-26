@@ -1,5 +1,5 @@
 <template>
-    <q-dialog ref="dialog" v-model="active" no-route-dismiss @show="onShow" @hide="onHide">
+    <q-dialog ref="dialog" v-model="active" no-route-dismiss :no-esc-dismiss="noEscDismiss" :no-backdrop-dismiss="noBackdropDismiss" @show="onShow" @hide="onHide">
         <slot></slot>
 
         <!--------------------------------------------------->
@@ -62,7 +62,7 @@
                     <q-icon v-show="caption" class="q-mr-sm" :class="iconColor" :name="iconName" size="28px"></q-icon>
                     <div v-html="caption"></div>
                 </div>
-                <div class="close-icon column justify-center items-center">
+                <div v-if="!noCancel" class="close-icon column justify-center items-center">
                     <q-btn v-close-popup flat round dense>
                         <q-icon name="la la-times" size="18px"></q-icon>
                     </q-btn>
@@ -78,7 +78,40 @@
             </div>
 
             <div class="buttons row justify-end q-pa-md">
-                <q-btn v-close-popup class="q-px-md q-ml-sm" dense no-caps>
+                <q-btn v-if="!noCancel" v-close-popup class="q-px-md q-ml-sm" dense no-caps>
+                    Отмена
+                </q-btn>
+                <q-btn class="q-px-md q-ml-sm" color="primary" dense no-caps @click="okClick">
+                    OK
+                </q-btn>
+            </div>
+        </div>
+
+        <!--------------------------------------------------->
+        <div v-show="type == 'password'" class="bg-white no-wrap">
+            <div class="header row">
+                <div class="caption col row items-center q-ml-md">
+                    <q-icon v-show="caption" class="q-mr-sm" :class="iconColor" :name="iconName" size="28px"></q-icon>
+                    <div v-html="caption"></div>
+                </div>
+                <div v-if="!noCancel" class="close-icon column justify-center items-center">
+                    <q-btn v-close-popup flat round dense>
+                        <q-icon name="la la-times" size="18px"></q-icon>
+                    </q-btn>
+                </div>
+            </div>
+
+            <div class="q-mx-md">
+                <div v-html="message"></div>
+                <input type="text" name="username" autocomplete="username" :value="userName" hidden />
+                <q-input ref="input" v-model="inputValue" type="password" autocomplete="current-password" class="q-mt-xs" outlined dense />
+                <div class="error">
+                    <span v-show="error != ''">{{ error }}</span>
+                </div>
+            </div>
+
+            <div class="buttons row justify-end q-pa-md">
+                <q-btn v-if="!noCancel" v-close-popup class="q-px-md q-ml-sm" dense no-caps>
                     Отмена
                 </q-btn>
                 <q-btn class="q-px-md q-ml-sm" color="primary" dense no-caps @click="okClick">
@@ -146,6 +179,10 @@ class StdDialog {
     iconColor = '';
     iconName = '';
     hotKeyCode = '';
+    userName = '';
+    noEscDismiss = false;
+    noBackdropDismiss = false;
+    noCancel = false;
 
     created() {
         if (this.$root.addKeyHook) {
@@ -163,6 +200,9 @@ class StdDialog {
         this.inputValue = '';
         this.error = '';
         this.showed = false;
+        this.noEscDismiss = (opts && opts.noEscDismiss) || false;
+        this.noBackdropDismiss = (opts && opts.noBackdropDismiss) || false;
+        this.noCancel = (opts && opts.noCancel) || false;
 
         this.iconColor = 'text-warning';
         if (opts && opts.color) {
@@ -189,7 +229,7 @@ class StdDialog {
     }
 
     onShow() {
-        if (this.type == 'prompt') {
+        if (this.type == 'prompt' || this.type == 'password') {
             this.enableValidator = true;
             if (this.inputValue)
                 this.validate(this.inputValue);
@@ -214,7 +254,7 @@ class StdDialog {
     }
 
     okClick() {
-        if (this.type == 'prompt' && !this.validate(this.inputValue)) {
+        if ((this.type == 'prompt' || this.type == 'password') && !this.validate(this.inputValue)) {
             this.$refs.dialog.shake();
             return;
         }
@@ -284,6 +324,31 @@ class StdDialog {
         });
     }
 
+    password(message, caption, opts) {
+        return new Promise((resolve) => {
+            this.enableValidator = false;
+            this.init(message, caption, opts);
+
+            this.hideTrigger = () => {
+                if (this.ok) {
+                    history.pushState({}, null);
+                    resolve({value: this.inputValue});
+                } else {
+                    resolve(false);
+                }
+            };
+
+            this.type = 'password';
+            this.userName = '';
+            if (opts) {
+                this.inputValidator = opts.inputValidator || null;
+                this.inputValue = opts.inputValue || '';
+                this.userName = opts.userName || '';
+            }
+            this.active = true;
+        });
+    }
+
     getHotKey(message, caption, opts) {
         return new Promise((resolve) => {
             this.init(message, caption, opts);
@@ -315,7 +380,7 @@ class StdDialog {
                     handled = true;
                 }
 
-                if (event.key == 'Escape') {
+                if (event.key == 'Escape' && !this.noEscDismiss) {
                     this.$nextTick(() => {
                         this.$refs.dialog.hide();
                     });

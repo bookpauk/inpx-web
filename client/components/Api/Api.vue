@@ -143,8 +143,12 @@ class Api {
 
 
     async showPasswordDialog() {
-        const result = await this.$root.stdDialog.prompt(`Введите пароль для доступа:`, ' ', {
+        const result = await this.$root.stdDialog.password(`Введите пароль для доступа:`, ' ', {
             inputValidator: (str) => (str ? true : 'Пароль не должен быть пустым'),
+            userName: 'access',
+            noEscDismiss: true,
+            noBackdropDismiss: true,
+            noCancel: true,
         });
 
         if (result && result.value) {
