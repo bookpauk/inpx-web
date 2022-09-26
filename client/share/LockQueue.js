@@ -1,5 +1,5 @@
 class LockQueue {
-    constructor(queueSize) {
+    constructor(queueSize = 100) {
         this.queueSize = queueSize;
         this.freed = true;
         this.waitingQueue = [];

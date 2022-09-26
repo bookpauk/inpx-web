@@ -35,6 +35,7 @@ import vueComponent from '../vueComponent.js';
 import wsc from './webSocketConnection';
 import * as utils from '../../share/utils';
 import * as cryptoUtils from '../../share/cryptoUtils';
+import LockQueue from '../../share/LockQueue';
 
 const rotor = '|/-\\';
 const stepBound = [
@@ -72,6 +73,7 @@ class Api {
 
     created() {
         this.commit = this.$store.commit;
+        this.lock = new LockQueue();
 
         this.loadSettings();
     }
@@ -103,14 +105,50 @@ class Api {
         return this.$store.state.settings;
     }
 
+    async showPasswordDialog() {
+        try {
+            await this.lock.get();//заход только один раз, остальные ждут закрытия диалога
+        } catch (e) {
+            return;
+        }
+
+        try {
+            const result = await this.$root.stdDialog.password(`Введите пароль для доступа:`, ' ', {
+                inputValidator: (str) => (str ? true : 'Пароль не должен быть пустым'),
+                userName: 'access',
+                noEscDismiss: true,
+                noBackdropDismiss: true,
+                noCancel: true,
+            });
+
+            if (result && result.value) {
+                const accessToken = utils.toHex(cryptoUtils.sha256(result.value));
+                this.commit('setSettings', {accessToken});
+            }
+        } finally {
+            this.lock.errAll();
+            this.lock.ret();
+        }
+    }
+
     async showBusyDialog() {
+        try {
+            await this.lock.get();//заход только один раз, остальные ждут закрытия диалога
+        } catch (e) {
+            return;
+        }
+
         this.mainMessage = '';
         this.jobMessage = '';
         this.busyDialogVisible = true;
         try {
             let ri = 0;
             while (1) {// eslint-disable-line
-                const server = await wsc.message(await wsc.send({action: 'get-worker-state', workerId: 'server_state'}));
+                const params = {action: 'get-worker-state', workerId: 'server_state'};
+                if (this.accessToken)
+                    params.accessToken = this.accessToken;
+
+                const server = await wsc.message(await wsc.send(params));
 
                 if (server.state != 'normal') {
                     this.mainMessage = `${server.serverMessage} ${rotor[ri]}`;
@@ -138,22 +176,8 @@ class Api {
             }
         } finally {
             this.busyDialogVisible = false;
-        }
-    }
-
-
-    async showPasswordDialog() {
-        const result = await this.$root.stdDialog.password(`Введите пароль для доступа:`, ' ', {
-            inputValidator: (str) => (str ? true : 'Пароль не должен быть пустым'),
-            userName: 'access',
-            noEscDismiss: true,
-            noBackdropDismiss: true,
-            noCancel: true,
-        });
-
-        if (result && result.value) {
-            const accessToken = utils.toHex(cryptoUtils.sha256(result.value));
-            this.commit('setSettings', {accessToken});
+            this.lock.errAll();
+            this.lock.ret();
         }
     }
 
@@ -164,10 +188,10 @@ class Api {
 
             const response = await wsc.message(await wsc.send(params), timeoutSecs);
 
-            if (response && response.error == 'server_busy') {
-                await this.showBusyDialog();
-            } else if (response && response.error == 'need_access_token') {
+            if (response && response.error == 'need_access_token') {
                 await this.showPasswordDialog();
+            } else if (response && response.error == 'server_busy') {
+                await this.showBusyDialog();
             } else {
                 return response;
             }
