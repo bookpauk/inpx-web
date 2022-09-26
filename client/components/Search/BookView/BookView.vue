@@ -81,7 +81,7 @@ class BookView {
                     result.push(g.name);
         }
 
-        return `(${result.join(', ')})`;
+        return `(${result.join(' / ')})`;
     }
 
     selectTitle() {
