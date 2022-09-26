@@ -26,6 +26,8 @@ const stateToText = {
     [ssDbCreating]: 'Создание поисковой базы',
 };
 
+const cleanDirPeriod = 60*60*1000;//каждый час
+
 //singleton
 let instance = null;
 
@@ -44,6 +46,14 @@ class WebWorker {
 
             this.loadOrCreateDb();//no await
             this.logServerStats();//no await
+
+            const dirConfig = [
+                {
+                    dir: `${this.config.publicDir}/files`,
+                    maxSize: this.config.maxFilesDirSize,
+                },
+            ];
+            this.periodicCleanDir(dirConfig);//no await
 
             instance = this;
         }
@@ -267,8 +277,7 @@ class WebWorker {
     }
 
     async extractBook(bookPath) {
-        const tempDir = this.config.tempDir;
-        const outFile = `${tempDir}/${utils.randomHexString(30)}`;
+        const outFile = `${this.config.tempDir}/${utils.randomHexString(30)}`;
 
         const folder = `${this.config.libDir}/${path.dirname(bookPath)}`;
         const file = path.basename(bookPath);
@@ -284,7 +293,8 @@ class WebWorker {
         }
     }
 
-    async gzipFile(inputFile, outputFile, level = 1) {
+    //async
+    gzipFile(inputFile, outputFile, level = 1) {
         return new Promise((resolve, reject) => {
             const gzip = zlib.createGzip({level});
             const input = fs.createReadStream(inputFile);
@@ -308,9 +318,14 @@ class WebWorker {
 
         if (!await fs.pathExists(publicPath)) {
             await fs.ensureDir(path.dirname(publicPath));
-            await this.gzipFile(extractedFile, publicPath, 4);
+
+            const tmpFile = `${this.config.tempDir}/${utils.randomHexString(30)}`;
+            await this.gzipFile(extractedFile, tmpFile, 4);
+            await fs.remove(extractedFile);
+            await fs.move(tmpFile, publicPath, {overwrite: true});
         } else {
             await fs.remove(extractedFile);
+            await utils.touchFile(publicPath);
         }
 
         await db.insert({
@@ -393,6 +408,65 @@ class WebWorker {
                 log(LM_ERR, e.message);
             }
             await utils.sleep(5*1000);
+        }
+    }
+
+    async cleanDir(config) {
+        const {dir, maxSize} = config;
+
+        const list = await fs.readdir(dir);
+
+        let size = 0;
+        let files = [];
+        //формируем список
+        for (const filename of list) {
+            const filePath = `${dir}/${filename}`;
+            const stat = await fs.stat(filePath);
+            if (!stat.isDirectory()) {
+                size += stat.size;
+                files.push({name: filePath, stat});
+            }
+        }
+
+        log(LM_WARN, `clean dir ${dir}, maxSize=${maxSize}, found ${files.length} files, total size=${size}`);
+
+        files.sort((a, b) => a.stat.mtimeMs - b.stat.mtimeMs);
+
+        let i = 0;
+        //удаляем
+        while (i < files.length && size > maxSize) {
+            const file = files[i];
+            const oldFile = file.name;
+            await fs.remove(oldFile);
+            size -= file.stat.size;
+            i++;
+        }
+
+        log(LM_WARN, `removed ${i} files`);
+    }
+
+    async periodicCleanDir(dirConfig) {
+        try {
+            let lastCleanDirTime = 0;
+            while (1) {// eslint-disable-line no-constant-condition
+                //чистка папок
+                if (Date.now() - lastCleanDirTime >= cleanDirPeriod) {
+                    for (const config of Object.values(dirConfig)) {
+                        try {
+                            await this.cleanDir(config);
+                        } catch(e) {
+                            log(LM_ERR, e.stack);
+                        }
+                    }
+
+                    lastCleanDirTime = Date.now();
+                }
+
+                await utils.sleep(60*1000);//интервал проверки 1 минута
+            }
+        } catch (e) {
+            log(LM_FATAL, e.message);
+            ayncExit.exit(1);
         }
     }
 }
