@@ -2,6 +2,7 @@
 const state = {
     config: {},
     settings: {
+        accessToken: '',
         limit: 20,
         expanded: [],
         expandedSeries: [],

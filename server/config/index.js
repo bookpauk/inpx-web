@@ -4,6 +4,7 @@ const fs = require('fs-extra');
 const branchFilename = __dirname + '/application_env';
 
 const propsToSave = [
+    'accessPassword',
     'loggingEnabled',
     'maxFilesDirSize',
     'queryCacheEnabled',

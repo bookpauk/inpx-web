@@ -13,6 +13,9 @@ class WebSocketController {
     constructor(wss, config) {
         this.config = config;
         this.isDevelopment = (config.branch == 'development');
+        this.accessToken = '';
+        if (config.accessPassword)
+            this.accessToken = utils.getBufHash(config.accessPassword, 'sha256', 'hex');
 
         this.workerState = new WorkerState();
         this.webWorker = new WebWorker(config);
@@ -58,6 +61,11 @@ class WebSocketController {
             
             //pong for WebSocketConnection
             this.send({_rok: 1}, req, ws);
+
+            if (this.accessToken && req.accessToken !== this.accessToken) {
+                await utils.sleep(1000);
+                throw new Error('need_access_token');
+            }
 
             switch (req.action) {
                 case 'test':

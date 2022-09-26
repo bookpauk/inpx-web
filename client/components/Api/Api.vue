@@ -34,6 +34,7 @@ import vueComponent from '../vueComponent.js';
 
 import wsc from './webSocketConnection';
 import * as utils from '../../share/utils';
+import * as cryptoUtils from '../../share/cryptoUtils';
 
 const rotor = '|/-\\';
 const stepBound = [
@@ -55,6 +56,9 @@ const componentOptions = {
     components: {
     },
     watch: {
+        settings() {
+            this.loadSettings();
+        },
     },
 };
 class Api {
@@ -64,13 +68,22 @@ class Api {
     jobMessage = '';
     //jsonMessage = '';
     progress = 0;
+    accessToken = '';
 
     created() {
         this.commit = this.$store.commit;
+
+        this.loadSettings();
     }
 
     mounted() {
         this.updateConfig();//no await
+    }
+
+    loadSettings() {
+        const settings = this.settings;
+
+        this.accessToken = settings.accessToken;
     }
 
     async updateConfig() {
@@ -84,6 +97,10 @@ class Api {
 
     get config() {
         return this.$store.state.config;
+    }
+
+    get settings() {
+        return this.$store.state.settings;
     }
 
     async showBusyDialog() {
@@ -124,12 +141,29 @@ class Api {
         }
     }
 
+
+    async showPasswordDialog() {
+        const result = await this.$root.stdDialog.prompt(`Введите пароль для доступа:`, ' ', {
+            inputValidator: (str) => (str ? true : 'Пароль не должен быть пустым'),
+        });
+
+        if (result && result.value) {
+            const accessToken = utils.toHex(cryptoUtils.sha256(result.value));
+            this.commit('setSettings', {accessToken});
+        }
+    }
+
     async request(params, timeoutSecs = 10) {
         while (1) {// eslint-disable-line
+            if (this.accessToken)
+                params.accessToken = this.accessToken;
+
             const response = await wsc.message(await wsc.send(params), timeoutSecs);
 
             if (response && response.error == 'server_busy') {
                 await this.showBusyDialog();
+            } else if (response && response.error == 'need_access_token') {
+                await this.showPasswordDialog();
             } else {
                 return response;
             }

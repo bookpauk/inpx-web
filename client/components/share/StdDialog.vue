@@ -148,8 +148,8 @@ class StdDialog {
     hotKeyCode = '';
 
     created() {
-        if (this.$root.addEventHook) {
-            this.$root.addEventHook('key', this.keyHook);
+        if (this.$root.addKeyHook) {
+            this.$root.addKeyHook(this.keyHook);
         }
     }
 

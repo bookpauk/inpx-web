@@ -15,6 +15,7 @@ module.exports = {
     logDir: `${dataDir}/log`,
     publicDir: `${dataDir}/public`,
 
+    accessPassword: '',
     loggingEnabled: true,
 
     maxFilesDirSize: 1024*1024*1024,//1Gb
