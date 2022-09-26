@@ -124,9 +124,9 @@ class Api {
         }
     }
 
-    async request(params) {
+    async request(params, timeoutSecs = 10) {
         while (1) {// eslint-disable-line
-            const response = await wsc.message(await wsc.send(params));
+            const response = await wsc.message(await wsc.send(params), timeoutSecs);
 
             if (response && response.error == 'server_busy') {
                 await this.showBusyDialog();
@@ -166,8 +166,8 @@ class Api {
         return response;
     }    
 
-    async getBookLink(bookPath) {
-        const response = await this.request({action: 'get-book-link', bookPath});
+    async getBookLink(params) {
+        const response = await this.request(Object.assign({action: 'get-book-link'}, params), 120);
 
         if (response.error) {
             throw new Error(response.error);

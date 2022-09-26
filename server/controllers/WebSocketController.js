@@ -147,8 +147,10 @@ class WebSocketController {
     async getBookLink(req, ws) {
         if (!utils.hasProp(req, 'bookPath'))
             throw new Error(`bookPath is empty`);
+        if (!utils.hasProp(req, 'downFileName'))
+            throw new Error(`downFileName is empty`);    
 
-        const result = await this.webWorker.getBookLink(req.bookPath);
+        const result = await this.webWorker.getBookLink({bookPath: req.bookPath, downFileName: req.downFileName});
 
         this.send(result, req, ws);
     }

@@ -163,14 +163,20 @@ function initStatic(app, config) {
 
         const publicPath = `${config.publicDir}${req.path}`;
 
+        let downFileName = '';
         //восстановим
         try {
             if (!await fs.pathExists(publicPath)) {
-                await webWorker.restoreBookFile(publicPath);
+                downFileName = await webWorker.restoreBookFile(publicPath);
+            } else {
+                downFileName = await webWorker.getDownFileName(publicPath);                    
             }
         } catch(e) {
             //quiet
         }
+
+        if (downFileName)
+            res.downFileName = downFileName;
 
         return next();
     });
@@ -183,6 +189,9 @@ function initStatic(app, config) {
         setHeaders: (res, filePath) => {
             if (path.dirname(filePath) == filesDir) {
                 res.set('Content-Encoding', 'gzip');
+
+                if (res.downFileName)
+                    res.set('Content-Disposition', `inline; filename*=UTF-8''${encodeURIComponent(res.downFileName)}`);
             }
         },
     }));

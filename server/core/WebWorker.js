@@ -307,7 +307,7 @@ class WebWorker {
         });
     }
 
-    async restoreBook(bookPath) {
+    async restoreBook(bookPath, downFileName) {
         const db = this.db;
 
         const extractedFile = await this.extractBook(bookPath);
@@ -333,15 +333,17 @@ class WebWorker {
             replace: true,
             rows: [
                 {id: bookPath, hash},
-                {id: hash, bookPath}
+                {id: hash, bookPath, downFileName}
             ]
         });
 
         return link;
     }
 
-    async getBookLink(bookPath) {
+    async getBookLink(params) {
         this.checkMyState();
+
+        const {bookPath, downFileName} = params;
 
         try {
             const db = this.db;
@@ -360,7 +362,7 @@ class WebWorker {
             }
 
             if (!link) {
-                link = await this.restoreBook(bookPath)
+                link = await this.restoreBook(bookPath, downFileName)
             }
 
             if (!link)
@@ -380,11 +382,13 @@ class WebWorker {
             const db = this.db;
             const hash = path.basename(publicPath);
 
-            //найдем bookPath
+            //найдем bookPath и downFileName
             const rows = await db.select({table: 'file_hash', where: `@@id(${db.esc(hash)})`});        
-            if (rows.length) {//bookPath найден по хешу
-                const bookPath = rows[0].bookPath;
-                await this.restoreBook(bookPath);
+            if (rows.length) {//нашли по хешу
+                const rec = rows[0];
+                await this.restoreBook(rec.bookPath, rec.downFileName);
+                
+                return rec.downFileName;
             } else {//bookPath не найден
                 throw new Error('404 Файл не найден');
             }
@@ -393,6 +397,19 @@ class WebWorker {
             if (e.message.indexOf('ENOENT') >= 0)
                 throw new Error('404 Файл не найден');
             throw e;
+        }
+    }
+
+    async getDownFileName(publicPath) {
+        const db = this.db;
+        const hash = path.basename(publicPath);
+
+        //найдем downFileName
+        const rows = await db.select({table: 'file_hash', where: `@@id(${db.esc(hash)})`});        
+        if (rows.length) {//downFileName найден по хешу
+            return rows[0].downFileName;
+        } else {//bookPath не найден
+            throw new Error('404 Файл не найден');
         }
     }
 

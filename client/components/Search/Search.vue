@@ -555,26 +555,51 @@ class Search {
     }
 
     async download(book, copy = false) {
-        let downloadFlag = true;
+        if (this.downloadFlag)
+            return;
+
+        this.downloadFlag = true;
         (async() => {
             await utils.sleep(200);
-            if (downloadFlag)
+            if (this.downloadFlag)
                 this.loadingMessage2 = 'Подготовка файла...';
         })();
 
-        try {            
-            const bookPath = `${book.folder}/${book.file}.${book.ext}`;
+        try {
+            const makeValidFilenameOrEmpty = (s) => {
+                try {
+                    return utils.makeValidFilename(s);
+                } catch(e) {
+                    return '';
+                }
+            };
 
-            const response = await this.api.getBookLink(bookPath);
+            //имя файла
+            let downFileName = 'default-name';
+            const author = book.author.split(',');
+            const at = [author[0], book.title];
+            downFileName = makeValidFilenameOrEmpty(at.filter(r => r).join(' - '))
+                || makeValidFilenameOrEmpty(at[0])
+                || makeValidFilenameOrEmpty(at[1])
+                || downFileName;
+            downFileName = `${downFileName.substring(0, 100)}.${book.ext}`;
+
+            const bookPath = `${book.folder}/${book.file}.${book.ext}`;
+            //подготовка
+            const response = await this.api.getBookLink({bookPath, downFileName});
             
-            const href = `${window.location.origin}${response.link}`;
+            const link = response.link;
+            const href = `${window.location.origin}${link}`;
 
             if (!copy) {
+                //скачивание
                 const d = this.$refs.download;
                 d.href = href;
+                d.download = downFileName;
 
                 d.click();
             } else {
+                //копирование ссылки
                 if (utils.copyTextToClipboard(href))
                     this.$root.notify.success('Ссылка успешно скопирована');
                 else
@@ -583,7 +608,7 @@ class Search {
         } catch(e) {
             this.$root.stdDialog.alert(e.message, 'Ошибка');
         } finally {
-            downloadFlag = false;
+            this.downloadFlag = false;
             this.loadingMessage2 = '';
         }
     }
