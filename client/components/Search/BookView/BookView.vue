@@ -17,7 +17,7 @@
             <q-icon name="la la-copy" size="20px" />
         </div>
 
-        <div v-if="showGenres" class="q-ml-sm">
+        <div v-if="showGenres && book.genre" class="q-ml-sm">
             {{ bookGenre }}
         </div>
 
