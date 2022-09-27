@@ -6,6 +6,7 @@
         class="no-mp"
         :class="(error ? 'error' : '')"
         :disable="disable"
+        :mask="mask"
     >
         <slot></slot>
         <template #prepend>
@@ -95,6 +96,7 @@ class NumInput {
         minusIcon: {type: String, default: 'la la-minus-circle'},
         plusIcon: {type: String, default: 'la la-plus-circle'},
         mmButtons: Boolean,
+        mask: String,
     };
 
     filteredValue = 0;
