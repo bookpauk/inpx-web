@@ -30,9 +30,15 @@
                         </div>
                     </div>
                     
-                    <DivBtn class="q-mx-md text-white bg-secondary" :size="30" :icon-size="24" :imt="1" icon="la la-cog" round @click="settingsDialogVisible = true">
+                    <DivBtn class="q-ml-md text-white bg-secondary" :size="30" :icon-size="24" :imt="1" icon="la la-cog" round @click="settingsDialogVisible = true">
                         <q-tooltip :delay="1500" anchor="bottom middle" content-style="font-size: 80%" max-width="400px">
                             Настройки
+                        </q-tooltip>
+                    </DivBtn>
+
+                    <DivBtn class="q-ml-sm text-white bg-secondary" :size="30" :icon-size="24" icon="la la-question" round @click="showSearchHelp">
+                        <q-tooltip :delay="1500" anchor="bottom middle" content-style="font-size: 80%" max-width="400px">
+                            Памятка
                         </q-tooltip>
                     </DivBtn>
 
@@ -93,12 +99,6 @@
                     <DivBtn class="text-white q-mt-xs bg-grey-13" :size="30" :icon-size="24" icon="la la-broom" round @click="setDefaults">
                         <q-tooltip :delay="1500" anchor="bottom middle" content-style="font-size: 80%" max-width="400px">
                             Сбросить поиск
-                        </q-tooltip>
-                    </DivBtn>
-                    <div class="q-mx-xs" />
-                    <DivBtn class="text-white q-mt-xs bg-grey-13" :size="30" :icon-size="24" icon="la la-question" round @click="showSearchHelp">
-                        <q-tooltip :delay="1500" anchor="bottom middle" content-style="font-size: 80%" max-width="400px">
-                            Памятка
                         </q-tooltip>
                     </DivBtn>
 
@@ -178,8 +178,10 @@
             </div>
             <!-- Формирование списка конец ------------------------------------------------------------------>
 
-            <div v-show="hiddenCount" class="q-ml-lg q-py-sm clickable2 text-red" style="font-size: 120%" @click="showHiddenHelp">
-                {{ hiddenResultsMessage }}
+            <div v-show="hiddenCount" class="row">
+                <div class="q-ml-lg q-py-sm clickable2 text-red" style="font-size: 120%" @click="showHiddenHelp">
+                    {{ hiddenResultsMessage }}
+                </div>
             </div>
 
             <div class="row justify-center">
@@ -439,8 +441,8 @@ class Search {
         info += `<div style="min-width: 250px" />`;
         info += `
 <p>
-    Работу поискового движка можно описать одной фразой: найти авторов по указанным критериям.
-    Далее по уже найденным авторам ищутся книги, которые группируются по сериям.
+    Работу поискового движка можно описать простой фразой: найти авторов по указанным критериям.
+    По тем же критериям среди найденных авторов фильтруются книги, сортируются и группируются по сериям.
     <br><br>
     По умолчанию поисковое значение трактуется как "начинается с". Например значение автора "Пушкин"
     трактуется как: найти авторов, имя которых начинается с "Пушкин". Поиск всегда ведется без
@@ -454,24 +456,24 @@ class Search {
         </li>
         <br>
         <li>
-            "*" поиск подстроки в строке. Например, для "*Александр" в поле автора, то будут найдены
+            "*" поиск подстроки в строке. Например, для "*Александр" в поле автора, будут найдены
             все авторы, имя которых содержит "Александр"
         </li>
         <br>
         <li>
-            "#" поиск подстроки в строке, но только для тех значений (в т.ч. пустых), которые не начинаются ни с одной буквы русского или латинского алфавита.
+            "#" поиск подстроки в строке, но только для тех значений, которые не начинаются ни с одной буквы русского или латинского алфавита.
             Например, значение "#поворот" в поле автора означает: найти всех авторов, имя которых начинается не с русской или латинской буквы и содержит слово "поворот".
-            Указание простого "#" в поиске для названия означает: найти всех авторов, названия книг которых начинаются не с русской или латинской буквы.
+            Указание простого "#" в поиске по названию означает: найти всех авторов, названия книг которых начинаются не с русской или латинской буквы
         </li>
         <br>
         <li>
             "?" поиск пустых значений или тех, что начинаются с этого символа. Например, "?" в поле серии означает: найти всех авторов, у которых есть книги без серий
             или название серии начинается с "?".
-            Значение "?" в поле названия означает: найти всех авторов, книги которых без названия или начинаются с "?".
+            Значение "?" в поле названия означает: найти всех авторов, книги которых без названия или начинаются с "?"
         </li>
-        <br>
-        Специльное имя автора "?" служит для поиска и группировки книг без автора.
     </ul>
+    <br>
+    Специльное имя автора "?" служит для поиска и группировки книг без автора.
 </p>
 `;        
 
