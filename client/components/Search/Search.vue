@@ -449,47 +449,46 @@ class Search {
     }
 
     showCollectionInfo() {
-/*
-  "dbConfig": {
-    "inpxInfo": {
-      "collection": "Flibusta Offline 2 August 2022\r\nflibusta_all_local_2022-08-02\r\n65537\r\nFlibusta. A local collection. Total: 636591 books\r\nhttp://flibusta.is/",
-      "structure": "AUTHOR;GENRE;TITLE;SERIES;SERNO;FILE;SIZE;LIBID;DEL;EXT;DATE;INSNO;FOLDER;LANG;LIBRATE;KEYWORDS;",
-      "version": "20220802"
-    },
-    "stats": {
-      "recsLoaded": 687063,
-      "authorCount": 153364,
-      "authorCountAll": 177034,
-      "bookCount": 576018,
-      "bookCountAll": 687063,
-      "bookDelCount": 111045,
-      "noAuthorBookCount": 4347,
-      "titleCount": 512671,
-      "seriesCount": 54472,
-      "genreCount": 238,
-      "langCount": 102
-    },
-*/      
+        /*
+          "dbConfig": {
+            "inpxInfo": {
+              "collection": "Flibusta Offline 2 August 2022\r\nflibusta_all_local_2022-08-02\r\n65537\r\nFlibusta. A local collection. Total: 636591 books\r\nhttp://flibusta.is/",
+            },
+            "stats": {
+              "recsLoaded": 687063,
+              "authorCount": 153364,
+              "authorCountAll": 177034,
+              "bookCount": 576018,
+              "bookCountAll": 687063,
+              "bookDelCount": 111045,
+              "noAuthorBookCount": 4347,
+              "titleCount": 512671,
+              "seriesCount": 54472,
+              "genreCount": 238,
+              "langCount": 102
+            },
+        */      
         let info = '';  
         const inpxInfo = this.config.dbConfig.inpxInfo;
         const stat = this.config.dbConfig.stats;
+
         const keyStyle = 'style="display: inline-block; text-align: right; margin-right: 5px; min-width: 200px"';
         info += `<div style="min-width: 250px" />`;
 
         info += `
-<div><div ${keyStyle}>Найдено ссылок на файлы:</div><span>${stat.bookCountAll}</span></div>
+<div><div ${keyStyle}>Обработано ссылок на файлы:</div><span>${stat.bookCountAll}</span></div>
 <div><div ${keyStyle}>Из них актуальных:</div><span>${stat.bookCount}</span></div>
 <div><div ${keyStyle}>Помеченных как удаленные:</div><span>${stat.bookDelCount}</span></div>
-<div><div ${keyStyle}>Без автора:</div><span>${stat.noAuthorBookCount}</span></div>
+<div><div ${keyStyle}>Актуальных без автора:</div><span>${stat.noAuthorBookCount}</span></div>
 <br>
-<div><div ${keyStyle}>Распознано авторов:</div><span>${stat.authorCountAll}</span></div>
-<div><div ${keyStyle}>Авторов без соавторов:</div><span>${stat.authorCount}</span></div>
+<div><div ${keyStyle}>Всего записей об авторах:</div><span>${stat.authorCountAll}</span></div>
+<div><div ${keyStyle}>Записей без соавторов:</div><span>${stat.authorCount}</span></div>
+<div><div ${keyStyle}>С соавторами:</div><span>${stat.authorCountAll- stat.authorCount}</span></div>
 <br>
 <div><div ${keyStyle}>Уникальных названий книг:</div><span>${stat.titleCount}</span></div>
 <div><div ${keyStyle}>Уникальных серий:</div><span>${stat.seriesCount}</span></div>
 <div><div ${keyStyle}>Найдено жанров:</div><span>${stat.genreCount}</span></div>
 <div><div ${keyStyle}>Найдено языков:</div><span>${stat.langCount}</span></div>
-
 `;        
 
         info += `
