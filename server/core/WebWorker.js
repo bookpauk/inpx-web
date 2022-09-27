@@ -90,7 +90,7 @@ class WebWorker {
         if (await fs.pathExists(dbPath))
             throw new Error(`createDb.pathExists: ${dbPath}`);
 
-        const db = new JembaDbThread();//создаем не в потоке, чтобы лучше работал GC
+        const db = new JembaDbThread();
         await db.lock({
             dbPath,
             create: true,
@@ -387,7 +387,7 @@ class WebWorker {
             if (rows.length) {//нашли по хешу
                 const rec = rows[0];
                 await this.restoreBook(rec.bookPath, rec.downFileName);
-                
+
                 return rec.downFileName;
             } else {//bookPath не найден
                 throw new Error('404 Файл не найден');
@@ -424,7 +424,7 @@ class WebWorker {
             } catch (e) {
                 log(LM_ERR, e.message);
             }
-            await utils.sleep(5*1000);
+            await utils.sleep(60*1000);
         }
     }
 
