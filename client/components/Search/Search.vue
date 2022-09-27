@@ -544,14 +544,11 @@ class Search {
 
     selectAuthor(author) {
         this.search.author = `=${author}`;
-        this.search.series = '';
-        this.search.title = '';
         this.scrollToTop();
     }
 
     selectSeries(series) {
         this.search.series = `=${series}`;
-        this.search.title = '';
     }
 
     async download(book, copy = false) {

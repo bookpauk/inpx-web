@@ -113,7 +113,7 @@ class Api {
         }
 
         try {
-            const result = await this.$root.stdDialog.password(`Введите пароль для доступа:`, ' ', {
+            const result = await this.$root.stdDialog.password('Введите пароль:', 'Доступ ограничен', {
                 inputValidator: (str) => (str ? true : 'Пароль не должен быть пустым'),
                 userName: 'access',
                 noEscDismiss: true,
