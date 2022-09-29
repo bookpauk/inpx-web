@@ -24,7 +24,7 @@ function showHelp() {
 
 Options:
   --help              Print ${config.name} command line options
-  --lib-dir=<dirpath> Set library directory, default: the same as ${config.name} executable
+  --lib-dir=<dirpath> Set library directory, default: the same as ${config.name} executable's
   --inpx=<filepath>   Set INPX collection file, default: the one that found in library dir
   --recreate          Force recreation of the search database on start
 `
