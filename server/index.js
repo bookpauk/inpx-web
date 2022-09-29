@@ -53,8 +53,10 @@ async function init() {
     await fs.emptyDir(config.tempDir);
 
     //web app
-    const createWebApp = require('./createWebApp');
-    await createWebApp(config);
+    if (branch !== 'development') {
+        const createWebApp = require('./createWebApp');
+        await createWebApp(config);
+    }
 
     //cli
     if (argv.help) {
