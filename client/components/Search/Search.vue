@@ -80,6 +80,10 @@
                         class="bg-white q-mt-xs" input-style="cursor: pointer" style="width: 200px;" label="Жанр" stack-label outlined dense clearable readonly
                         @click="selectGenre"
                     >
+                        <template v-if="genreNames" #append>
+                            <q-icon name="la la-times-circle" class="q-field__focusable-action" @click.stop.prevent="search.genre = ''" />
+                        </template>
+
                         <q-tooltip v-if="genreNames" :delay="500" anchor="bottom middle" content-style="font-size: 80%" max-width="400px">
                             {{ genreNames }}
                         </q-tooltip>
