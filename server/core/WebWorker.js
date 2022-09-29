@@ -464,11 +464,14 @@ class WebWorker {
 
     async periodicCleanDir(dirConfig) {
         try {
+            for (const config of dirConfig) 
+                await fs.ensureDir(config.dir);
+
             let lastCleanDirTime = 0;
             while (1) {// eslint-disable-line no-constant-condition
                 //чистка папок
                 if (Date.now() - lastCleanDirTime >= cleanDirPeriod) {
-                    for (const config of Object.values(dirConfig)) {
+                    for (const config of dirConfig) {
                         try {
                             await this.cleanDir(config);
                         } catch(e) {

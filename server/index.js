@@ -52,6 +52,10 @@ async function init() {
     await fs.ensureDir(config.tempDir);
     await fs.emptyDir(config.tempDir);
 
+    //web app
+    const createWebApp = require('./createWebApp');
+    await createWebApp(config);
+
     //cli
     if (argv.help) {
         showHelp();

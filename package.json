@@ -10,14 +10,15 @@
   "scripts": {
     "dev": "nodemon --inspect --ignore server/.inpx-web --ignore client --exec 'node --expose-gc server --lib-dir=server/.inpx-web/lib'",
     "build:client": "webpack --config build/webpack.prod.config.js",
-    "build:linux": "npm run build:client && node build/linux && pkg -t node16-linux-x64 -C GZip --options max-old-space-size=4096,expose-gc -o dist/linux/inpx-web .",
-    "build:win": "npm run build:client && node build/win && pkg -t node16-win-x64 -C GZip --options max-old-space-size=4096,expose-gc -o dist/win/inpx-web .",
+    "build:linux": "npm run build:client && node build/prepkg.js linux && pkg -t node16-linux-x64 -C GZip --options max-old-space-size=4096,expose-gc -o dist/linux/inpx-web .",
+    "build:win": "npm run build:client && node build/prepkg.js win && pkg -t node16-win-x64 -C GZip --options max-old-space-size=4096,expose-gc -o dist/win/inpx-web .",
     "build:client-dev": "webpack --config build/webpack.dev.config.js",
     "postinstall": "npm run build:client-dev"
   },
   "bin": "server/index.js",
   "pkg": {
-    "scripts": "server/config/*.js"
+    "scripts": "server/config/*.js",
+    "assets": "dist/public.json"
   },
   "devDependencies": {
     "@babel/core": "^7.18.9",
