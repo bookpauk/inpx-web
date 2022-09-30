@@ -16,6 +16,7 @@ module.exports = {
     publicDir: `${dataDir}/public`,
 
     accessPassword: '',
+    bookReadLink: '',
     loggingEnabled: true,
 
     maxFilesDirSize: 1024*1024*1024,//1Gb
@@ -23,7 +24,7 @@ module.exports = {
     cacheCleanInterval: 60,//minutes
     lowMemoryMode: false,
 
-    webConfigParams: ['name', 'version', 'branch'],
+    webConfigParams: ['name', 'version', 'branch', 'bookReadLink'],
 
     server: {
         ip: '0.0.0.0',

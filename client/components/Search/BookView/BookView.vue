@@ -40,6 +40,10 @@
             <q-icon name="la la-copy" size="20px" />
         </div>
 
+        <div v-if="config.bookReadLink" class="q-ml-sm clickable" @click="readBook">
+            (читать)
+        </div>
+
         <div v-if="showGenres && book.genre" class="q-ml-sm">
             {{ bookGenre }}
         </div>
@@ -84,6 +88,10 @@ class BookView {
         this.showRate = settings.showRate;
         this.showGenres = settings.showGenres;
         this.showDeleted = settings.showDeleted;
+    }
+
+    get config() {
+        return this.$store.state.config;
     }
 
     get settings() {
@@ -131,6 +139,10 @@ class BookView {
 
     copyLink() {
         this.$emit('bookEvent', {action: 'copyLink', book: this.book});
+    }
+
+    readBook() {
+        this.$emit('bookEvent', {action: 'readBook', book: this.book});
     }
 }
 

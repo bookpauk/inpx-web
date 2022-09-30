@@ -654,7 +654,7 @@ class Search {
         this.search.series = `=${series}`;
     }
 
-    async download(book, copy = false) {
+    async download(book, action) {
         if (this.downloadFlag)
             return;
 
@@ -691,19 +691,22 @@ class Search {
             const link = response.link;
             const href = `${window.location.origin}${link}`;
 
-            if (!copy) {
+            if (action == 'download') {
                 //скачивание
                 const d = this.$refs.download;
                 d.href = href;
                 d.download = downFileName;
 
                 d.click();
-            } else {
+            } else if (action == 'copyLink') {
                 //копирование ссылки
                 if (utils.copyTextToClipboard(href))
                     this.$root.notify.success('Ссылка успешно скопирована');
                 else
                     this.$root.notify.error('Копирование ссылки не удалось');
+            } else if (action == 'readBook') {
+                const url = this.config.bookReadLink.replace('${DOWNLOAD_LINK}', href);
+                window.open(url, '_blank');
             }
         } catch(e) {
             this.$root.stdDialog.alert(e.message, 'Ошибка');
@@ -719,10 +722,9 @@ class Search {
                 this.search.title = `=${event.book.title}`;
                 break;
             case 'download':
-                this.download(event.book);//no await
-                break;
             case 'copyLink':
-                this.download(event.book, true);//no await
+            case 'readBook':
+                this.download(event.book, event.action);//no await
                 break;
         }
     }
