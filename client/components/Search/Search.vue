@@ -214,7 +214,8 @@
                     />
                 </div>
 
-                <q-checkbox v-model="showCounts" size="36px" label="Показывать количество" />
+                <q-checkbox v-model="showCounts" size="36px" label="Показывать количество" />                
+                <q-checkbox v-model="showRate" size="36px" label="Показывать оценки" />
                 <q-checkbox v-model="showGenres" size="36px" label="Показывать жанры" />
                 <q-checkbox v-model="showDeleted" size="36px" label="Показывать удаленные" />
                 <q-checkbox v-model="abCacheEnabled" size="36px" label="Кешировать запросы" />
@@ -284,6 +285,9 @@ const componentOptions = {
         showCounts(newValue) {
             this.setSetting('showCounts', newValue);
         },
+        showRate(newValue) {
+            this.setSetting('showRate', newValue);
+        },
         showGenres(newValue) {
             this.setSetting('showGenres', newValue);
         },
@@ -337,7 +341,8 @@ class Search {
     expanded = [];
     expandedSeries = [];
     showCounts = true;
-    showGenres = true;
+    showRate = true;
+    showGenres = true;    
     showDeleted = false;
     abCacheEnabled = true;
     langDefault = '';
@@ -402,6 +407,7 @@ class Search {
         this.expanded = _.cloneDeep(settings.expanded);
         this.expandedSeries = _.cloneDeep(settings.expandedSeries);
         this.showCounts = settings.showCounts;
+        this.showRate = settings.showRate;
         this.showGenres = settings.showGenres;
         this.showDeleted = settings.showDeleted;
         this.abCacheEnabled = settings.abCacheEnabled;
@@ -1228,6 +1234,6 @@ export default vueComponent(Search);
 }
 
 .book-row {
-    margin-left: 70px;
+    margin-left: 50px;
 }
 </style>

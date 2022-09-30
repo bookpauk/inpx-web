@@ -1,6 +1,29 @@
 <template>
-    <div class="row items-center">
-        <div class="q-my-sm clickable2" @click="selectTitle">
+    <div class="row items-center q-my-sm">
+        <div v-if="showRate || showDeleted">
+            <div v-if="showRate && !book.del">
+                <div v-if="book.librate">
+                    <q-knob
+                        :model-value="book.librate"
+                        :min="0"
+                        :max="5"
+                        show-value
+                        size="22px"
+                        font-size="12px"
+                        :thickness="0.3"
+                        :color="rateColor"
+                        track-color="grey-4"
+                        readonly
+                    />
+                </div>
+                <div v-else style="width: 22px" />
+            </div>
+            <div v-else class="row justify-center" style="width: 22px">
+                <q-icon v-if="book.del" class="la la-trash text-bold text-red" size="22px" />
+            </div>
+        </div>
+
+        <div class="q-ml-sm clickable2" @click="selectTitle">
             {{ book.serno ? `${book.serno}. ` : '' }}
             <span class="text-blue-10">{{ book.title }}</span>
         </div>
@@ -21,7 +44,9 @@
             {{ bookGenre }}
         </div>
 
-        {{ book.src1 }}
+        <div v-show="false">
+            {{ book }}
+        </div>
     </div>
 </template>
 
@@ -45,7 +70,9 @@ class BookView {
         genreTree: Array,
     };
 
+    showRate = true;
     showGenres = true;
+    showDeleted = false;
 
     created() {
         this.loadSettings();
@@ -54,7 +81,9 @@ class BookView {
     loadSettings() {
         const settings = this.settings;
 
+        this.showRate = settings.showRate;
         this.showGenres = settings.showGenres;
+        this.showDeleted = settings.showDeleted;
     }
 
     get settings() {
@@ -69,6 +98,14 @@ class BookView {
             unit = 'MB';
         }
         return `${size.toFixed(0)}${unit}`;
+    }
+
+    get rateColor() {
+        const rate = (this.book.librate > 5 ? 5 : this.book.librate);
+        if (rate > 2)
+            return `green-${(rate - 1)*2}`;
+        else
+            return `red-${10 - rate*2}`;
     }
 
     get bookGenre() {

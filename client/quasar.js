@@ -35,6 +35,7 @@ import {QTree} from 'quasar/src/components/tree';
 //import {QVirtualScroll} from 'quasar/src/components/virtual-scroll';
 //import {QExpansionItem} from 'quasar/src/components/expansion-item';
 import {QOptionGroup} from 'quasar/src/components/option-group';
+import {QKnob} from 'quasar/src/components/knob';
 
 
 const components = {
@@ -68,6 +69,7 @@ const components = {
     //QExpansionItem,
     //QVirtualScroll,
     QOptionGroup,
+    QKnob,
 };
 
 //directives 
