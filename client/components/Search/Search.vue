@@ -84,7 +84,7 @@
                             <q-icon name="la la-times-circle" class="q-field__focusable-action" @click.stop.prevent="search.genre = ''" />
                         </template>
 
-                        <q-tooltip v-if="genreNames" :delay="500" anchor="bottom middle" content-style="font-size: 80%" max-width="400px">
+                        <q-tooltip v-if="genreNames && showTooltips" :delay="500" anchor="bottom middle" content-style="font-size: 80%" max-width="400px">
                             {{ genreNames }}
                         </q-tooltip>
                     </q-input>
@@ -94,7 +94,7 @@
                         class="bg-white q-mt-xs" input-style="cursor: pointer" style="width: 80px;" label="Язык" stack-label outlined dense clearable readonly
                         @click="selectLang"
                     >
-                        <q-tooltip v-if="search.lang" :delay="500" anchor="bottom middle" content-style="font-size: 80%" max-width="400px">
+                        <q-tooltip v-if="search.lang && showTooltips" :delay="500" anchor="bottom middle" content-style="font-size: 80%" max-width="400px">
                             {{ search.lang }}
                         </q-tooltip>
                     </q-input>
@@ -354,6 +354,7 @@ class Search {
     genreTreeInpxHash = '';
     cachedAuthors = {};
     hiddenCount = 0;
+    showTooltips = true;
 
     limitOptions = [
         {label: '10', value: 10},
@@ -543,11 +544,20 @@ class Search {
         this.$root.stdDialog.alert(info, 'Статистика по коллекции', {iconName: 'la la-info-circle'});
     }
 
+    async hideTooltip() {
+        //Firefox bugfix: при всплывающем диалоге скрываем подсказку
+        this.showTooltips = false;
+        await utils.sleep(1000);
+        this.showTooltips = true;
+    }
+
     selectGenre() {
+        this.hideTooltip();
         this.selectGenreDialogVisible = true;
     }    
 
     selectLang() {
+        this.hideTooltip();
         this.selectLangDialogVisible = true;
     }
     
