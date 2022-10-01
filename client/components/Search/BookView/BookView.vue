@@ -7,19 +7,26 @@
                         :model-value="book.librate"
                         :min="0"
                         :max="5"
-                        show-value
-                        size="22px"
+                        size="18px"
                         font-size="12px"
-                        :thickness="0.3"
+                        :thickness="1"
                         :color="rateColor"
                         track-color="grey-4"
                         readonly
                     />
+
+                    <q-tooltip :delay="500" anchor="top middle" content-style="font-size: 80%" max-width="400px">
+                        Оценка {{ book.librate }}
+                    </q-tooltip>
                 </div>
-                <div v-else style="width: 22px" />
+                <div v-else style="width: 18px" />
             </div>
-            <div v-else class="row justify-center" style="width: 22px">
-                <q-icon v-if="book.del" class="la la-trash text-bold text-red" size="22px" />
+            <div v-else class="row justify-center" style="width: 18px">
+                <q-icon v-if="book.del" class="la la-trash text-bold text-red" size="18px">
+                    <q-tooltip :delay="500" anchor="top middle" content-style="font-size: 80%" max-width="400px">
+                        Удалено
+                    </q-tooltip>
+                </q-icon>
             </div>
         </div>
 
