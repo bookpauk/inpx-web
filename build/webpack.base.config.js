@@ -13,6 +13,7 @@ module.exports = {
     entry: [`${clientDir}/main.js`],
     output: {
         publicPath: '/app/',
+        clean: true
     },
 
     module: {

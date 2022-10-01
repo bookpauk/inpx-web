@@ -16,7 +16,8 @@ module.exports = merge(baseWpConfig, {
     mode: 'production',
     output: {
         path: `${publicDir}/app_new`,
-        filename: 'bundle.[contenthash].js'
+        filename: 'bundle.[contenthash].js',
+        clean: true
     },
     module: {
         rules: [
