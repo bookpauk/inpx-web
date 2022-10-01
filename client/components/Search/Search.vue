@@ -153,8 +153,8 @@
                 </div>
 
                 <div v-if="isExpanded(item) && item.books">
-                    <div v-for="book in item.books" :key="book._key" class="book-row column">
-                        <div v-if="book._type == 'series'" class="column">
+                    <div v-for="book in item.books" :key="book.key" class="book-row column">
+                        <div v-if="book.type == 'series'" class="column">
                             <div class="row items-center q-mr-xs no-wrap text-grey-9">
                                 <div class="row items-center clickable2 q-py-xs no-wrap" @click="expandSeries(book)">
                                     <div style="min-width: 30px">
@@ -173,11 +173,21 @@
                             </div>
 
                             <div v-if="isExpandedSeries(book) && book.books" class="book-row column">
-                                <BookView v-for="subbook in book.books" :key="subbook._key" :book="subbook" :genre-tree="genreTree" @book-event="bookEvent" />
+                                <BookView v-for="subbook in book.books" :key="subbook.key" :book="subbook" :genre-tree="genreTree" @book-event="bookEvent" />
                             </div>
                         </div>
                         <BookView v-else :book="book" :genre-tree="genreTree" @book-event="bookEvent" />
                     </div>
+                </div>
+
+                <div v-if="isExpanded(item) && item.showMore" class="row items-center book-row q-mb-sm">
+                    <i class="las la-ellipsis-h text-blue-10" style="font-size: 40px"></i>
+                    <q-btn class="q-ml-md" color="primary" style="width: 200px" dense rounded no-caps @click="showMore(item)">
+                        Показать еще {{ showMoreCount }}
+                    </q-btn>
+                    <q-btn class="q-ml-sm" color="primary" style="width: 200px" dense rounded no-caps @click="showMore(item, true)">
+                        Показать все
+                    </q-btn>
                 </div>
             </div>
             <!-- Формирование списка конец ------------------------------------------------------------------>
@@ -253,6 +263,7 @@ import diffUtils from '../../share/diffUtils';
 import _ from 'lodash';
 
 const maxItemCount = 500;//выше этого значения показываем "Загрузка"
+const showMoreCount = 200;//значение для "Показать еще"
 
 const componentOptions = {
     components: {
@@ -360,6 +371,7 @@ class Search {
     cachedAuthors = {};
     hiddenCount = 0;
     showTooltips = true;
+    showMoreCount = showMoreCount;
 
     limitOptions = [
         {label: '10', value: 10},
@@ -629,10 +641,10 @@ class Search {
         if (!this.showCounts || item.count === undefined)
             return result;
 
-        if (item.books) {
+        if (item.loadedBooks) {
             let count = 0;
-            for (const book of item.books) {
-                if (book._type == 'series')
+            for (const book of item.loadedBooks) {
+                if (book.type == 'series')
                     count += book.books.length;
                 else
                     count++;
@@ -734,7 +746,7 @@ class Search {
     }
 
     isExpandedSeries(seriesItem) {
-        return this.expandedSeries.indexOf(seriesItem._key) >= 0;
+        return this.expandedSeries.indexOf(seriesItem.key) >= 0;
     }
 
     setSetting(name, newValue) {
@@ -818,7 +830,7 @@ class Search {
 
     expandSeries(seriesItem) {
         const expandedSeries = _.cloneDeep(this.expandedSeries);
-        const key = seriesItem._key;
+        const key = seriesItem.key;
 
         if (!this.isExpandedSeries(seriesItem)) {
             expandedSeries.push(key);
@@ -954,6 +966,28 @@ class Search {
         });
     }
 
+    showMore(item, all = false) {
+        if (item.loadedBooks) {
+            const books = [];
+
+            let count = (all ? item.loadedBooks.length : showMoreCount);
+            for (const book of item.loadedBooks) {
+                if (book.visible) {
+                    books.push(book);
+                } else if (count) {
+                    count--;
+                    book.visible = true;
+                    books.push(book);
+                } else {
+                    break;
+                }
+            }
+
+            item.showMore = books.length < item.loadedBooks.length;
+            item.books = books;
+        }
+    }
+
     async getBooks(item) {
         if (item.books) {
             if (item.count > maxItemCount) {
@@ -987,8 +1021,9 @@ class Search {
             const prepareBook = (book) => {
                 return Object.assign(
                     {
-                        _key: book.id,
-                        _type: 'book',
+                        key: book.id,
+                        type: 'book',
+                        visible: false,
                     },
                     book
                 );
@@ -1003,9 +1038,10 @@ class Search {
                     if (index === undefined) {
                         index = books.length;
                         books.push({
-                            _key: `${item.author}-${book.series}`,
-                            _type: 'series',
+                            key: `${item.author}-${book.series}`,
+                            type: 'series',
                             series: book.series,
+                            visible: false,
 
                             books: [],
                         });
@@ -1021,16 +1057,16 @@ class Search {
 
             //сортировка
             books.sort((a, b) => {
-                if (a._type == 'series') {
-                    return (b._type == 'series' ? a._key.localeCompare(b._key) : -1);
+                if (a.type == 'series') {
+                    return (b.type == 'series' ? a.key.localeCompare(b.key) : -1);
                 } else {
-                    return (b._type == 'book' ? a.title.localeCompare(b.title) : 1);
+                    return (b.type == 'book' ? a.title.localeCompare(b.title) : 1);
                 }
             });
 
             //сортировка внутри серий
             for (const book of books) {
-                if (book._type == 'series') {
+                if (book.type == 'series') {
                     book.books.sort((a, b) => {
                         const dserno = (a.serno || Number.MAX_VALUE) - (b.serno || Number.MAX_VALUE);
                         const dtitle = a.title.localeCompare(b.title);
@@ -1040,11 +1076,13 @@ class Search {
                 }
             }
 
-            if (books.length == 1 && books[0]._type == 'series' && !this.isExpandedSeries(books[0])) {
+            if (books.length == 1 && books[0].type == 'series' && !this.isExpandedSeries(books[0])) {
                 this.expandSeries(books[0]);
             }
 
-            item.books = books;
+            item.loadedBooks = books;
+            this.showMore(item);
+
             await this.$nextTick();
         } finally {
             item.bookLoading = false;
@@ -1107,8 +1145,10 @@ class Search {
                 author: rec.author,
                 name: rec.author.replace(/,/g, ', '),
                 count,
-                book: false,
+                loadedBooks: false,
+                books: false,
                 bookLoading: false,
+                showMore: false,
             });
             num++;
 
