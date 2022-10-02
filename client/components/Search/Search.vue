@@ -263,7 +263,7 @@ import diffUtils from '../../share/diffUtils';
 import _ from 'lodash';
 
 const maxItemCount = 500;//выше этого значения показываем "Загрузка"
-const showMoreCount = 200;//значение для "Показать еще"
+const showMoreCount = 100;//значение для "Показать еще"
 
 const componentOptions = {
     components: {
@@ -717,6 +717,7 @@ class Search {
                 else
                     this.$root.notify.error('Копирование ссылки не удалось');
             } else if (action == 'readBook') {
+                //читать
                 const url = this.config.bookReadLink.replace('${DOWNLOAD_LINK}', href);
                 window.open(url, '_blank');
             }
@@ -968,22 +969,15 @@ class Search {
 
     showMore(item, all = false) {
         if (item.loadedBooks) {
-            const books = [];
-
-            let count = (all ? item.loadedBooks.length : showMoreCount);
-            for (const book of item.loadedBooks) {
-                if (book.visible) {
-                    books.push(book);
-                } else if (count) {
-                    count--;
-                    book.visible = true;
-                    books.push(book);
-                } else {
-                    break;
-                }
+            const currentLen = (item.books ? item.books.length : 0);
+            let books;
+            if (all) {
+                books = item.loadedBooks;
+            } else {
+                books = item.loadedBooks.slice(0, currentLen + showMoreCount);
             }
 
-            item.showMore = books.length < item.loadedBooks.length;
+            item.showMore = (books.length < item.loadedBooks.length);
             item.books = books;
         }
     }
@@ -1023,7 +1017,6 @@ class Search {
                     {
                         key: book.id,
                         type: 'book',
-                        visible: false,
                     },
                     book
                 );
@@ -1041,7 +1034,6 @@ class Search {
                             key: `${item.author}-${book.series}`,
                             type: 'series',
                             series: book.series,
-                            visible: false,
 
                             books: [],
                         });
