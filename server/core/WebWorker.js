@@ -509,15 +509,16 @@ class WebWorker {
                 const currentInpxHash = (dbConfig.inpxHash ? dbConfig.inpxHash : '');
 
                 if (newInpxHash !== currentInpxHash) {
-                    log('inpx file changed, recreating DB');
+                    log('inpx file: changes found, recreating DB');
                     await this.recreateDb();
+                } else {
+                    log('inpx file: no changes');
                 }
             } catch(e) {
                 log(LM_ERR, `periodicCheckInpx: ${e.message}`);
             }
 
-            //await utils.sleep(inpxCheckInterval*60*1000);
-            await utils.sleep(10000);
+            await utils.sleep(inpxCheckInterval*60*1000);
         }
     }
 }
