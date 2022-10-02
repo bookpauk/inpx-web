@@ -10,6 +10,7 @@ const propsToSave = [
     'maxFilesDirSize',
     'queryCacheEnabled',
     'cacheCleanInterval',
+    'inpxCheckInterval',
     'lowMemoryMode',
     'server',
 ];

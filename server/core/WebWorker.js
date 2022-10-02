@@ -53,7 +53,9 @@ class WebWorker {
                     maxSize: this.config.maxFilesDirSize,
                 },
             ];
+
             this.periodicCleanDir(dirConfig);//no await
+            this.periodicCheckInpx();//no await
 
             instance = this;
         }
@@ -487,6 +489,35 @@ class WebWorker {
         } catch (e) {
             log(LM_FATAL, e.message);
             ayncExit.exit(1);
+        }
+    }
+
+    async periodicCheckInpx() {
+        const inpxCheckInterval = this.config.inpxCheckInterval;
+        if (!inpxCheckInterval)
+            return;
+
+        while (1) {// eslint-disable-line no-constant-condition
+            try {
+                while (this.myState != ssNormal)
+                    await utils.sleep(1000);
+
+                log('check inpx file for changes');
+                const newInpxHash = await utils.getFileHash(this.config.inpxFile, 'sha256', 'hex');
+
+                const dbConfig = await this.dbConfig();
+                const currentInpxHash = (dbConfig.inpxHash ? dbConfig.inpxHash : '');
+
+                if (newInpxHash !== currentInpxHash) {
+                    log('inpx file changed, recreating DB');
+                    await this.recreateDb();
+                }
+            } catch(e) {
+                log(LM_ERR, `periodicCheckInpx: ${e.message}`);
+            }
+
+            //await utils.sleep(inpxCheckInterval*60*1000);
+            await utils.sleep(10000);
         }
     }
 }
