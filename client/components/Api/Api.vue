@@ -36,6 +36,7 @@ import wsc from './webSocketConnection';
 import * as utils from '../../share/utils';
 import * as cryptoUtils from '../../share/cryptoUtils';
 import LockQueue from '../../share/LockQueue';
+import packageJson from '../../../package.json';
 
 const rotor = '|/-\\';
 const stepBound = [
@@ -92,6 +93,15 @@ class Api {
         try {
             const config = await this.getConfig();
             this.commit('setConfig', config);
+
+            //проверим на новую версию, обновимся при необходимости
+            if (this.config.version) {
+                if (this.config.version != packageJson.version && Date.now() - this.lastReloadTime > 15*1000) {
+                    this.commit('setLastReloadTime', Date.now());//на всякий случай, чтобы исключить зацикливание в reload
+
+                    document.location.reload();
+                }
+            }            
         } catch (e) {
             this.$root.stdDialog.alert(e.message, 'Ошибка');
         }
@@ -99,6 +109,10 @@ class Api {
 
     get config() {
         return this.$store.state.config;
+    }
+
+    get lastReloadTime() {
+        return this.$store.state.lastReloadTime;
     }
 
     get settings() {
