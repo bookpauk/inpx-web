@@ -1,4 +1,7 @@
+const fs = require('fs-extra');
+
 const InpxParser = require('./InpxParser');
+const InpxHashCreator = require('./InpxHashCreator');
 const utils = require('./utils');
 
 const emptyFieldValue = '?';
@@ -6,6 +9,29 @@ const emptyFieldValue = '?';
 class DbCreator {
     constructor(config) {
         this.config = config;
+    }
+
+    async loadInpxFilter() {
+        const inpxFilterFile = this.config.inpxFilterFile;
+
+        if (await fs.pathExists(inpxFilterFile)) {
+            let filter = await fs.readFile(inpxFilterFile, 'utf8');
+            filter = JSON.parse(filter);
+
+            if (filter.includeAuthors) {
+                filter.includeAuthors = filter.includeAuthors.map(a => a.toLowerCase());
+                filter.includeSet = new Set(filter.includeAuthors);
+            }
+
+            if (filter.excludeAuthors) {
+                filter.excludeAuthors = filter.excludeAuthors.map(a => a.toLowerCase());
+                filter.excludeSet = new Set(filter.excludeAuthors);
+            }
+
+            return filter;
+        } else {
+            return false;
+        }
     }
 
     //процедура формировани БД несколько усложнена, в целях экономии памяти
@@ -44,10 +70,37 @@ class DbCreator {
         callback({recsLoaded});
         let chunkNum = 0;
 
+        //фильтр по авторам
+        const inpxFilter = await this.loadInpxFilter();
+        let filterAuthor = () => true;
+        if (inpxFilter) {
+            filterAuthor = (author) => {
+                if (!author)
+                    author = emptyFieldValue;
+
+                author = author.toLowerCase();
+
+                let excluded = false;
+                if (inpxFilter.excludeSet) {
+                    const authors = author.split(',');
+
+                    for (const a of authors) {
+                        if (inpxFilter.excludeSet.has(a)) {
+                            excluded = true;
+                            break;
+                        }
+                    }
+                }
+
+                return (!inpxFilter.includeSet || inpxFilter.includeSet.has(author)) && !excluded
+                ;
+            };
+        }
+
+        //вспомогательные функции
         const splitAuthor = (author) => {
-            if (!author) {
+            if (!author)
                 author = emptyFieldValue;
-            }
 
             const result = author.split(',');
             if (result.length > 1)
@@ -69,7 +122,15 @@ class DbCreator {
 
         let id = 0;
         const parsedCallback = async(chunk) => {
+            let filtered = false;
             for (const rec of chunk) {
+                //сначала фильтр по авторам
+                if (!filterAuthor(rec.author)) {
+                    rec.id = 0;
+                    filtered = true;
+                    continue;
+                }
+
                 rec.id = ++id;
 
                 if (!rec.del) {
@@ -116,7 +177,14 @@ class DbCreator {
                 }
             }
 
-            await db.insert({table: 'book', rows: chunk});
+            let saveChunk = [];
+            if (filtered) {
+                saveChunk = chunk.filter(r => r.id);
+            } else {
+                saveChunk = chunk;
+            }
+
+            await db.insert({table: 'book', rows: saveChunk});
 
             recsLoaded += chunk.length;
             callback({recsLoaded});
@@ -373,12 +441,12 @@ class DbCreator {
         };
         //console.log(stats);
 
-        const inpxHash = await utils.getFileHash(config.inpxFile, 'sha256', 'hex');
+        const inpxHashCreator = new InpxHashCreator(config);
 
         await db.insert({table: 'config', rows: [
-            {id: 'inpxInfo', value: parser.info},
+            {id: 'inpxInfo', value: (inpxFilter && inpxFilter.info ? inpxFilter.info : parser.info)},
             {id: 'stats', value: stats},
-            {id: 'inpxHash', value: inpxHash},
+            {id: 'inpxHash', value: await inpxHashCreator.getHash()},
         ]});
 
         //сохраним поисковые таблицы

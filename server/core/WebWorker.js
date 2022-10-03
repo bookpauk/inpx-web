@@ -9,6 +9,7 @@ const WorkerState = require('./WorkerState');
 const { JembaDbThread } = require('jembadb');
 const DbCreator = require('./DbCreator');
 const DbSearcher = require('./DbSearcher');
+const InpxHashCreator = require('./InpxHashCreator');
 
 const ayncExit = new (require('./AsyncExit'))();
 const log = new (require('./AppLogger'))().log;//singleton
@@ -497,13 +498,14 @@ class WebWorker {
         if (!inpxCheckInterval)
             return;
 
+        const inpxHashCreator = new InpxHashCreator(this.config);
+
         while (1) {// eslint-disable-line no-constant-condition
             try {
                 while (this.myState != ssNormal)
                     await utils.sleep(1000);
 
-                log('check inpx file for changes');
-                const newInpxHash = await utils.getFileHash(this.config.inpxFile, 'sha256', 'hex');
+                const newInpxHash = await inpxHashCreator.getHash();
 
                 const dbConfig = await this.dbConfig();
                 const currentInpxHash = (dbConfig.inpxHash ? dbConfig.inpxHash : '');
