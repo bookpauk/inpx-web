@@ -537,7 +537,7 @@ class Search {
         info += `<div style="min-width: 250px" />`;
 
         info += `
-<div><div ${keyStyle}>Обработано ссылок на файлы:</div><span>${stat.bookCountAll}</span></div>
+<div><div ${keyStyle}>Обработано ссылок на книги:</div><span>${stat.bookCountAll}</span></div>
 <div><div ${keyStyle}>Из них актуальных:</div><span>${stat.bookCount}</span></div>
 <div><div ${keyStyle}>Помеченных как удаленные:</div><span>${stat.bookDelCount}</span></div>
 <div><div ${keyStyle}>Актуальных без автора:</div><span>${stat.noAuthorBookCount}</span></div>
