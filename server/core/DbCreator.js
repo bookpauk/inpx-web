@@ -70,11 +70,17 @@ class DbCreator {
         callback({recsLoaded});
         let chunkNum = 0;
 
-        //фильтр по авторам
+        //фильтр
         const inpxFilter = await this.loadInpxFilter();
-        let filterAuthor = () => true;
+        let filter = () => true;
         if (inpxFilter) {
-            filterAuthor = (author) => {
+
+            let recFilter = () => true;
+            if (inpxFilter.filter)
+                recFilter = new Function(`'use strict'; return ${inpxFilter.filter}`)();
+
+            filter = (rec) => {
+                let author = rec.author;
                 if (!author)
                     author = emptyFieldValue;
 
@@ -92,7 +98,9 @@ class DbCreator {
                     }
                 }
 
-                return (!inpxFilter.includeSet || inpxFilter.includeSet.has(author)) && !excluded
+                return recFilter(rec)
+                    && (!inpxFilter.includeSet || inpxFilter.includeSet.has(author))
+                    && !excluded
                 ;
             };
         }
@@ -124,8 +132,8 @@ class DbCreator {
         const parsedCallback = async(chunk) => {
             let filtered = false;
             for (const rec of chunk) {
-                //сначала фильтр по авторам
-                if (!filterAuthor(rec.author)) {
+                //сначала фильтр
+                if (!filter(rec)) {
                     rec.id = 0;
                     filtered = true;
                     continue;
