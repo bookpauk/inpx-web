@@ -104,6 +104,7 @@ async function init() {
 
     config.recreateDb = argv.recreate || false;
     config.inpxFilterFile = `${config.execDir}/inpx-web-filter.json`;
+    config.allowUnsafeFilter = argv['unsafe-filter'] || false;
 
     //app
     const appDir = `${config.publicDir}/app`;

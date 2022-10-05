@@ -76,8 +76,12 @@ class DbCreator {
         if (inpxFilter) {
 
             let recFilter = () => true;
-            if (inpxFilter.filter)
-                recFilter = new Function(`'use strict'; return ${inpxFilter.filter}`)();
+            if (inpxFilter.filter) {
+                if (config.allowUnsafeFilter)
+                    recFilter = new Function(`'use strict'; return ${inpxFilter.filter}`)();
+                else
+                    throw new Error(`Unsafe property 'filter' detected in ${this.config.inpxFilterFile}. Please specify '--unsafe-filter' param if you know what you're doing.`);
+            }
 
             filter = (rec) => {
                 let author = rec.author;
