@@ -1,9 +1,9 @@
-let instance = null;
-
 const defaultTimeout = 15*1000;//15 sec
 const exitSignals = ['SIGINT', 'SIGTERM', 'SIGBREAK', 'SIGHUP', 'uncaughtException'];
 
 //singleton
+let instance = null;
+
 class AsyncExit {
     constructor(signals = exitSignals, codeOnSignal = 2) {
         if (!instance) {
@@ -22,6 +22,10 @@ class AsyncExit {
 
     _init(signals, codeOnSignal) {
         const runSingalCallbacks = async(signal, err, origin) => {
+            if (!this.onSignalCallbacks.size) {
+                console.error(`Uncaught signal "${signal}" received, error: "${(err.stack ? err.stack : err)}"`);
+            }
+
             for (const signalCallback of this.onSignalCallbacks.keys()) {
                 try {
                     await signalCallback(signal, err, origin);
