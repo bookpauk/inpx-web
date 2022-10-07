@@ -395,6 +395,8 @@ class WebWorker {
     }
 
     async restoreBookFile(publicPath) {
+        this.checkMyState();
+
         try {
             const db = this.db;
             const hash = path.basename(publicPath);
@@ -418,6 +420,8 @@ class WebWorker {
     }
 
     async getDownFileName(publicPath) {
+        this.checkMyState();
+
         const db = this.db;
         const hash = path.basename(publicPath);
 
