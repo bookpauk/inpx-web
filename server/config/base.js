@@ -2,7 +2,6 @@ const path = require('path');
 const pckg = require('../../package.json');
 
 const execDir = path.resolve(__dirname, '..');
-const dataDir = `${execDir}/.${pckg.name}`;
 
 module.exports = {
     branch: 'unknown',
@@ -10,10 +9,6 @@ module.exports = {
     name: pckg.name,
 
     execDir,
-    dataDir,
-    tempDir: `${dataDir}/tmp`,
-    logDir: `${dataDir}/log`,
-    publicDir: `${dataDir}/public`,
 
     accessPassword: '',
     bookReadLink: '',
@@ -26,6 +21,16 @@ module.exports = {
     lowMemoryMode: false,
 
     webConfigParams: ['name', 'version', 'branch', 'bookReadLink'],
+
+    allowRemoteLib: false,
+    remoteLib: false,
+    /*
+    allowRemoteLib: true, // на сервере
+    remoteLib: { // на клиенте
+        accessPassword: '',
+        url: 'wss://remoteInpxWeb.ru',
+    },
+    */
 
     server: {
         ip: '0.0.0.0',

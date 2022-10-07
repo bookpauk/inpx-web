@@ -1,4 +1,5 @@
 const _ = require('lodash');
+const path = require('path');
 const fs = require('fs-extra');
 
 const branchFilename = __dirname + '/application_env';
@@ -12,6 +13,8 @@ const propsToSave = [
     'cacheCleanInterval',
     'inpxCheckInterval',
     'lowMemoryMode',
+    'allowRemoteLib',
+    'remoteLib',
     'server',
 ];
 
@@ -29,7 +32,7 @@ class ConfigManager {
         return instance;
     }
 
-    async init() {
+    async init(dataDir) {
         if (this.inited)
             throw new Error('already inited');
 
@@ -44,10 +47,17 @@ class ConfigManager {
         process.env.NODE_ENV = this.branch;
 
         this.branchConfigFile = __dirname + `/${this.branch}.js`;
-        this._config = require(this.branchConfigFile);
+        const config = require(this.branchConfigFile);
 
-        await fs.ensureDir(this._config.dataDir);
-        this._userConfigFile = `${this._config.dataDir}/config.json`;
+        if (dataDir) {
+            config.dataDir = path.resolve(dataDir);
+        } else {
+            config.dataDir = `${config.execDir}/.${config.name}`;
+        }
+
+        await fs.ensureDir(config.dataDir);
+        this._userConfigFile = `${config.dataDir}/config.json`;
+        this._config = config;
 
         this.inited = true;
     }

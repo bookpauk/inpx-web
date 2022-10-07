@@ -5,11 +5,12 @@ const zlib = require('zlib');
 const _ = require('lodash');
 
 const ZipReader = require('./ZipReader');
-const WorkerState = require('./WorkerState');
+const WorkerState = require('./WorkerState');//singleton
 const { JembaDbThread } = require('jembadb');
 const DbCreator = require('./DbCreator');
 const DbSearcher = require('./DbSearcher');
 const InpxHashCreator = require('./InpxHashCreator');
+const RemoteLib = require('./RemoteLib');//singleton
 
 const ayncExit = new (require('./AsyncExit'))();
 const log = new (require('./AppLogger'))().log;//singleton
@@ -504,6 +505,11 @@ class WebWorker {
             try {
                 while (this.myState != ssNormal)
                     await utils.sleep(1000);
+
+                if (this.config.remoteLib) {
+                    const remoteLib = new RemoteLib(this.config);
+                    await remoteLib.getInpxFile(60*1000);
+                }
 
                 const newInpxHash = await inpxHashCreator.getHash();
 

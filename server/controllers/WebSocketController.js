@@ -1,5 +1,6 @@
-const WebSocket = require ('ws');
+const fs = require('fs-extra');
 const _ = require('lodash');
+const WebSocket = require ('ws');
 
 const WorkerState = require('../core/WorkerState');//singleton
 const WebWorker = require('../core/WebWorker');//singleton
@@ -83,6 +84,9 @@ class WebSocketController {
                 case 'get-book-link':
                     await this.getBookLink(req, ws); break;
 
+                case 'get-inpx-file':
+                    await this.getInpxFile(req, ws); break;
+
                 default:
                     throw new Error(`Action not found: ${req.action}`);
             }
@@ -162,6 +166,16 @@ class WebSocketController {
 
         this.send(result, req, ws);
     }
+
+    async getInpxFile(req, ws) {
+        if (!this.config.allowRemoteLib)
+            throw new Error('Remote lib access disabled');
+
+        const data = await fs.readFile(this.config.inpxFile, 'base64');
+
+        this.send({data}, req, ws);
+    }
+
 }
 
 module.exports = WebSocketController;
