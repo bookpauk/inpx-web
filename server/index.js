@@ -6,12 +6,9 @@ const compression = require('compression');
 const http = require('http');
 const WebSocket = require ('ws');
 
-const RemoteLib = require('./core/RemoteLib');//singleton
 const utils = require('./core/utils');
 
 const ayncExit = new (require('./core/AsyncExit'))();
-
-const maxPayloadSize = 50;//in MB
 
 let log;
 let config;
@@ -111,8 +108,9 @@ async function init() {
             }
         }
     } else {
+        const RemoteLib = require('./core/RemoteLib');//singleton
         const remoteLib = new RemoteLib(config);
-        config.inpxFile = await remoteLib.getInpxFile();
+        config.inpxFile = await remoteLib.downloadInpxFile();
     }
 
     config.recreateDb = argv.recreate || false;
@@ -127,7 +125,7 @@ async function main() {
     const app = express();
 
     const server = http.createServer(app);
-    const wss = new WebSocket.Server({ server, maxPayload: maxPayloadSize*1024*1024 });
+    const wss = new WebSocket.Server({ server, maxPayload: config.maxPayloadSize*1024*1024 });
 
     let devModule = undefined;
     if (branch == 'development') {
@@ -137,7 +135,7 @@ async function main() {
     }
 
     app.use(compression({ level: 1 }));
-    //app.use(express.json({limit: `${maxPayloadSize}mb`}));
+    //app.use(express.json({limit: `${config.maxPayloadSize}mb`}));
     if (devModule)
         devModule.logQueries(app);
 

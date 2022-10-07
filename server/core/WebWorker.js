@@ -38,6 +38,11 @@ class WebWorker {
         if (!instance) {
             this.config = config;
             this.workerState = new WorkerState();
+
+            this.remoteLib = null;
+            if (config.remoteLib) {
+                this.remoteLib = new RemoteLib(config);
+            }
             
             this.wState = this.workerState.getControl('server_state');
             this.myState = '';
@@ -314,9 +319,16 @@ class WebWorker {
     async restoreBook(bookPath, downFileName) {
         const db = this.db;
 
-        const extractedFile = await this.extractBook(bookPath);
+        let extractedFile = '';
+        let hash = '';
 
-        const hash = await utils.getFileHash(extractedFile, 'sha256', 'hex');
+        if (!this.remoteLib) {
+            extractedFile = await this.extractBook(bookPath);
+            hash = await utils.getFileHash(extractedFile, 'sha256', 'hex');
+        } else {
+            hash = await this.remoteLib.downloadBook(bookPath, downFileName);
+        }
+
         const link = `/files/${hash}`;
         const publicPath = `${this.config.publicDir}${link}`;
 
@@ -328,7 +340,8 @@ class WebWorker {
             await fs.remove(extractedFile);
             await fs.move(tmpFile, publicPath, {overwrite: true});
         } else {
-            await fs.remove(extractedFile);
+            if (extractedFile)
+                await fs.remove(extractedFile);
             await utils.touchFile(publicPath);
         }
 
@@ -506,9 +519,8 @@ class WebWorker {
                 while (this.myState != ssNormal)
                     await utils.sleep(1000);
 
-                if (this.config.remoteLib) {
-                    const remoteLib = new RemoteLib(this.config);
-                    await remoteLib.getInpxFile(60*1000);
+                if (this.remoteLib) {
+                    await this.remoteLib.downloadInpxFile(60*1000);
                 }
 
                 const newInpxHash = await inpxHashCreator.getHash();

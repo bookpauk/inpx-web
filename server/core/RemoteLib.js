@@ -1,7 +1,10 @@
 const fs = require('fs-extra');
+const path = require('path');
 const utils = require('./utils');
 
+const FileDownloader = require('./FileDownloader');
 const WebSocketConnection = require('./WebSocketConnection');
+const log = new (require('./AppLogger'))().log;//singleton
 
 //singleton
 let instance = null;
@@ -15,8 +18,12 @@ class RemoteLib {
             if (config.remoteLib.accessPassword)
                 this.accessToken = utils.getBufHash(config.remoteLib.accessPassword, 'sha256', 'hex');
 
+            this.remoteHost = config.remoteLib.url.replace(/^ws:\/\//, 'http://').replace(/^wss:\/\//, 'https://');
+
             this.inpxFile = `${config.tempDir}/${utils.randomHexString(20)}`;
             this.lastUpdateTime = 0;
+
+            this.down = new FileDownloader(config.maxPayloadSize*1024*1024);
 
             instance = this;
         }
@@ -29,8 +36,8 @@ class RemoteLib {
             query.accessToken = this.accessToken;
 
         const response = await this.wsc.message(
-            await this.wsc.send(query, 60),
-            60
+            await this.wsc.send(query),
+            120
         );
 
         if (response.error)
@@ -39,7 +46,7 @@ class RemoteLib {
         return response;
     }
 
-    async getInpxFile(getPeriod = 0) {
+    async downloadInpxFile(getPeriod = 0) {
         if (getPeriod && Date.now() - this.lastUpdateTime < getPeriod)
             return this.inpxFile;
 
@@ -50,6 +57,23 @@ class RemoteLib {
         this.lastUpdateTime = Date.now();
 
         return this.inpxFile;
+    }
+
+    async downloadBook(bookPath, downFileName) {
+        try {
+            const response = await await this.wsRequest({action: 'get-book-link', bookPath, downFileName});
+            const link = response.link;
+
+            const buf = await this.down.load(`${this.remoteHost}${link}`);
+
+            const publicPath = `${this.config.publicDir}${link}`;
+            await fs.writeFile(publicPath, buf);
+
+            return path.basename(link);
+        } catch (e) {
+            log(LM_ERR, `RemoteLib.downloadBook: ${e.message}`);
+            throw new Error('502 Bad Gateway');
+        }
     }
 }
 

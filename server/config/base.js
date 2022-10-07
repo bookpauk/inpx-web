@@ -14,6 +14,7 @@ module.exports = {
     bookReadLink: '',
     loggingEnabled: true,
 
+    maxPayloadSize: 500,//in MB
     maxFilesDirSize: 1024*1024*1024,//1Gb
     queryCacheEnabled: true,
     cacheCleanInterval: 60,//minutes

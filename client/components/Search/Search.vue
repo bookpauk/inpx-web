@@ -694,9 +694,13 @@ class Search {
                 || makeValidFilenameOrEmpty(at[0])
                 || makeValidFilenameOrEmpty(at[1])
                 || downFileName;
-            downFileName = `${downFileName.substring(0, 100)}.${book.ext}`;
+            downFileName = downFileName.substring(0, 100);
 
-            const bookPath = `${book.folder}/${book.file}.${book.ext}`;
+            const ext = `.${book.ext}`;
+            if (downFileName.substring(downFileName.length - ext.length) != ext)
+                downFileName += ext;
+
+            const bookPath = `${book.folder}/${book.file}${ext}`;
             //подготовка
             const response = await this.api.getBookLink({bookPath, downFileName});
             
