@@ -194,9 +194,10 @@ function initStatic(app, config) {
     //заголовки при отдаче
     const filesDir = `${config.publicDir}/files`;
     app.use(express.static(config.publicDir, {
-        maxAge: '30d',
-
         setHeaders: (res, filePath) => {
+            res.set('Cache-Control', 'no-cache');
+            res.set('Expires', '-1');
+
             if (path.dirname(filePath) == filesDir) {
                 res.set('Content-Encoding', 'gzip');
 
