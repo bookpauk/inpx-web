@@ -57,12 +57,6 @@ async function init() {
     await appLogger.init(config);
     log = appLogger.log;
 
-    //web app
-    if (branch !== 'development') {
-        const createWebApp = require('./createWebApp');
-        await createWebApp(config);
-    }
-
     //cli
     if (argv.help) {
         showHelp();
@@ -116,6 +110,12 @@ async function init() {
     config.recreateDb = argv.recreate || false;
     config.inpxFilterFile = `${config.execDir}/inpx-web-filter.json`;
     config.allowUnsafeFilter = argv['unsafe-filter'] || false;
+
+    //web app
+    if (branch !== 'development') {
+        const createWebApp = require('./createWebApp');
+        await createWebApp(config);
+    }
 }
 
 async function main() {
