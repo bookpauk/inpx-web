@@ -15,7 +15,7 @@ const clientDir = path.resolve(__dirname, '../client');
 module.exports = merge(baseWpConfig, {
     mode: 'production',
     output: {
-        path: `${publicDir}/app_new`,
+        path: `${publicDir}/app`,
         filename: 'bundle.[contenthash].js',
         clean: true
     },

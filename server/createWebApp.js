@@ -41,13 +41,4 @@ module.exports = async(config) => {
 
     await fs.writeFile(verFile, config.version);
     await fs.remove(zipFile);
-
-    //rename app_new
-    const webAppDir = `${config.publicDir}/app`;
-    const appNewDir = `${config.publicDir}/app_new`;
-    if (await fs.pathExists(appNewDir)) {
-        await fs.remove(webAppDir);
-        await fs.move(appNewDir, webAppDir);
-    }
-
 };
