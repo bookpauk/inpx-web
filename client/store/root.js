@@ -1,7 +1,6 @@
 // initial state
 const state = {
     config: {},
-    lastReloadTime: 0,
     settings: {
         accessToken: '',
         limit: 20,
@@ -26,9 +25,6 @@ const actions = {};
 const mutations = {
     setConfig(state, value) {
         state.config = value;
-    },
-    setLastReloadTime(state, value) {
-        state.lastReloadTime = value;
     },
     setSettings(state, value) {
         state.settings = Object.assign({}, state.settings, value);

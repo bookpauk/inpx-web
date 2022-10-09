@@ -455,7 +455,7 @@ class Search {
         const collection = this.config.dbConfig.inpxInfo.collection.split('\n');
         this.collection = collection[0].trim();
 
-        this.projectName = `${this.config.name} v${this.config.version}`;
+        this.projectName = `${this.config.name} v${this.config.webAppVersion}`;
         this.$root.setAppTitle(`Коллекция ${this.collection}`);
     }
 
