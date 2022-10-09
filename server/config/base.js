@@ -34,7 +34,7 @@ module.exports = {
     */
 
     server: {
-        ip: '0.0.0.0',
+        host: '0.0.0.0',
         port: '22380',
     },
 };

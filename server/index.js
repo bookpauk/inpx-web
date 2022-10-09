@@ -14,7 +14,7 @@ let log;
 let config;
 let argv;
 let branch = '';
-const argvStrings = ['lib-dir', 'app-dir', 'inpx'];
+const argvStrings = ['host', 'port', 'app-dir', 'lib-dir', 'inpx'];
 
 function showHelp() {
     console.log(utils.versionText(config));
@@ -23,6 +23,8 @@ function showHelp() {
 
 Options:
   --help              Print ${config.name} command line options
+  --host=<ip>         Set web server host, default: 0.0.0.0
+  --port=<port>       Set web server port, default: 22380
   --app-dir=<dirpath> Set application working directory, default: <execDir>/.${config.name}
   --lib-dir=<dirpath> Set library directory, default: the same as ${config.name} executable's
   --inpx=<filepath>   Set INPX collection file, default: the one that found in library dir
@@ -64,6 +66,14 @@ async function init() {
     } else {
         log(utils.versionText(config));
         log('Initializing');
+    }
+
+    if (argv.host) {
+        config.server.host = argv.host;
+    }
+
+    if (argv.port) {
+        config.server.port = argv.port;
     }
 
     if (!config.remoteLib) {
@@ -154,8 +164,8 @@ async function main() {
     }
 
     const serverConfig = config.server;
-    server.listen(serverConfig.port, serverConfig.ip, () => {
-        log(`Server is ready on http://${serverConfig.ip}:${serverConfig.port}`);
+    server.listen(serverConfig.port, serverConfig.host, () => {
+        log(`Server is ready on http://${serverConfig.host}:${serverConfig.port}`);
     });
 }
 
