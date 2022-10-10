@@ -140,7 +140,7 @@
                         {{ item.name }}                            
                     </div>
 
-                    <div class="q-ml-sm" style="font-weight: bold; color: #555">
+                    <div class="q-ml-sm text-bold" style="color: #555">
                         {{ getBookCount(item) }}
                     </div>                    
                 </div>
@@ -167,7 +167,7 @@
                                     </div>
                                 </div>
 
-                                <div class="clickable2 q-ml-xs q-py-sm" style="font-weight: bold" @click="selectSeries(book.series)">
+                                <div class="clickable2 q-ml-xs q-py-sm text-bold" @click="selectSeries(book.series)">
                                     Серия: {{ book.series }}
                                 </div>
                             </div>
@@ -191,6 +191,9 @@
                 </div>
             </div>
             <!-- Формирование списка конец ------------------------------------------------------------------>
+            <div v-if="ready && !refreshing && !tableData.length" class="q-ml-md" style="font-size: 120%">
+                Поиск не дал результатов
+            </div>
 
             <div v-show="hiddenCount" class="row">
                 <div class="q-ml-lg q-py-sm clickable2 text-red" style="font-size: 120%" @click="showHiddenHelp">
@@ -322,6 +325,9 @@ const componentOptions = {
 };
 class Search {
     _options = componentOptions;
+    
+    ready = false;
+
     collection = '';
     projectName = '';
 
