@@ -41,17 +41,18 @@ import packageJson from '../../../package.json';
 const rotor = '|/-\\';
 const stepBound = [
     0,
-    0,//1
-    18,//2
-    20,//3
-    70,//4
-    82,//5
-    84,//6
-    88,//7
-    90,//8
-    98,//9
-    99,//10
-    100,//11
+    0,// jobStep = 1
+    18,// jobStep = 2
+    20,// jobStep = 3
+    60,// jobStep = 4
+    72,// jobStep = 5
+    72,// jobStep = 6
+    74,// jobStep = 7
+    75,// jobStep = 8
+    79,// jobStep = 9
+    79,// jobStep = 10
+    80,// jobStep = 11
+    100,// jobStep = 12
 ];
 
 const componentOptions = {

@@ -313,8 +313,11 @@ class DbCreator {
 
         //парсинг 2, подготовка
         const parseField = (fieldValue, fieldMap, fieldArr, authorIds, bookId) => {
-            if (!fieldValue)
+            let addBookId = bookId;
+            if (!fieldValue) {
                 fieldValue = emptyFieldValue;
+                addBookId = 0;//!!!
+            }
 
             const value = fieldValue.toLowerCase();
 
@@ -334,8 +337,8 @@ class DbCreator {
                 fieldRec.authorId.add(id);
             }
 
-            if (bookId)
-                fieldRec.bookId.add(bookId);
+            if (addBookId)
+                fieldRec.bookId.add(addBookId);
         };
 
         const parseBookRec = (rec) => {
@@ -514,7 +517,7 @@ class DbCreator {
 
         //series
         callback({job: 'series save', jobMessage: 'Сохранение индекса серий', jobStep: 7, progress: 0});
-        await saveTable('series', seriesArr, () => {seriesArr = null}, true, true);
+        await saveTable('series_temporary', seriesArr, () => {seriesArr = null}, true, true);
 
         //title
         callback({job: 'title save', jobMessage: 'Сохранение индекса названий', jobStep: 8, progress: 0});
@@ -534,6 +537,92 @@ class DbCreator {
 
         //кэш-таблица имен файлов и их хешей
         await db.create({table: 'file_hash'});
+
+        //-- завершающие шаги --------------------------------
+        //оптимизация series, превращаем массив bookId в books
+        callback({job: 'series optimization', jobMessage: 'Оптимизация', jobStep: 11, progress: 0});
+
+        await db.open({
+            table: 'book',
+            cacheSize: (config.lowMemoryMode ? 5 : 500),
+        });
+        await db.open({table: 'series_temporary'});
+        await db.create({
+            table: 'series',
+            index: {field: 'value', unique: true, depth: 1000000},
+        });
+
+        const count = await db.select({table: 'series_temporary', count: true});
+        const seriesCount = (count.length ? count[0].count : 0);
+
+        const saveSeriesChunk = async(seriesChunk) => {
+            const ids = [];
+            for (const s of seriesChunk) {
+                for (const id of s.bookId) {
+                    ids.push(id);
+                }
+            }
+
+            ids.sort();// обязательно, иначе будет тормозить - особенности JembaDb
+
+            const rows = await db.select({table: 'book', where: `@@id(${db.esc(ids)})`});
+
+            const bookArr = new Map();
+            for (const row of rows)
+                bookArr.set(row.id, row);
+
+            for (const s of seriesChunk) {
+                const sBooks = [];
+                for (const id of s.bookId) {
+                    const rec = bookArr.get(id);
+                    sBooks.push(rec);
+                }
+
+                s.books = JSON.stringify(sBooks);
+                delete s.bookId;
+            }
+
+            await db.insert({
+                table: 'series',
+                rows: seriesChunk,
+            });
+        };
+
+        const rows = await db.select({table: 'series_temporary'});
+
+        idsLen = 0;
+        aChunk = [];
+        proc = 0;
+        for (const row of rows) {// eslint-disable-line
+            aChunk.push(row);
+            idsLen += row.bookId.length;
+            proc++;
+
+            if (idsLen > 20000) {//константа выяснена эмпирическим путем "память/скорость"
+                await saveSeriesChunk(aChunk);
+
+                idsLen = 0;
+                aChunk = [];
+
+                callback({progress: proc/seriesCount});
+
+                await utils.sleep(100);
+                utils.freeMemory();
+                await db.freeMemory();
+            }
+        }
+        if (aChunk.length) {
+            await saveSeriesChunk(aChunk);
+            aChunk = null;
+        }
+
+        //чистка памяти, ибо жрет как не в себя
+        await db.drop({table: 'book'});//таблица больше не понадобится
+        await db.drop({table: 'series_temporary'});//таблица больше не понадобится        
+
+        await db.close({table: 'series'});
+        await db.freeMemory();
+        utils.freeMemory();
 
         callback({job: 'done', jobMessage: ''});
     }
