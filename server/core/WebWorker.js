@@ -227,6 +227,12 @@ class WebWorker {
         return await this.dbSearcher.getBookList(authorId);
     }
 
+    async getSeriesBookList(seriesId) {
+        this.checkMyState();
+
+        return await this.dbSearcher.getSeriesBookList(seriesId);
+    }
+
     async getGenreTree() {
         this.checkMyState();
 

@@ -878,6 +878,29 @@ class Search {
         }
     }
 
+    async loadSeriesBooks(seriesId) {
+        try {
+            let result;
+
+            if (this.abCacheEnabled) {
+                const key = `series-${seriesId}-${this.inpxHash}`;
+                const data = await authorBooksStorage.getData(key);
+                if (data) {
+                    result = JSON.parse(data);
+                } else {
+                    result = await this.api.getBookList(seriesId);
+                    await authorBooksStorage.setData(key, JSON.stringify(result));
+                }
+            } else {
+                result = await this.api.getBookList(seriesId);
+            }
+
+            return JSON.parse(result.books);
+        } catch (e) {
+            this.$root.stdDialog.alert(e.message, 'Ошибка');
+        }
+    }
+
     filterBooks(loadedBooks) {
         const s = this.search;
 

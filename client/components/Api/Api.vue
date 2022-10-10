@@ -220,6 +220,16 @@ class Api {
         return response;
     }
 
+    async getSeriesBookList(seriesId) {
+        const response = await this.request({action: 'get-series-book-list', seriesId});
+
+        if (response.error) {
+            throw new Error(response.error);
+        }
+
+        return response;
+    }
+
     async getGenreTree() {
         const response = await this.request({action: 'get-genre-tree'});
 

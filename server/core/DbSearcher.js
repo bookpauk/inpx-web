@@ -273,7 +273,7 @@ class DbSearcher {
         });
 
         let author = '';
-        let books = [];
+        let books = '';
 
         if (rows.length) {
             author = rows[0].author;
@@ -323,6 +323,75 @@ class DbSearcher {
                 }
             } else {
                 result = await this.selectBookList(authorId);
+            }
+
+            return result;
+        } finally {
+            this.searchFlag--;
+        }
+    }
+
+    async selectSeriesBookList(seriesId) {
+        const db = this.db;
+
+        //выборка серии по seriesId
+        const rows = await db.select({
+            table: 'series',
+            where: `@@id(${db.esc(seriesId)})`
+        });
+
+        let books = [];
+
+        if (rows.length) {
+            books = await db.select({
+                table: 'book',
+                where: `@@id(${db.esc(rows[0].bookId)})`
+            });
+        }
+
+        return {books: JSON.stringify(books)};
+    }
+
+    async getSeriesBookList(seriesId) {
+        if (this.closed)
+            throw new Error('DbSearcher closed');
+
+        this.searchFlag++;
+
+        try {
+            const db = this.db;
+
+            let result;
+
+            if (this.config.queryCacheEnabled) {
+                const key = `series_books-${seriesId}`;
+                const rows = await db.select({table: 'query_cache', where: `@@id(${db.esc(key)})`});
+
+                if (rows.length) {//нашли в кеше
+                    await db.insert({
+                        table: 'query_time',
+                        replace: true,
+                        rows: [{id: key, time: Date.now()}],
+                    });
+
+                    result = rows[0].value;
+                } else {//не нашли в кеше
+                    result = await this.selectSeriesBookList(seriesId);
+
+                    //кладем в кеш
+                    await db.insert({
+                        table: 'query_cache',
+                        replace: true,
+                        rows: [{id: key, value: result}],
+                    });
+                    await db.insert({
+                        table: 'query_time',
+                        replace: true,
+                        rows: [{id: key, time: Date.now()}],
+                    });
+                }
+            } else {
+                result = await this.selectSeriesBookList(seriesId);
             }
 
             return result;
