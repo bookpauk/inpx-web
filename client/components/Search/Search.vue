@@ -154,6 +154,7 @@
 
                 <div v-if="isExpanded(item) && item.books">
                     <div v-for="book in item.books" :key="book.key" class="book-row column">
+                        <!-- серия книг -->
                         <div v-if="book.type == 'series'" class="column">
                             <div class="row items-center q-mr-xs no-wrap text-grey-9">
                                 <div class="row items-center clickable2 q-py-xs no-wrap" @click="expandSeries(book)">
@@ -174,22 +175,36 @@
 
                             <div v-if="isExpandedSeries(book) && book.books">
                                 <div v-if="book.showAllBooks" class="book-row column">
-                                    <BookView v-for="subbook in book.allBooks" :key="subbook.key" :book="subbook" show-author :genre-tree="genreTree" @book-event="bookEvent" />
+                                    <BookView
+                                        v-for="subbook in book.allBooks" :key="subbook.key"
+                                        :book="subbook" :genre-tree="genreTree"
+                                        show-author
+                                        :title-color="isFoundSeriesBook(book, subbook) ? 'text-blue-10' : 'text-red'"
+                                        @book-event="bookEvent"
+                                    />
                                 </div>
                                 <div v-else class="book-row column">
                                     <BookView v-for="subbook in book.books" :key="subbook.key" :book="subbook" :genre-tree="genreTree" @book-event="bookEvent" />
                                 </div>
 
-                                <div v-if="book.allBooks" class="q-my-sm clickable" style="margin-left: 100px" @click="book.showAllBooks = !book.showAllBooks">
-                                    <div v-if="book.showAllBooks">
-                                        Показать только найденные
+                                <div
+                                    v-if="book.allBooks && book.allBooks.length != book.books.length"
+                                    class="q-my-sm clickable2"
+                                    style="margin-left: 100px"
+                                    @click="book.showAllBooks = !book.showAllBooks"
+                                >
+                                    <div v-if="book.showAllBooks" class="row items-center text-blue-10">
+                                        <q-icon class="la la-long-arrow-alt-up" size="28px" />
+                                        Показать только найденные книги
                                     </div>
-                                    <div v-else>
-                                        Показать все книги серии
+                                    <div v-else class="row items-center text-red">
+                                        <q-icon class="la la-long-arrow-alt-down" size="28px" />
+                                        Показать все книги этой серии
                                     </div>
                                 </div>
                             </div>
                         </div>
+                        <!-- книга без серии -->
                         <BookView v-else :book="book" :genre-tree="genreTree" @book-event="bookEvent" />
                     </div>
                 </div>
@@ -206,7 +221,8 @@
             </div>
             <!-- Формирование списка конец ------------------------------------------------------------------>
 
-            <div v-if="ready && !refreshing && !tableData.length" class="q-ml-md" style="font-size: 120%">
+            <div v-if="ready && !refreshing && !tableData.length" class="row items-center q-ml-md" style="font-size: 120%">
+                <q-icon class="la la-meh q-mr-xs" size="28px" />
                 Поиск не дал результатов
             </div>
 
@@ -605,6 +621,7 @@ class Search {
             return;
 
         const curScrollTop = this.$refs.scroller.scrollTop;
+
         if (!this.lastScrollTop)
             this.lastScrollTop = 0;
         if (!this.lastScrollTop2)
@@ -613,7 +630,7 @@ class Search {
         if (curScrollTop - this.lastScrollTop > 0) {
             this.$refs.toolPanel.style.position = 'relative';
             this.$refs.toolPanel.style.top = `${this.lastScrollTop2}px`;
-        } else if (curScrollTop - this.lastScrollTop <= 0) {
+        } else {
             this.$refs.toolPanel.style.position = 'sticky';
             this.$refs.toolPanel.style.top = 0;
             this.lastScrollTop2 = curScrollTop;
@@ -773,6 +790,14 @@ class Search {
 
     isExpandedSeries(seriesItem) {
         return this.expandedSeries.indexOf(seriesItem.key) >= 0;
+    }
+
+    isFoundSeriesBook(book, subbook) {
+        if (!book.booksSet) {
+            book.booksSet = new Set(book.books.map(b => b.id));
+        }
+
+        return book.booksSet.has(subbook.id);
     }
 
     setSetting(name, newValue) {

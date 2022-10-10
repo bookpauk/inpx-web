@@ -33,7 +33,7 @@
 
             <div class="q-ml-sm clickable2" @click="selectTitle">
                 {{ book.serno ? `${book.serno}. ` : '' }}
-                <span class="text-blue-10">{{ bookTitle }}</span>
+                <span :class="titleColor">{{ bookTitle }}</span>
             </div>
         </div>
 
@@ -82,6 +82,7 @@ class BookView {
         book: Object,
         genreTree: Array,
         showAuthor: Boolean,
+        titleColor: { type: String, default: 'text-blue-10'},
     };
 
     showRate = true;
