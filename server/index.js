@@ -118,7 +118,7 @@ async function init() {
     }
 
     config.recreateDb = argv.recreate || false;
-    config.inpxFilterFile = `${config.dataDir}/inpx-web-filter.json`;
+    config.inpxFilterFile = `${config.dataDir}/filter.json`;
     config.allowUnsafeFilter = argv['unsafe-filter'] || false;
 
     //web app
