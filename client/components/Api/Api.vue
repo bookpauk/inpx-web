@@ -221,8 +221,8 @@ class Api {
         return response;
     }
 
-    async getSeriesBookList(seriesId) {
-        const response = await this.request({action: 'get-series-book-list', seriesId});
+    async getSeriesBookList(series) {
+        const response = await this.request({action: 'get-series-book-list', series});
 
         if (response.error) {
             throw new Error(response.error);

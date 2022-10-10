@@ -172,8 +172,22 @@
                                 </div>
                             </div>
 
-                            <div v-if="isExpandedSeries(book) && book.books" class="book-row column">
-                                <BookView v-for="subbook in book.books" :key="subbook.key" :book="subbook" :genre-tree="genreTree" @book-event="bookEvent" />
+                            <div v-if="isExpandedSeries(book) && book.books">
+                                <div v-if="book.showAllBooks" class="book-row column">
+                                    <BookView v-for="subbook in book.allBooks" :key="subbook.key" :book="subbook" show-author :genre-tree="genreTree" @book-event="bookEvent" />
+                                </div>
+                                <div v-else class="book-row column">
+                                    <BookView v-for="subbook in book.books" :key="subbook.key" :book="subbook" :genre-tree="genreTree" @book-event="bookEvent" />
+                                </div>
+
+                                <div v-if="book.allBooks" class="q-my-sm clickable" style="margin-left: 100px" @click="book.showAllBooks = !book.showAllBooks">
+                                    <div v-if="book.showAllBooks">
+                                        Показать только найденные
+                                    </div>
+                                    <div v-else>
+                                        Показать все книги серии
+                                    </div>
+                                </div>
                             </div>
                         </div>
                         <BookView v-else :book="book" :genre-tree="genreTree" @book-event="bookEvent" />
@@ -191,7 +205,7 @@
                 </div>
             </div>
             <!-- Формирование списка конец ------------------------------------------------------------------>
-            
+
             <div v-if="ready && !refreshing && !tableData.length" class="q-ml-md" style="font-size: 120%">
                 Поиск не дал результатов
             </div>
@@ -851,6 +865,8 @@ class Search {
                 expandedSeries.shift();
             }
 
+            this.getSeriesBooks(seriesItem); //no await
+
             this.setSetting('expandedSeries', expandedSeries);
             this.ignoreScroll();
         } else {
@@ -879,32 +895,49 @@ class Search {
                 result = await this.api.getBookList(authorId);
             }
 
-            return JSON.parse(result.books);
+            return (result.books ? JSON.parse(result.books) : []);
         } catch (e) {
             this.$root.stdDialog.alert(e.message, 'Ошибка');
         }
     }
 
-    async loadSeriesBooks(seriesId) {
+    async loadSeriesBooks(series) {
         try {
             let result;
 
             if (this.abCacheEnabled) {
-                const key = `series-${seriesId}-${this.inpxHash}`;
+                const key = `series-${series}-${this.inpxHash}`;
                 const data = await authorBooksStorage.getData(key);
                 if (data) {
                     result = JSON.parse(data);
                 } else {
-                    result = await this.api.getBookList(seriesId);
+                    result = await this.api.getSeriesBookList(series);
                     await authorBooksStorage.setData(key, JSON.stringify(result));
                 }
             } else {
-                result = await this.api.getBookList(seriesId);
+                result = await this.api.getSeriesBookList(series);
             }
 
-            return JSON.parse(result.books);
+            return (result.books ? JSON.parse(result.books) : []);
         } catch (e) {
             this.$root.stdDialog.alert(e.message, 'Ошибка');
+        }
+    }
+
+    async getSeriesBooks(seriesItem) {
+        //асинхронно подгружаем все книги серии, блокируем повторный вызов
+        if (seriesItem.allBooks === null) {
+            seriesItem.allBooks = undefined;
+            (async() => {
+                seriesItem.allBooks = await this.loadSeriesBooks(seriesItem.series);
+
+                if (seriesItem.allBooks) {
+                    seriesItem.allBooks = seriesItem.allBooks.filter(book => (this.showDeleted || !book.del));
+                    this.sortSeriesBooks(seriesItem.allBooks);
+                } else {
+                    seriesItem.allBooks = null;
+                }
+            })();
         }
     }
 
@@ -1016,6 +1049,15 @@ class Search {
         }
     }
 
+    sortSeriesBooks(books) {
+        books.sort((a, b) => {
+            const dserno = (a.serno || Number.MAX_VALUE) - (b.serno || Number.MAX_VALUE);
+            const dtitle = a.title.localeCompare(b.title);
+            const dext = a.ext.localeCompare(b.ext);
+            return (dserno ? dserno : (dtitle ? dtitle : dext));
+        });
+    }
+
     async getBooks(item) {
         if (item.books) {
             if (item.count > maxItemCount) {
@@ -1064,13 +1106,15 @@ class Search {
                     let index = seriesIndex[book.series];
                     if (index === undefined) {
                         index = books.length;
-                        books.push({
+                        books.push(reactive({
                             key: `${item.author}-${book.series}`,
                             type: 'series',
                             series: book.series,
+                            allBooks: null,
+                            showAllBooks: false,
 
                             books: [],
-                        });
+                        }));
 
                         seriesIndex[book.series] = index;
                     }
@@ -1093,12 +1137,12 @@ class Search {
             //сортировка внутри серий
             for (const book of books) {
                 if (book.type == 'series') {
-                    book.books.sort((a, b) => {
-                        const dserno = (a.serno || Number.MAX_VALUE) - (b.serno || Number.MAX_VALUE);
-                        const dtitle = a.title.localeCompare(b.title);
-                        const dext = a.ext.localeCompare(b.ext);
-                        return (dserno ? dserno : (dtitle ? dtitle : dext));
-                    });
+                    this.sortSeriesBooks(book.books);
+
+                    //асинхронно подгрузим все книги серии, если она раскрыта
+                    if (this.isExpandedSeries(book)) {
+                        this.getSeriesBooks(book);//no await
+                    }
                 }
             }
 

@@ -153,10 +153,10 @@ class WebSocketController {
     }
 
     async getSeriesBookList(req, ws) {
-        if (!utils.hasProp(req, 'seriesId'))
-            throw new Error(`seriesId is empty`);
+        if (!utils.hasProp(req, 'series'))
+            throw new Error(`series is empty`);
 
-        const result = await this.webWorker.getSeriesBookList(req.seriesId);
+        const result = await this.webWorker.getSeriesBookList(req.series);
 
         this.send(result, req, ws);
     }

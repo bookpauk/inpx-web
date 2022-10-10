@@ -1,38 +1,40 @@
 <template>
     <div class="row items-center q-my-sm">
-        <div v-if="showRate || showDeleted">
-            <div v-if="showRate && !book.del">
-                <div v-if="book.librate">
-                    <q-knob
-                        :model-value="book.librate"
-                        :min="0"
-                        :max="5"
-                        size="18px"
-                        font-size="12px"
-                        :thickness="1"
-                        :color="rateColor"
-                        track-color="grey-4"
-                        readonly
-                    />
+        <div class="row no-wrap">
+            <div v-if="showRate || showDeleted">
+                <div v-if="showRate && !book.del">
+                    <div v-if="book.librate">
+                        <q-knob
+                            :model-value="book.librate"
+                            :min="0"
+                            :max="5"
+                            size="18px"
+                            font-size="12px"
+                            :thickness="1"
+                            :color="rateColor"
+                            track-color="grey-4"
+                            readonly
+                        />
 
-                    <q-tooltip :delay="500" anchor="top middle" content-style="font-size: 80%" max-width="400px">
-                        Оценка {{ book.librate }}
-                    </q-tooltip>
+                        <q-tooltip :delay="500" anchor="top middle" content-style="font-size: 80%" max-width="400px">
+                            Оценка {{ book.librate }}
+                        </q-tooltip>
+                    </div>
+                    <div v-else style="width: 18px" />
                 </div>
-                <div v-else style="width: 18px" />
+                <div v-else class="row justify-center" style="width: 18px">
+                    <q-icon v-if="book.del" class="la la-trash text-bold text-red" size="18px">
+                        <q-tooltip :delay="500" anchor="top middle" content-style="font-size: 80%" max-width="400px">
+                            Удалено
+                        </q-tooltip>
+                    </q-icon>
+                </div>
             </div>
-            <div v-else class="row justify-center" style="width: 18px">
-                <q-icon v-if="book.del" class="la la-trash text-bold text-red" size="18px">
-                    <q-tooltip :delay="500" anchor="top middle" content-style="font-size: 80%" max-width="400px">
-                        Удалено
-                    </q-tooltip>
-                </q-icon>
-            </div>
-        </div>
 
-        <div class="q-ml-sm clickable2" @click="selectTitle">
-            {{ book.serno ? `${book.serno}. ` : '' }}
-            <span class="text-blue-10">{{ book.title }}</span>
+            <div class="q-ml-sm clickable2" @click="selectTitle">
+                {{ book.serno ? `${book.serno}. ` : '' }}
+                <span class="text-blue-10">{{ bookTitle }}</span>
+            </div>
         </div>
 
         <div class="q-ml-sm">
@@ -79,6 +81,7 @@ class BookView {
     _props = {
         book: Object,
         genreTree: Array,
+        showAuthor: Boolean,
     };
 
     showRate = true;
@@ -103,6 +106,17 @@ class BookView {
 
     get settings() {
         return this.$store.state.settings;
+    }
+
+    get bookTitle() {
+        if (this.showAuthor && this.book.author) {
+            let a = this.book.author.split(',');
+            const author = a.slice(0, 2).join(', ') + (a.length > 2 ? ' и др.' : '');
+
+            return `${author} - ${this.book.title}`;
+        } else {
+            return this.book.title;
+        }
     }
 
     get bookSize() {

@@ -292,7 +292,7 @@ class DbSearcher {
         }
     }
 
-    async getSeriesBookList(seriesId) {
+    async getSeriesBookList(series) {
         if (this.closed)
             throw new Error('DbSearcher closed');
 
@@ -301,10 +301,11 @@ class DbSearcher {
         try {
             const db = this.db;
 
-            //выборка серии по seriesId
+            series = series.toLowerCase();
+            //выборка серии по названию серии
             const rows = await db.select({
                 table: 'series',
-                where: `@@id(${db.esc(seriesId)})`
+                where: `@@dirtyIndexLR('value', ${db.esc(series)}, ${db.esc(series)})`
             });
 
             return {books: (rows.length ? rows[0].books : '')};
