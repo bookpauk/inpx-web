@@ -16,15 +16,15 @@ let argv;
 let branch = '';
 const argvStrings = ['host', 'port', 'app-dir', 'lib-dir', 'inpx'];
 
-function showHelp() {
+function showHelp(defaultConfig) {
     console.log(utils.versionText(config));
     console.log(
 `Usage: ${config.name} [options]
 
 Options:
   --help              Print ${config.name} command line options
-  --host=<ip>         Set web server host, default: 0.0.0.0
-  --port=<port>       Set web server port, default: 22380
+  --host=<ip>         Set web server host, default: ${defaultConfig.server.host}
+  --port=<port>       Set web server port, default: ${defaultConfig.server.port}
   --app-dir=<dirpath> Set application working directory, default: <execDir>/.${config.name}
   --lib-dir=<dirpath> Set library directory, default: the same as ${config.name} executable's
   --inpx=<filepath>   Set INPX collection file, default: the one that found in library dir
@@ -40,6 +40,8 @@ async function init() {
     //config
     const configManager = new (require('./config'))();//singleton
     await configManager.init(dataDir);
+    const defaultConfig = configManager.config;
+
     await configManager.load();
     config = configManager.config;
     branch = config.branch;
@@ -61,7 +63,7 @@ async function init() {
 
     //cli
     if (argv.help) {
-        showHelp();
+        showHelp(defaultConfig);
         ayncExit.exit(0);
     } else {
         log(utils.versionText(config));
