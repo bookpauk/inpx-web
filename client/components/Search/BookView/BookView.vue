@@ -1,6 +1,6 @@
 <template>
     <div class="row items-center q-my-sm">
-        <div class="row no-wrap">
+        <div class="row items-center no-wrap">
             <div v-if="showRate || showDeleted">
                 <div v-if="showRate && !book.del">
                     <div v-if="book.librate">

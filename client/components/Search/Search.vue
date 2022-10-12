@@ -195,11 +195,11 @@
                                 >
                                     <div v-if="book.showAllBooks" class="row items-center text-blue-10">
                                         <q-icon class="la la-long-arrow-alt-up" size="28px" />
-                                        Показать только найденные книги
+                                        Только найденные книги
                                     </div>
                                     <div v-else class="row items-center text-red">
                                         <q-icon class="la la-long-arrow-alt-down" size="28px" />
-                                        Показать все книги этой серии
+                                        Все книги серии
                                     </div>
                                 </div>
                             </div>
