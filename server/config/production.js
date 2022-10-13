@@ -9,7 +9,7 @@ module.exports = Object.assign({}, base, {
     execDir,
 
     server: {
-        ip: '0.0.0.0',
+        host: '0.0.0.0',
         port: '12380',
     },
 
