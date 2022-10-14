@@ -102,9 +102,7 @@ class App {
     }
 
     setAppTitle(title) {
-        if (!title) {
-            document.title = 'inpx-web';
-        } else {
+        if (title) {
             document.title = title;
         }
     }
