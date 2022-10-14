@@ -185,12 +185,13 @@
                                         v-for="subbook in book.allBooks" :key="subbook.key"
                                         :book="subbook" :genre-tree="genreTree"
                                         show-author
+                                        :show-read-link="showReadLink"
                                         :title-color="isFoundSeriesBook(book, subbook) ? 'text-blue-10' : 'text-red'"
                                         @book-event="bookEvent"
                                     />
                                 </div>
                                 <div v-else class="book-row column">
-                                    <BookView v-for="subbook in book.books" :key="subbook.key" :book="subbook" :genre-tree="genreTree" @book-event="bookEvent" />
+                                    <BookView v-for="subbook in book.books" :key="subbook.key" :book="subbook" :genre-tree="genreTree" :show-read-link="showReadLink" @book-event="bookEvent" />
                                 </div>
 
                                 <div
@@ -211,7 +212,7 @@
                             </div>
                         </div>
                         <!-- книга без серии -->
-                        <BookView v-else :book="book" :genre-tree="genreTree" @book-event="bookEvent" />
+                        <BookView v-else :book="book" :genre-tree="genreTree" :show-read-link="showReadLink" @book-event="bookEvent" />
                     </div>
                 </div>
 
@@ -525,6 +526,10 @@ class Search {
         }
 
         return result.join(', ');
+    }
+
+    get showReadLink() {
+        return this.config.bookReadLink != '' || this.liberamaReady;
     }
 
     openReleasePage() {

@@ -49,7 +49,7 @@
             <q-icon name="la la-copy" size="20px" />
         </div>
 
-        <div v-if="config.bookReadLink" class="q-ml-sm clickable" @click="readBook">
+        <div v-if="showReadLink" class="q-ml-sm clickable" @click="readBook">
             (читать)
         </div>
 
@@ -82,6 +82,7 @@ class BookView {
         book: Object,
         genreTree: Array,
         showAuthor: Boolean,
+        showReadLink: Boolean,
         titleColor: { type: String, default: 'text-blue-10'},
     };
 
@@ -99,10 +100,6 @@ class BookView {
         this.showRate = settings.showRate;
         this.showGenres = settings.showGenres;
         this.showDeleted = settings.showDeleted;
-    }
-
-    get config() {
-        return this.$store.state.config;
     }
 
     get settings() {
