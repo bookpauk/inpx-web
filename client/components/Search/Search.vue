@@ -430,6 +430,8 @@ class Search {
     searchResult = {};
     tableData = [];
 
+    liberamaReady = false;
+
     created() {
         this.commit = this.$store.commit;
 
@@ -438,6 +440,17 @@ class Search {
 
     mounted() {
         (async() => {
+            //для встраивания в liberama
+            window.addEventListener('message', (event) => {
+                if (!_.isObject(event.data) || event.data.from != 'ExternalLibs')
+                    return;
+
+                //console.log(event);
+
+                this.recvMessage(event.data);
+            });
+
+            //локальный кеш
             await authorBooksStorage.init();
 
             this.api = this.$root.api;
@@ -449,10 +462,12 @@ class Search {
             this.updateSearchFromRouteQuery(this.$route);
 
             //чтоб не вызывался лишний refresh
-            await utils.sleep(100);
+            await this.$nextTick();
 
             this.ready = true;
             this.refresh();//no await
+
+            this.sendMessage({type: 'mes', data: 'hello-from-inpx-web'});
         })();
     }
 
@@ -469,6 +484,26 @@ class Search {
         this.showDeleted = settings.showDeleted;
         this.abCacheEnabled = settings.abCacheEnabled;
         this.langDefault = settings.langDefault;
+    }
+
+    recvMessage(d) {
+        if (d.type == 'mes') {
+            switch(d.data) {
+                case 'ready':
+                    this.liberamaReady = true;
+                    this.sendMessage({type: 'mes', data: 'ready'});
+                    this.sendCurrentUrl();
+                    break;
+            }
+        }
+    }
+
+    sendMessage(d) {
+        window.parent.postMessage(Object.assign({}, {from: 'inpx-web'}, d), '*');
+    }
+
+    sendCurrentUrl() {
+        this.sendMessage({type: 'urlChange', data: window.location.href});
     }
 
     get config() {
@@ -536,6 +571,8 @@ class Search {
         }
 
         this.$root.setAppTitle(result);
+        if (this.liberamaReady)
+            this.sendMessage({type: 'titleChange', data: result});
     }
 
     showSearchHelp() {
@@ -806,8 +843,12 @@ class Search {
                     this.$root.notify.error('Копирование ссылки не удалось');
             } else if (action == 'readBook') {
                 //читать
-                const url = this.config.bookReadLink.replace('${DOWNLOAD_LINK}', href);
-                window.open(url, '_blank');
+                if (this.liberamaReady) {
+                    this.sendMessage({type: 'submitUrl', data: href});
+                } else {
+                    const url = this.config.bookReadLink.replace('${DOWNLOAD_LINK}', href);
+                    window.open(url, '_blank');
+                }
             }
         } catch(e) {
             this.$root.stdDialog.alert(e.message, 'Ошибка');
@@ -861,6 +902,9 @@ class Search {
     }
 
     async updateSearchFromRouteQuery(to) {
+        if (this.liberamaReady)
+            this.sendCurrentUrl();
+            
         if (this.routeUpdating)
             return;
 
