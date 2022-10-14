@@ -1,23 +1,24 @@
 {
   "name": "inpx-web",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "author": "Book Pauk <bookpauk@gmail.com>",
   "license": "CC0-1.0",
   "repository": "bookpauk/inpx-web",
   "engines": {
-    "node": ">=14.4.0"
+    "node": ">=16.16.0"
   },
   "scripts": {
-    "dev": "nodemon --inspect --ignore server/.inpx-web --ignore client --exec 'node server --lib-dir=.inpx-web/lib'",
+    "dev": "nodemon --inspect --ignore server/.inpx-web --ignore client --exec 'node --expose-gc server --lib-dir=server/.inpx-web/lib'",
     "build:client": "webpack --config build/webpack.prod.config.js",
-    "build:linux": "npm run build:client && node build/linux && pkg -t node16-linux-x64 -C GZip -o dist/linux/inpx-web .",
-    "build:win": "npm run build:client && node build/win && pkg -t node16-win-x64 -C GZip -o dist/win/inpx-web .",
+    "build:linux": "npm run build:client && node build/prepkg.js linux && pkg -t node16-linux-x64 -C GZip --options max-old-space-size=4096,expose-gc -o dist/linux/inpx-web .",
+    "build:win": "npm run build:client && node build/prepkg.js win && pkg -t node16-win-x64 -C GZip --options max-old-space-size=4096,expose-gc -o dist/win/inpx-web .",
     "build:client-dev": "webpack --config build/webpack.dev.config.js",
     "postinstall": "npm run build:client-dev"
   },
   "bin": "server/index.js",
   "pkg": {
-    "scripts": "server/config/*.js"
+    "scripts": "server/config/*.js",
+    "assets": "dist/public.json"
   },
   "devDependencies": {
     "@babel/core": "^7.18.9",
@@ -51,11 +52,13 @@
     "compression": "^1.7.4",
     "express": "^4.18.1",
     "fs-extra": "^10.1.0",
-    "jembadb": "^3.0.10",
+    "jembadb": "^4.2.0",
     "localforage": "^1.10.0",
     "lodash": "^4.17.21",
     "minimist": "^1.2.6",
+    "node-stream-zip": "^1.15.0",
     "quasar": "^2.7.5",
+    "safe-buffer": "^5.2.1",
     "vue": "^3.2.37",
     "vue-router": "^4.1.2",
     "vuex": "^4.0.2",
