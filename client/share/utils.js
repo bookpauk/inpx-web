@@ -54,7 +54,7 @@ export async function copyTextToClipboard(text) {
         await navigator.clipboard.writeText(text);
         result = true;
     } catch (e) {
-        //
+        console.error(e);
     }
 
     return result;
