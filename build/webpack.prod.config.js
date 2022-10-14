@@ -1,3 +1,4 @@
+const fs = require('fs-extra');
 const path = require('path');
 //const webpack = require('webpack');
 
@@ -11,6 +12,8 @@ const CopyWebpackPlugin = require('copy-webpack-plugin');
 
 const publicDir = path.resolve(__dirname, '../dist/tmp/public');
 const clientDir = path.resolve(__dirname, '../client');
+
+fs.emptyDirSync(publicDir);
 
 module.exports = merge(baseWpConfig, {
     mode: 'production',
@@ -44,7 +47,6 @@ module.exports = merge(baseWpConfig, {
         ]
     },
     plugins: [
-        //new CleanWebpackPlugin({ cleanOnceBeforeBuildPatterns: [`${publicDir}/**`] }),
         new MiniCssExtractPlugin({
             filename: "[name].[contenthash].css"
         }),
