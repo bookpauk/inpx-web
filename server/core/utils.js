@@ -1,5 +1,6 @@
 const fs = require('fs-extra');
 const path = require('path');
+const zlib = require('zlib');
 const crypto = require('crypto');
 
 function sleep(ms) {
@@ -93,6 +94,20 @@ function randomHexString(len) {
     return crypto.randomBytes(len).toString('hex')
 }
 
+//async
+function gzipFile(inputFile, outputFile, level = 1) {
+    return new Promise((resolve, reject) => {
+        const gzip = zlib.createGzip({level});
+        const input = fs.createReadStream(inputFile);
+        const output = fs.createWriteStream(outputFile);
+
+        input.pipe(gzip).pipe(output).on('finish', (err) => {
+            if (err) reject(err);
+            else resolve();
+        });
+    });
+}
+
 module.exports = {
     sleep,
     versionText,
@@ -104,4 +119,5 @@ module.exports = {
     getBufHash,
     intersectSet,
     randomHexString,
+    gzipFile,
 };

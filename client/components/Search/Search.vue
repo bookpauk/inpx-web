@@ -842,7 +842,7 @@ class Search {
                 d.click();
             } else if (action == 'copyLink') {
                 //копирование ссылки
-                if (utils.copyTextToClipboard(href))
+                if (await utils.copyTextToClipboard(href))
                     this.$root.notify.success('Ссылка успешно скопирована');
                 else
                     this.$root.notify.error('Копирование ссылки не удалось');

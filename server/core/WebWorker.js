@@ -1,7 +1,6 @@
 const os = require('os');
 const path = require('path');
 const fs = require('fs-extra');
-const zlib = require('zlib');
 const _ = require('lodash');
 
 const ZipReader = require('./ZipReader');
@@ -310,20 +309,6 @@ class WebWorker {
         }
     }
 
-    //async
-    gzipFile(inputFile, outputFile, level = 1) {
-        return new Promise((resolve, reject) => {
-            const gzip = zlib.createGzip({level});
-            const input = fs.createReadStream(inputFile);
-            const output = fs.createWriteStream(outputFile);
-
-            input.pipe(gzip).pipe(output).on('finish', (err) => {
-                if (err) reject(err);
-                else resolve();
-            });
-        });
-    }
-
     async restoreBook(bookPath, downFileName) {
         const db = this.db;
 
@@ -344,7 +329,7 @@ class WebWorker {
             await fs.ensureDir(path.dirname(publicPath));
 
             const tmpFile = `${this.config.tempDir}/${utils.randomHexString(30)}`;
-            await this.gzipFile(extractedFile, tmpFile, 4);
+            await utils.gzipFile(extractedFile, tmpFile, 4);
             await fs.remove(extractedFile);
             await fs.move(tmpFile, publicPath, {overwrite: true});
         } else {
