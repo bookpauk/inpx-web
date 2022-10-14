@@ -347,10 +347,10 @@ const componentOptions = {
             this.updatePageCount();
         },
         $route(to) {
-            this.updateQueryFromRoute(to);
+            this.updateSearchFromRouteQuery(to);
         },
         langDefault() {
-            this.updateQueryFromRoute(this.$route);
+            this.updateSearchFromRouteQuery(this.$route);
         },
     },
 };
@@ -439,7 +439,7 @@ class Search {
                 this.$refs.authorInput.focus();
 
             this.setDefaults();
-            this.updateQueryFromRoute(this.$route);
+            this.updateSearchFromRouteQuery(this.$route);
 
             //чтоб не вызывался лишний refresh
             await utils.sleep(100);
@@ -453,6 +453,7 @@ class Search {
         const settings = this.settings;
 
         this.search.limit = settings.limit;
+
         this.expanded = _.cloneDeep(settings.expanded);
         this.expandedSeries = _.cloneDeep(settings.expandedSeries);
         this.showCounts = settings.showCounts;
@@ -814,7 +815,7 @@ class Search {
         });
     }
 
-    async updateQueryFromRoute(to) {
+    async updateSearchFromRouteQuery(to) {
         if (this.routeUpdating)
             return;
 
@@ -825,23 +826,26 @@ class Search {
             series: query.series || '',
             title: query.title || '',
             genre: query.genre || '',
-            lang: (query.lang == 'default' ? this.langDefault : query.lang || ''),
+            lang: (typeof(query.lang) == 'string' ? query.lang : this.langDefault),
             page: parseInt(query.page, 10) || 1,
-            limit: parseInt(query.limit, 10) || 20,
+            limit: parseInt(query.limit, 10) || this.search.limit,
         });
 
         if (this.search.limit > 1000)
             this.search.limit = 1000;
     }
 
-    updateRouteQuery() {
+    updateRouteQueryFromSearch() {
         this.routeUpdating = true;
         try {
             const oldQuery = this.$route.query;
             const query = _.pickBy(this.search);
 
-            if (this.search.lang == this.langDefault)
-                query.lang = 'default'
+            if (this.search.lang == this.langDefault) {
+                delete query.lang;
+            } else {
+                query.lang = this.search.lang;
+            }
 
             const diff = diffUtils.getObjDiff(oldQuery, query);
             if (!diffUtils.isEmptyObjDiff(diff)) {
@@ -1268,7 +1272,7 @@ class Search {
         if (!this.ready)
             return;
 
-        this.updateRouteQuery();
+        this.updateRouteQueryFromSearch();
 
         //оптимизация
         if (this.abCacheEnabled && this.search.author && this.search.author[0] == '=') {
