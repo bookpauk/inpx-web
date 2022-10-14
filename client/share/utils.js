@@ -48,7 +48,29 @@ export function wordEnding(num, type = 0) {
     }
 }
 
+export function fallbackCopyTextToClipboard(text) {
+    let textArea = document.createElement('textarea');
+    textArea.value = text;
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+
+    let result = false;
+    try {
+         result = document.execCommand('copy');
+    } catch (e) {
+        console.error(e);
+    }
+
+    document.body.removeChild(textArea);
+    return result;
+}
+
 export async function copyTextToClipboard(text) {
+    if (!navigator.clipboard) {
+        return fallbackCopyTextToClipboard(text);
+    }
+
     let result = false;
     try {
         await navigator.clipboard.writeText(text);

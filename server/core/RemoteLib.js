@@ -66,8 +66,15 @@ class RemoteLib {
 
             const buf = await this.down.load(`${this.remoteHost}${link}`);
 
+            const tmpFile = `${this.config.tempDir}/${utils.randomHexString(30)}`;
+            const tmpFile2 = `${this.config.tempDir}/${utils.randomHexString(30)}`;
             const publicPath = `${this.config.publicDir}${link}`;
-            await fs.writeFile(publicPath, buf);
+            
+            await fs.writeFile(tmpFile, buf);
+
+            await utils.gzipFile(tmpFile, tmpFile2, 4);
+            await fs.remove(tmpFile);
+            await fs.move(tmpFile2, publicPath, {overwrite: true});
 
             return path.basename(link);
         } catch (e) {
