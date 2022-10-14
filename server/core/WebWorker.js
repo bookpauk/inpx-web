@@ -52,7 +52,7 @@ class WebWorker {
             ayncExit.add(this.closeDb.bind(this));
 
             this.loadOrCreateDb();//no await
-            this.logServerStats();//no await
+            this.periodicLogServerStats();//no await
 
             const dirConfig = [
                 {
@@ -169,6 +169,8 @@ class WebWorker {
             this.db = db;
 
             log('Searcher DB ready');
+
+            this.logServerStats();
         } catch (e) {
             log(LM_FATAL, e.message);            
             ayncExit.exit(1);
@@ -440,17 +442,24 @@ class WebWorker {
         }
     }
 
-    async logServerStats() {
-        while (1) {// eslint-disable-line
-            try {
-                const memUsage = process.memoryUsage().rss/(1024*1024);//Mb
-                let loadAvg = os.loadavg();
-                loadAvg = loadAvg.map(v => v.toFixed(2));
+    logServerStats() {
+        try {
+            const memUsage = process.memoryUsage().rss/(1024*1024);//Mb
+            let loadAvg = os.loadavg();
+            loadAvg = loadAvg.map(v => v.toFixed(2));
 
-                log(`Server info [ memUsage: ${memUsage.toFixed(2)}MB, loadAvg: (${loadAvg.join(', ')}) ]`);
-            } catch (e) {
-                log(LM_ERR, e.message);
-            }
+            log(`Server info [ memUsage: ${memUsage.toFixed(2)}MB, loadAvg: (${loadAvg.join(', ')}) ]`);
+
+            if (this.config.server.ready)
+                log(`Server listening on http://${this.config.server.host}:${this.config.server.port}`);
+        } catch (e) {
+            log(LM_ERR, e.message);
+        }
+    }
+    
+    async periodicLogServerStats() {
+        while (1) {// eslint-disable-line
+            this.logServerStats();
             await utils.sleep(60*1000);
         }
     }

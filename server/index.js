@@ -165,9 +165,9 @@ async function main() {
         });
     }
 
-    const serverConfig = config.server;
-    server.listen(serverConfig.port, serverConfig.host, () => {
-        log(`Server is ready on http://${serverConfig.host}:${serverConfig.port}`);
+    server.listen(config.server.port, config.server.host, () => {
+        config.server.ready = true;
+        log(`Server ready`);
     });
 }
 
