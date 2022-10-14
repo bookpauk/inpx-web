@@ -316,7 +316,7 @@ const componentOptions = {
     },
     watch: {
         config() {
-            this.makeTitle();
+            this.makeProjectName();
         },
         settings() {
             this.loadSettings();
@@ -324,6 +324,7 @@ const componentOptions = {
         search: {
             handler(newValue) {
                 this.limit = newValue.limit;
+                this.makeTitle();
                 this.refresh();
             },
             deep: true,
@@ -495,12 +496,46 @@ class Search {
         window.open('https://github.com/bookpauk/inpx-web', '_blank');
     }
 
-    makeTitle() {
+    makeProjectName() {
         const collection = this.config.dbConfig.inpxInfo.collection.split('\n');
         this.collection = collection[0].trim();
 
         this.projectName = `${this.config.name} v${this.config.webAppVersion}`;
-        this.$root.setAppTitle(`Коллекция ${this.collection}`);
+        this.makeTitle();
+    }
+
+    makeTitle() {
+        if (!this.collection)
+            return;
+
+        let result = `Коллекция ${this.collection}`;
+
+        const search = this.search;
+        const specSym = new Set(['*', '#']);
+        const correctValue = (v) => {
+            if (v) {
+                if (v[0] === '=')
+                    v = v.substring(1);
+                else if (!specSym.has(v[0]))
+                    v = '^' + v;
+            }
+            return v || '';
+        };
+
+        if (search.author || search.series || search.title) {
+            const as = (search.author ? search.author.split(',') : []);
+            const author = (as.length ? as[0] : '') + (as.length > 1 ? ' и др.' : '');
+
+            const a = correctValue(author);
+            const sc = correctValue(search.series);
+            const s = (sc ? `(${sc})` : '');
+            const t = correctValue(search.title);
+
+            result = [s, t].filter(v => v).join(' ');
+            result = [a, result].filter(v => v).join(' - ');
+        }
+
+        this.$root.setAppTitle(result);
     }
 
     showSearchHelp() {
