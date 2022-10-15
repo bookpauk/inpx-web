@@ -208,10 +208,10 @@ function initStatic(app, config) {
     const filesDir = `${config.publicDir}/files`;
     app.use(express.static(config.publicDir, {
         setHeaders: (res, filePath) => {
-            res.set('Cache-Control', 'no-cache');
-            res.set('Expires', '-1');
+            //res.set('Cache-Control', 'no-cache');
+            //res.set('Expires', '-1');
 
-            if (path.dirname(filePath) == filesDir) {
+            if (utils.toUnixPath(path.dirname(filePath)) == utils.toUnixPath(filesDir)) {
                 res.set('Content-Encoding', 'gzip');
 
                 if (res.downFileName)
