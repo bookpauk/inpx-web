@@ -108,6 +108,10 @@ function gzipFile(inputFile, outputFile, level = 1) {
     });
 }
 
+function toUnixPath(dir) {
+    return dir.replace(/\\/g, '/');
+}
+
 module.exports = {
     sleep,
     versionText,
@@ -120,4 +124,5 @@ module.exports = {
     intersectSet,
     randomHexString,
     gzipFile,
+    toUnixPath,
 };

@@ -23,6 +23,14 @@ class InpxHashCreator {
 
         return utils.getBufHash(joinedHash, 'sha256', 'hex');
     }
+
+    async getInpxFileHash() {
+        return (
+            await fs.pathExists(this.config.inpxFile) ?
+            await utils.getFileHash(this.config.inpxFile, 'sha256', 'hex') :
+            ''
+        );
+    }
 }
 
 module.exports = InpxHashCreator;
