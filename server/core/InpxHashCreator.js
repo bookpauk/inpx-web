@@ -25,7 +25,11 @@ class InpxHashCreator {
     }
 
     async getInpxFileHash() {
-        return await utils.getFileHash(this.config.inpxFile, 'sha256', 'hex');
+        return (
+            await fs.pathExists(this.config.inpxFile) ?
+            await utils.getFileHash(this.config.inpxFile, 'sha256', 'hex') :
+            ''
+        );
     }
 }
 
