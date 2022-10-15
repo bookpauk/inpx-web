@@ -453,7 +453,7 @@ class WebWorker {
             log(`Server info [ memUsage: ${memUsage.toFixed(2)}MB, loadAvg: (${loadAvg.join(', ')}) ]`);
 
             if (this.config.server.ready)
-                log(`Server accessible on http://127.0.0.1:${this.config.server.port} (listening on ${this.config.server.host}:${this.config.server.port})`);
+                log(`Server accessible at http://127.0.0.1:${this.config.server.port} (listening on ${this.config.server.host}:${this.config.server.port})`);
         } catch (e) {
             log(LM_ERR, e.message);
         }
