@@ -114,9 +114,10 @@ async function init() {
             }
         }
     } else {
+        config.inpxFile = `${config.tempDir}/${utils.randomHexString(20)}`;
         const RemoteLib = require('./core/RemoteLib');//singleton
         const remoteLib = new RemoteLib(config);
-        config.inpxFile = await remoteLib.downloadInpxFile();
+        await remoteLib.downloadInpxFile();
     }
 
     config.recreateDb = argv.recreate || false;

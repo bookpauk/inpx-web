@@ -43,6 +43,9 @@ class WebWorker {
                 this.remoteLib = new RemoteLib(config);
             }
             
+            this.inpxHashCreator = new InpxHashCreator(config);
+            this.inpxFileHash = '';
+
             this.wState = this.workerState.getControl('server_state');
             this.myState = '';
             this.db = null;
@@ -135,6 +138,8 @@ class WebWorker {
         try {
             const config = this.config;
             const dbPath = `${config.dataDir}/db`;
+
+            this.inpxFileHash = await this.inpxHashCreator.getInpxFileHash();
 
             //пересоздаем БД из INPX если нужно
             if (config.recreateDb || recreate)
@@ -427,6 +432,18 @@ class WebWorker {
         }
     }
 
+    async getInpxFile(params) {
+        let data = null;
+        if (params.inpxFileHash && this.inpxFileHash && params.inpxFileHash === this.inpxFileHash) {
+            data = false;
+        }
+
+        if (data === null)
+            data = await fs.readFile(this.config.inpxFile, 'base64');
+
+        return {data};
+    }
+
     logServerStats() {
         try {
             const memUsage = process.memoryUsage().rss/(1024*1024);//Mb
@@ -516,18 +533,16 @@ class WebWorker {
         if (!inpxCheckInterval)
             return;
 
-        const inpxHashCreator = new InpxHashCreator(this.config);
-
         while (1) {// eslint-disable-line no-constant-condition
             try {
                 while (this.myState != ssNormal)
                     await utils.sleep(1000);
 
                 if (this.remoteLib) {
-                    await this.remoteLib.downloadInpxFile(60*1000);
+                    await this.remoteLib.downloadInpxFile();
                 }
 
-                const newInpxHash = await inpxHashCreator.getHash();
+                const newInpxHash = await this.inpxHashCreator.getHash();
 
                 const dbConfig = await this.dbConfig();
                 const currentInpxHash = (dbConfig.inpxHash ? dbConfig.inpxHash : '');

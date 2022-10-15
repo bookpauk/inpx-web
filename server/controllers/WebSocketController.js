@@ -1,4 +1,3 @@
-const fs = require('fs-extra');
 const _ = require('lodash');
 const WebSocket = require ('ws');
 
@@ -182,9 +181,9 @@ class WebSocketController {
         if (!this.config.allowRemoteLib)
             throw new Error('Remote lib access disabled');
 
-        const data = await fs.readFile(this.config.inpxFile, 'base64');
+        const result = await this.webWorker.getInpxFile(req);
 
-        this.send({data}, req, ws);
+        this.send(result, req, ws);
     }
 
 }

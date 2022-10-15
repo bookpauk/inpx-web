@@ -4,6 +4,7 @@ const utils = require('./utils');
 
 const FileDownloader = require('./FileDownloader');
 const WebSocketConnection = require('./WebSocketConnection');
+const InpxHashCreator = require('./InpxHashCreator');
 const log = new (require('./AppLogger'))().log;//singleton
 
 //singleton
@@ -20,10 +21,9 @@ class RemoteLib {
 
             this.remoteHost = config.remoteLib.url.replace(/^ws:\/\//, 'http://').replace(/^wss:\/\//, 'https://');
 
-            this.inpxFile = `${config.tempDir}/${utils.randomHexString(20)}`;
-            this.lastUpdateTime = 0;
-
             this.down = new FileDownloader(config.maxPayloadSize*1024*1024);
+            this.inpxHashCreator = new InpxHashCreator(config);
+            this.inpxFileHash = '';
 
             instance = this;
         }
@@ -46,17 +46,16 @@ class RemoteLib {
         return response;
     }
 
-    async downloadInpxFile(getPeriod = 0) {
-        if (getPeriod && Date.now() - this.lastUpdateTime < getPeriod)
-            return this.inpxFile;
+    async downloadInpxFile() {
+        if (!this.inpxFileHash)
+            this.inpxFileHash = await this.inpxHashCreator.getInpxFileHash();
 
-        const response = await this.wsRequest({action: 'get-inpx-file'});
+        const response = await this.wsRequest({action: 'get-inpx-file', inpxFileHash: this.inpxFileHash});
 
-        await fs.writeFile(this.inpxFile, response.data, 'base64');
-
-        this.lastUpdateTime = Date.now();
-
-        return this.inpxFile;
+        if (response.data) {
+            await fs.writeFile(this.config.inpxFile, response.data, 'base64');
+            this.inpxFileHash = '';
+        }
     }
 
     async downloadBook(bookPath, downFileName) {
