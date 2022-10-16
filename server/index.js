@@ -205,13 +205,13 @@ function initStatic(app, config) {
     });
 
     //заголовки при отдаче
-    const filesDir = `${config.publicDir}/files`;
+    const filesDir = utils.toUnixPath(`${config.publicDir}/files`);
     app.use(express.static(config.publicDir, {
         setHeaders: (res, filePath) => {
             //res.set('Cache-Control', 'no-cache');
             //res.set('Expires', '-1');
 
-            if (utils.toUnixPath(path.dirname(filePath)) == utils.toUnixPath(filesDir)) {
+            if (utils.toUnixPath(path.dirname(filePath)) == filesDir) {
                 res.set('Content-Encoding', 'gzip');
 
                 if (res.downFileName)

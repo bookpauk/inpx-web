@@ -533,7 +533,7 @@ class Search {
     }
 
     openReleasePage() {
-        window.open('https://github.com/bookpauk/inpx-web', '_blank');
+        window.open('https://github.com/bookpauk/inpx-web/releases', '_blank');
     }
 
     makeProjectName() {

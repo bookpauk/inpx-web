@@ -146,7 +146,13 @@ class WebWorker {
                 await fs.remove(dbPath);
 
             if (!await fs.pathExists(dbPath)) {
-                await this.createDb(dbPath);
+                try {
+                    await this.createDb(dbPath);
+                } catch (e) {
+                    //при ошибке создания БД удалим ее, чтобы не работать с поломанной базой при следующем запуске
+                    await fs.remove(dbPath);
+                    throw e;
+                }
                 utils.freeMemory();
             }
 
