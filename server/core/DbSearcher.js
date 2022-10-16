@@ -317,6 +317,8 @@ class DbSearcher {
     async periodicCleanCache() {
         this.timer = null;
         const cleanInterval = this.config.cacheCleanInterval*60*1000;
+        if (!cleanInterval)
+            return;
 
         try {
             const db = this.db;

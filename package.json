@@ -1,6 +1,6 @@
 {
   "name": "inpx-web",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "author": "Book Pauk <bookpauk@gmail.com>",
   "license": "CC0-1.0",
   "repository": "bookpauk/inpx-web",
@@ -13,7 +13,8 @@
     "build:linux": "npm run build:client && node build/prepkg.js linux && pkg -t node16-linux-x64 -C GZip --options max-old-space-size=4096,expose-gc -o dist/linux/inpx-web .",
     "build:win": "npm run build:client && node build/prepkg.js win && pkg -t node16-win-x64 -C GZip --options max-old-space-size=4096,expose-gc -o dist/win/inpx-web .",
     "build:client-dev": "webpack --config build/webpack.dev.config.js",
-    "release": "npm run build:linux && npm run build:client && node build/release.js",
+    "build:all": "npm run build:linux && npm run build:win",
+    "release": "npm run build:all && node build/release.js",
     "postinstall": "npm run build:client-dev"
   },
   "bin": "server/index.js",
