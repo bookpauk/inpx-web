@@ -14,7 +14,7 @@ class ZipReader {
         if (this.zip)
             throw new Error('Zip file is already open');
 
-         const zip = new StreamZip.async({file: zipFile});
+         const zip = new StreamZip.async({file: zipFile, skipEntryNameValidation: true});
          
         if (zipEntries)
             this.zipEntries = await zip.entries();
