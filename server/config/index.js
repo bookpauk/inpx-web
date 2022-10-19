@@ -8,6 +8,7 @@ const propsToSave = [
     'accessPassword',
     'bookReadLink',
     'loggingEnabled',
+    'dbCacheSize',
     'maxFilesDirSize',
     'queryCacheEnabled',
     'cacheCleanInterval',

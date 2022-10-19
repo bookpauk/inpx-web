@@ -166,15 +166,18 @@ class WebWorker {
                 softLock: true,
 
                 tableDefaults: {
-                    cacheSize: 5,
+                    cacheSize: config.dbCacheSize,
                 },
             });
 
             //открываем все таблицы
             await db.openAll();
+            
             //переоткроем таблицу 'author' с бОльшим размером кеша блоков, для ускорения выборки
-            await db.close({table: 'author'});
-            await db.open({table: 'author', cacheSize: 100});
+            if (config.dbCacheSize < 100) {
+                await db.close({table: 'author'});
+                await db.open({table: 'author', cacheSize: 100});
+            }
 
             this.dbSearcher = new DbSearcher(config, db);
 
