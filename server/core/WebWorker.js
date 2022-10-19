@@ -108,7 +108,7 @@ class WebWorker {
             softLock: true,
 
             tableDefaults: {
-                cacheSize: 5,
+                cacheSize: config.dbCacheSize,
             },
         });
 
@@ -172,7 +172,7 @@ class WebWorker {
 
             //открываем все таблицы
             await db.openAll();
-            
+
             //переоткроем таблицу 'author' с бОльшим размером кеша блоков, для ускорения выборки
             if (config.dbCacheSize < 100) {
                 await db.close({table: 'author'});
