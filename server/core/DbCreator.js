@@ -60,13 +60,10 @@ class DbCreator {
         let langArr = [];
 
         //stats
-        let filesCount = 0;
         let authorCount = 0;
         let bookCount = 0;
         let noAuthorBookCount = 0;
         let bookDelCount = 0;
-
-        let filesSet = new Set();
 
         //stuff
         let recsLoaded = 0;
@@ -148,8 +145,6 @@ class DbCreator {
 
                 rec.id = ++id;
 
-                filesSet.add(`${rec.folder}/${rec.file}.${rec.ext}`);
-
                 if (!rec.del) {
                     bookCount++;
                     if (!rec.author)
@@ -213,9 +208,6 @@ class DbCreator {
         //парсинг 1
         const parser = new InpxParser();
         await parser.parse(config.inpxFile, readFileCallback, parsedCallback);
-
-        filesCount = filesSet.size;
-        filesSet = null;
 
         utils.freeMemory();
 
@@ -448,14 +440,35 @@ class DbCreator {
 
         utils.freeMemory();
 
+        //сортировка серий
+        callback({job: 'series sort', jobMessage: 'Сортировка серий', jobStep: 5, progress: 0});
+        await utils.sleep(100);
+        seriesArr.sort((a, b) => a.value.localeCompare(b.value));
+        await utils.sleep(100);
+        callback({progress: 0.3});
+        id = 0;
+        for (const seriesRec of seriesArr) {
+            seriesRec.id = ++id;
+        }
+
+        await utils.sleep(100);
+        callback({progress: 0.5});
+        //заодно и названия
+        titleArr.sort((a, b) => a.value.localeCompare(b.value));
+        await utils.sleep(100);
+        callback({progress: 0.7});
+        id = 0;
+        for (const titleRec of titleArr) {
+            titleRec.id = ++id;
+        }
+
         //config
-        callback({job: 'config save', jobMessage: 'Сохранение конфигурации', jobStep: 5, progress: 0});
         await db.create({
             table: 'config'
         });
 
         const stats = {
-            filesCount,
+            filesCount: 0,
             recsLoaded,
             authorCount,
             authorCountAll: authorArr.length,
@@ -625,10 +638,47 @@ class DbCreator {
             aChunk = null;
         }
 
+        //статистика по количеству файлов
+        callback({job: 'files count', jobMessage: 'Подсчет статистики', jobStep: 12, progress: 0});
+
+        //эмуляция прогресса
+        let countDone = false;
+        (async() => {
+            let i = 0;
+            while (!countDone) {
+                callback({progress: i/100});
+                i = (i < 100 ? i + 5 : 100);
+                await utils.sleep(1000);
+            }
+        })();
+
+        //подчсет
+        const countRes = await db.select({table: 'book', count: true, where: `
+            const filesSet = new Set();
+
+            @@iter(@all(), (r) => {
+                const file = ${"`${r.folder}/${r.file}.${r.ext}`"};
+                if (filesSet.has(file)) {
+                    return false;
+                } else {
+                    filesSet.add(file);
+                    return true;
+                }
+            });
+        `});
+
+        if (countRes.length) {
+            stats.filesCount = countRes[0].count;
+            await db.insert({table: 'config', replace: true, rows: [
+                {id: 'stats', value: stats},
+            ]});
+        }
+        countDone = true;
+
         //чистка памяти, ибо жрет как не в себя
-        await db.drop({table: 'book'});//таблица больше не понадобится
         await db.drop({table: 'series_temporary'});//таблица больше не понадобится        
 
+        await db.close({table: 'book'});
         await db.close({table: 'series'});
         await db.freeMemory();
         utils.freeMemory();

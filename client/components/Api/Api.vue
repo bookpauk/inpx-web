@@ -52,7 +52,8 @@ const stepBound = [
     79,// jobStep = 9
     79,// jobStep = 10
     80,// jobStep = 11
-    100,// jobStep = 12
+    95,// jobStep = 12
+    100,// jobStep = 13
 ];
 
 const componentOptions = {
