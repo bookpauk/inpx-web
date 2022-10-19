@@ -588,12 +588,13 @@ class Search {
             const author = (as.length ? as[0] : '') + (as.length > 1 ? ' и др.' : '');
 
             const a = correctValue(author);
-            const sc = correctValue(search.series);
-            const s = (sc ? `(${sc})` : '');
-            const t = correctValue(search.title);
+            let s = correctValue(search.series);
+            s = (s ? `(${s})` : '');
+            let t = correctValue(search.title);
+            t = (t ? `"${t}"` : '');
 
             result = [s, t].filter(v => v).join(' ');
-            result = [a, result].filter(v => v).join(' - ');
+            result = [a, result].filter(v => v).join(' ');
         }
 
         this.$root.setAppTitle(result);
