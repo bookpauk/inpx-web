@@ -4,7 +4,7 @@ const utils = require('./utils');
 
 //поправить в случае, если были критические изменения в DbCreator
 //иначе будет рассинхронизация между сервером и клиентом на уровне БД
-const dbCreatorVersion = '2';
+const dbCreatorVersion = '3';
 
 class InpxHashCreator {
     constructor(config) {

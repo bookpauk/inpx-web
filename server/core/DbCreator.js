@@ -60,10 +60,13 @@ class DbCreator {
         let langArr = [];
 
         //stats
+        let filesCount = 0;
         let authorCount = 0;
         let bookCount = 0;
         let noAuthorBookCount = 0;
         let bookDelCount = 0;
+
+        let filesSet = new Set();
 
         //stuff
         let recsLoaded = 0;
@@ -145,6 +148,8 @@ class DbCreator {
 
                 rec.id = ++id;
 
+                filesSet.add(`${rec.folder}/${rec.file}.${rec.ext}`);
+
                 if (!rec.del) {
                     bookCount++;
                     if (!rec.author)
@@ -208,6 +213,9 @@ class DbCreator {
         //парсинг 1
         const parser = new InpxParser();
         await parser.parse(config.inpxFile, readFileCallback, parsedCallback);
+
+        filesCount = filesSet.size;
+        filesSet = null;
 
         utils.freeMemory();
 
@@ -447,6 +455,7 @@ class DbCreator {
         });
 
         const stats = {
+            filesCount,
             recsLoaded,
             authorCount,
             authorCountAll: authorArr.length,
