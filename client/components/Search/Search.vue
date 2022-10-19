@@ -179,32 +179,44 @@
                                 </div>
                             </div>
 
-                            <div v-if="isExpandedSeries(book) && book.books">
+                            <div v-if="isExpandedSeries(book) && book.seriesBooks">
                                 <div v-if="book.showAllBooks" class="book-row column">
                                     <BookView
-                                        v-for="subbook in book.allBooks" :key="subbook.id"
-                                        :book="subbook" :genre-tree="genreTree"
+                                        v-for="seriesBook in book.allBooks" :key="seriesBook.id"
+                                        :book="seriesBook" :genre-tree="genreTree"
                                         show-author
                                         :show-read-link="showReadLink"
-                                        :title-color="isFoundSeriesBook(book, subbook) ? 'text-blue-10' : 'text-red'"
+                                        :title-color="isFoundSeriesBook(book, seriesBook) ? 'text-blue-10' : 'text-red'"
                                         @book-event="bookEvent"
                                     />
                                 </div>
                                 <div v-else class="book-row column">
-                                    <BookView v-for="subbook in book.books" :key="subbook.key" :book="subbook" :genre-tree="genreTree" :show-read-link="showReadLink" @book-event="bookEvent" />
+                                    <BookView 
+                                        v-for="seriesBook in book.seriesBooks" :key="seriesBook.key"
+                                        :book="seriesBook" :genre-tree="genreTree" :show-read-link="showReadLink" @book-event="bookEvent"
+                                    />
                                 </div>
 
                                 <div
-                                    v-if="book.allBooks && book.allBooks.length != book.books.length"
-                                    class="q-my-sm clickable2"
+                                    v-if="book.allBooks && book.allBooks.length != book.seriesBooks.length"
+                                    class="row items-center q-my-sm"
                                     style="margin-left: 100px"
-                                    @click="book.showAllBooks = !book.showAllBooks"
                                 >
-                                    <div v-if="book.showAllBooks" class="row items-center text-blue-10">
+                                    <div v-if="book.showAllBooks && book.showMore" class="row items-center q-mr-md">
+                                        <i class="las la-ellipsis-h text-red" style="font-size: 40px"></i>
+                                        <q-btn class="q-ml-md" color="red" style="width: 200px" dense rounded no-caps @click="showMoreSeries(book)">
+                                            Показать еще {{ showMoreCount }}
+                                        </q-btn>
+                                        <q-btn class="q-ml-sm" color="red" style="width: 200px" dense rounded no-caps @click="showMoreSeries(book, true)">
+                                            Показать все
+                                        </q-btn>
+                                    </div>
+
+                                    <div v-if="book.showAllBooks" class="row items-center clickable2 text-blue-10" @click="book.showAllBooks = false">
                                         <q-icon class="la la-long-arrow-alt-up" size="28px" />
                                         Только найденные книги
                                     </div>
-                                    <div v-else class="row items-center text-red">
+                                    <div v-else class="row items-center clickable2 text-red" @click="book.showAllBooks = true">
                                         <q-icon class="la la-long-arrow-alt-down" size="28px" />
                                         Все книги серии
                                     </div>
@@ -774,11 +786,11 @@ class Search {
         if (!this.showCounts || item.count === undefined)
             return result;
 
-        if (item.loadedBooks) {
+        if (item.booksLoaded) {
             let count = 0;
-            for (const book of item.loadedBooks) {
+            for (const book of item.booksLoaded) {
                 if (book.type == 'series')
-                    count += book.books.length;
+                    count += book.seriesBooks.length;
                 else
                     count++;
             }
@@ -897,12 +909,12 @@ class Search {
         return this.expandedSeries.indexOf(seriesItem.key) >= 0;
     }
 
-    isFoundSeriesBook(book, subbook) {
-        if (!book.booksSet) {
-            book.booksSet = new Set(book.books.map(b => b.id));
+    isFoundSeriesBook(seriesItem, seriesBook) {
+        if (!seriesItem.booksSet) {
+            seriesItem.booksSet = new Set(seriesItem.seriesBooks.map(b => b.id));
         }
 
-        return book.booksSet.has(subbook.id);
+        return seriesItem.booksSet.has(seriesBook.id);
     }
 
     setSetting(name, newValue) {
@@ -1062,22 +1074,23 @@ class Search {
 
     async getSeriesBooks(seriesItem) {
         //асинхронно подгружаем все книги серии, блокируем повторный вызов
-        if (seriesItem.allBooks === null) {
-            seriesItem.allBooks = undefined;
+        if (seriesItem.allBooksLoaded === null) {
+            seriesItem.allBooksLoaded = undefined;
             (async() => {
-                seriesItem.allBooks = await this.loadSeriesBooks(seriesItem.series);
+                seriesItem.allBooksLoaded = await this.loadSeriesBooks(seriesItem.series);
 
-                if (seriesItem.allBooks) {
-                    seriesItem.allBooks = seriesItem.allBooks.filter(book => (this.showDeleted || !book.del));
-                    this.sortSeriesBooks(seriesItem.allBooks);
+                if (seriesItem.allBooksLoaded) {
+                    seriesItem.allBooksLoaded = seriesItem.allBooksLoaded.filter(book => (this.showDeleted || !book.del));
+                    this.sortSeriesBooks(seriesItem.allBooksLoaded);
+                    this.showMoreSeries(seriesItem);
                 } else {
-                    seriesItem.allBooks = null;
+                    seriesItem.allBooksLoaded = null;
                 }
             })();
         }
     }
 
-    filterBooks(loadedBooks) {
+    filterBooks(books) {
         const s = this.search;
 
         const emptyFieldValue = '?';
@@ -1125,7 +1138,7 @@ class Search {
             }
         };
 
-        return loadedBooks.filter((book) => {
+        return books.filter((book) => {
             //author
             let authorFound = false;
             const authors = splitAuthor(book.author);
@@ -1171,22 +1184,37 @@ class Search {
     }
 
     showMore(item, all = false) {
-        if (item.loadedBooks) {
+        if (item.booksLoaded) {
             const currentLen = (item.books ? item.books.length : 0);
             let books;
             if (all) {
-                books = item.loadedBooks;
+                books = item.booksLoaded;
             } else {
-                books = item.loadedBooks.slice(0, currentLen + showMoreCount);
+                books = item.booksLoaded.slice(0, currentLen + showMoreCount);
             }
 
-            item.showMore = (books.length < item.loadedBooks.length);
+            item.showMore = (books.length < item.booksLoaded.length);
             item.books = books;
         }
     }
 
-    sortSeriesBooks(books) {
-        books.sort((a, b) => {
+    showMoreSeries(seriesItem, all = false) {
+        if (seriesItem.allBooksLoaded) {
+            const currentLen = (seriesItem.allBooks ? seriesItem.allBooks.length : 0);
+            let books;
+            if (all) {
+                books = seriesItem.allBooksLoaded;
+            } else {
+                books = seriesItem.allBooksLoaded.slice(0, currentLen + showMoreCount);
+            }
+
+            seriesItem.showMore = (books.length < seriesItem.allBooksLoaded.length);
+            seriesItem.allBooks = books;
+        }
+    }
+
+    sortSeriesBooks(seriesBooks) {
+        seriesBooks.sort((a, b) => {
             const dserno = (a.serno || Number.MAX_VALUE) - (b.serno || Number.MAX_VALUE);
             const dtitle = a.title.localeCompare(b.title);
             const dext = a.ext.localeCompare(b.ext);
@@ -1220,9 +1248,8 @@ class Search {
                 })();
             }
 
-            const loadedBooks = await this.loadBooks(item.key);
-
-            const filtered = this.filterBooks(loadedBooks);
+            const booksToFilter = await this.loadBooks(item.key);
+            const filtered = this.filterBooks(booksToFilter);
 
             const prepareBook = (book) => {
                 return Object.assign(
@@ -1246,16 +1273,18 @@ class Search {
                             key: `${item.author}-${book.series}`,
                             type: 'series',
                             series: book.series,
+                            allBooksLoaded: null,
                             allBooks: null,
                             showAllBooks: false,
+                            showMore: false,
 
-                            books: [],
+                            seriesBooks: [],
                         }));
 
                         seriesIndex[book.series] = index;
                     }
 
-                    books[index].books.push(prepareBook(book));
+                    books[index].seriesBooks.push(prepareBook(book));
                 } else {
                     books.push(prepareBook(book));
                 }
@@ -1273,7 +1302,7 @@ class Search {
             //сортировка внутри серий
             for (const book of books) {
                 if (book.type == 'series') {
-                    this.sortSeriesBooks(book.books);
+                    this.sortSeriesBooks(book.seriesBooks);
 
                     //асинхронно подгрузим все книги серии, если она раскрыта
                     if (this.isExpandedSeries(book)) {
@@ -1286,7 +1315,7 @@ class Search {
                 this.expandSeries(books[0]);
             }
 
-            item.loadedBooks = books;
+            item.booksLoaded = books;
             this.showMore(item);
 
             await this.$nextTick();
@@ -1351,7 +1380,7 @@ class Search {
                 author: rec.author,
                 name: rec.author.replace(/,/g, ', '),
                 count,
-                loadedBooks: false,
+                booksLoaded: false,
                 books: false,
                 bookLoading: false,
                 showMore: false,
