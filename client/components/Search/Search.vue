@@ -182,7 +182,7 @@
                             <div v-if="isExpandedSeries(book) && book.books">
                                 <div v-if="book.showAllBooks" class="book-row column">
                                     <BookView
-                                        v-for="subbook in book.allBooks" :key="subbook.key"
+                                        v-for="subbook in book.allBooks" :key="subbook.id"
                                         :book="subbook" :genre-tree="genreTree"
                                         show-author
                                         :show-read-link="showReadLink"
@@ -330,6 +330,10 @@ const componentOptions = {
         search: {
             handler(newValue) {
                 this.limit = newValue.limit;
+
+                if (this.pageCount > 1)
+                    this.prevPage = this.search.page;
+
                 this.makeTitle();
                 this.refresh();
             },
@@ -761,10 +765,8 @@ class Search {
             this.search.page = this.prevPage;
         }
 
-        if (this.search.page > this.pageCount) {
-            this.prevPage = this.search.page;
+        if (this.search.page > this.pageCount)
             this.search.page = 1;
-        }
     }
 
     getBookCount(item) {
