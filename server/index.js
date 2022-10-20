@@ -2,7 +2,6 @@ const fs = require('fs-extra');
 const path = require('path');
 
 const express = require('express');
-const compression = require('compression');
 const http = require('http');
 const WebSocket = require ('ws');
 
@@ -147,8 +146,6 @@ async function main() {
         devModule.webpackDevMiddleware(app);
     }
 
-    app.use(compression({ level: 1 }));
-    //app.use(express.json({limit: `${config.maxPayloadSize}mb`}));
     if (devModule)
         devModule.logQueries(app);
 
