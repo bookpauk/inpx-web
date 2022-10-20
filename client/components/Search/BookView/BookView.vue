@@ -31,9 +31,14 @@
                 </div>
             </div>
 
-            <div class="q-ml-sm clickable2" @click="selectTitle">
+            <div class="q-ml-sm row items-center">
                 {{ book.serno ? `${book.serno}. ` : '' }}
-                <span :class="titleColor">{{ bookTitle }}</span>
+                <div v-if="showAuthor && book.author">
+                    <span class="clickable2 text-green-10" @click="selectAuthor">{{ bookAuthor }}</span>
+                    &nbsp;-&nbsp;
+                    <span class="clickable2" :class="titleColor" @click="selectTitle">{{ book.title }}</span>
+                </div>
+                <span v-else class="clickable2" :class="titleColor" @click="selectTitle">{{ book.title }}</span>
             </div>
         </div>
 
@@ -106,15 +111,13 @@ class BookView {
         return this.$store.state.settings;
     }
 
-    get bookTitle() {
+    get bookAuthor() {
         if (this.showAuthor && this.book.author) {
             let a = this.book.author.split(',');
-            const author = a.slice(0, 2).join(', ') + (a.length > 2 ? ' и др.' : '');
-
-            return `${author} - ${this.book.title}`;
-        } else {
-            return this.book.title;
+            return a.slice(0, 2).join(', ') + (a.length > 2 ? ' и др.' : '');
         }
+
+        return '';
     }
 
     get bookSize() {
@@ -146,6 +149,10 @@ class BookView {
         }
 
         return `(${result.join(' / ')})`;
+    }
+
+    selectAuthor() {
+        this.$emit('bookEvent', {action: 'authorClick', book: this.book});
     }
 
     selectTitle() {

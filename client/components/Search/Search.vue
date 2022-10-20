@@ -814,6 +814,10 @@ class Search {
         this.search.series = `=${series}`;
     }
 
+    selectTitle(title) {
+        this.search.title = `=${title}`;
+    }
+
     async download(book, action) {
         if (this.downloadFlag)
             return;
@@ -893,8 +897,11 @@ class Search {
 
     bookEvent(event) {
         switch (event.action) {
+            case 'authorClick':
+                this.selectAuthor(event.book.author);
+                break;
             case 'titleClick':
-                this.search.title = `=${event.book.title}`;
+                this.selectTitle(event.book.title);
                 break;
             case 'download':
             case 'copyLink':
