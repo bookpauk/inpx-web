@@ -223,10 +223,11 @@ function initStatic(app, config) {
         await init();
         await main();
     } catch (e) {
+        const mes = (branch == 'development' ? e.stack : e.message);
         if (log)
-            log(LM_FATAL, (branch == 'development' ? e.stack : e.message));
+            log(LM_FATAL, mes);
         else
-            console.error(branch == 'development' ? e.stack : e.message);
+            console.error(mes);
 
         ayncExit.exit(1);
     }
