@@ -58,8 +58,8 @@ class WebWorker {
 
             const dirConfig = [
                 {
-                    dir: `${this.config.publicDir}/files`,
-                    maxSize: this.config.maxFilesDirSize,
+                    dir: config.filesDir,
+                    maxSize: config.maxFilesDirSize,
                 },
             ];
 
@@ -358,20 +358,25 @@ class WebWorker {
             hash = await this.remoteLib.downloadBook(bookPath, downFileName);
         }
 
-        const link = `/files/${hash}`;
-        const publicPath = `${this.config.publicDir}${link}`;
+        const link = `${this.config.filesPathStatic}/${hash}`;
+        const bookFile = `${this.config.filesDir}/${hash}`;
+        const bookFileDesc = `${bookFile}.json`;
 
-        if (!await fs.pathExists(publicPath)) {
-            await fs.ensureDir(path.dirname(publicPath));
+        if (!await fs.pathExists(bookFile) || !await fs.pathExists(bookFileDesc)) {
+            await fs.ensureDir(path.dirname(bookFile));
 
             const tmpFile = `${this.config.tempDir}/${utils.randomHexString(30)}`;
             await utils.gzipFile(extractedFile, tmpFile, 4);
             await fs.remove(extractedFile);
-            await fs.move(tmpFile, publicPath, {overwrite: true});
+            await fs.move(tmpFile, bookFile, {overwrite: true});
+
+            await fs.writeFile(bookFileDesc, JSON.stringify({bookPath, downFileName}));
         } else {
             if (extractedFile)
                 await fs.remove(extractedFile);
-            await utils.touchFile(publicPath);
+
+            await utils.touchFile(bookFile);
+            await utils.touchFile(bookFileDesc);
         }
 
         await db.insert({
@@ -399,11 +404,10 @@ class WebWorker {
             const rows = await db.select({table: 'file_hash', where: `@@id(${db.esc(bookPath)})`});
             if (rows.length) {//хеш найден по bookPath
                 const hash = rows[0].hash;
-                link = `/files/${hash}`;
-                const publicPath = `${this.config.publicDir}${link}`;
+                const bookFileDesc = `${this.config.filesDir}/${hash}.json`;
 
-                if (!await fs.pathExists(publicPath)) {
-                    link = '';
+                if (await fs.pathExists(bookFileDesc)) {
+                    link = `${this.config.filesPathStatic}/${hash}`;
                 }
             }
 
@@ -423,6 +427,7 @@ class WebWorker {
         }
     }
 
+    /*
     async restoreBookFile(publicPath) {
         this.checkMyState();
 
@@ -462,6 +467,7 @@ class WebWorker {
             throw new Error('404 Файл не найден');
         }
     }
+    */
 
     async getInpxFile(params) {
         let data = null;

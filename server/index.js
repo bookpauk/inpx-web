@@ -49,9 +49,14 @@ async function init() {
     config.tempDir = `${config.dataDir}/tmp`;
     config.logDir = `${config.dataDir}/log`;
     config.publicDir = `${config.dataDir}/public`;
+    config.publicFilesDir = `${config.dataDir}/public-files`;
+    config.filesPathStatic = `/book`;
+    config.filesDir = `${config.publicFilesDir}${config.filesPathStatic}`;
+
     configManager.config = config;
 
     await fs.ensureDir(config.dataDir);
+    await fs.ensureDir(config.filesDir);
     await fs.ensureDir(config.tempDir);
     await fs.emptyDir(config.tempDir);
 
@@ -170,29 +175,42 @@ async function main() {
 }
 
 function initStatic(app, config) {
-    const WebWorker = require('./core/WebWorker');//singleton
-    const webWorker = new WebWorker(config);
-
+    /*
+    publicFilesDir = `${config.dataDir}/public-files`;
+    filesPathStatic = `/book`;
+    filesDir = `${config.publicFilesDir}${config.filesPathStatic}`;
+    */
+    const filesPath = `${config.filesPathStatic}/`;
     //загрузка или восстановление файлов в /files, при необходимости
     app.use(async(req, res, next) => {
         if ((req.method !== 'GET' && req.method !== 'HEAD') ||
-            !(req.path.indexOf('/files/') === 0)
+            !(req.path.indexOf(filesPath) === 0)
             ) {
             return next();
         }
 
-        const publicPath = `${config.publicDir}${req.path}`;
+        if (path.extname(req.path) == '.json')
+            return next();
+
+        const bookFile = `${config.publicFilesDir}${req.path}`;
+        const bookFileDesc = `${bookFile}.json`;
 
         let downFileName = '';
-        //восстановим
+        //восстановим из json-файла описания
         try {
-            if (!await fs.pathExists(publicPath)) {
-                downFileName = await webWorker.restoreBookFile(publicPath);
+            if (await fs.pathExists(bookFile) && await fs.pathExists(bookFileDesc)) {
+                await utils.touchFile(bookFile);
+                await utils.touchFile(bookFileDesc);
+
+                let desc = await fs.readFile(bookFileDesc, 'utf8');
+                desc = JSON.parse(desc);
+                downFileName = desc.downFileName;
             } else {
-                downFileName = await webWorker.getDownFileName(publicPath);                    
+                await fs.remove(bookFile);
+                await fs.remove(bookFileDesc);
             }
         } catch(e) {
-            //quiet
+            log(LM_ERR, e.message);
         }
 
         if (downFileName)
@@ -202,20 +220,16 @@ function initStatic(app, config) {
     });
 
     //заголовки при отдаче
-    const filesDir = utils.toUnixPath(`${config.publicDir}/files`);
-    app.use(express.static(config.publicDir, {
-        setHeaders: (res, filePath) => {
-            //res.set('Cache-Control', 'no-cache');
-            //res.set('Expires', '-1');
-
-            if (utils.toUnixPath(path.dirname(filePath)) == filesDir) {
+    app.use(config.filesPathStatic, express.static(config.filesDir, {
+        setHeaders: (res) => {
+            if (res.downFileName) {
                 res.set('Content-Encoding', 'gzip');
-
-                if (res.downFileName)
-                    res.set('Content-Disposition', `inline; filename*=UTF-8''${encodeURIComponent(res.downFileName)}`);
+                res.set('Content-Disposition', `inline; filename*=UTF-8''${encodeURIComponent(res.downFileName)}`);
             }
         },
     }));
+
+    app.use(express.static(config.publicDir));
 }
 
 (async() => {

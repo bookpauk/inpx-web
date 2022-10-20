@@ -13,15 +13,6 @@ module.exports = async(config) => {
             return;
     }
 
-    //сохраним files
-    const filesDir = `${config.publicDir}/files`;
-    let tmpFilesDir = '';
-    if (await fs.pathExists(filesDir)) {
-        tmpFilesDir = `${config.dataDir}/files`;
-        if (!await fs.pathExists(tmpFilesDir))
-            await fs.move(filesDir, tmpFilesDir);
-    }
-
     await fs.remove(config.publicDir);
 
     //извлекаем новый webApp
@@ -34,10 +25,6 @@ module.exports = async(config) => {
     } finally {
         await zipReader.close();
     }
-
-    //восстановим files
-    if (tmpFilesDir)
-        await fs.move(tmpFilesDir, filesDir);
 
     await fs.writeFile(verFile, config.version);
     await fs.remove(zipFile);
