@@ -18,7 +18,7 @@ class DbSearcher {
         this.timer = null;
         this.closed = false;
 
-        db.searchCache = {
+        this.searchCache = {
             memCache: new Map(),
             authorIdsAll: false,
         };
@@ -71,7 +71,7 @@ class DbSearcher {
             for (const row of authorRows)
                 authorIds.push(row.id);
         } else {//все авторы
-            if (!db.searchCache.authorIdsAll) {
+            if (!this.searchCache.authorIdsAll) {
                 const authorRows = await db.select({
                     table: 'author',
                     dirtyIdsOnly: true,
@@ -81,9 +81,9 @@ class DbSearcher {
                     authorIds.push(row.id);
                 }
 
-                db.searchCache.authorIdsAll = authorIds;
+                this.searchCache.authorIdsAll = authorIds;
             } else {//оптимизация
-                authorIds = db.searchCache.authorIdsAll;
+                authorIds = this.searchCache.authorIdsAll;
             }
         }
 
@@ -198,7 +198,7 @@ class DbSearcher {
         let result = null;
 
         const db = this.db;
-        const memCache = db.searchCache.memCache;
+        const memCache = this.searchCache.memCache;
 
         if (memCache.has(key)) {//есть в недавних
             result = memCache.get(key);
@@ -238,7 +238,7 @@ class DbSearcher {
 
         const db = this.db;
 
-        const memCache = db.searchCache.memCache;
+        const memCache = this.searchCache.memCache;
         memCache.set(key, value);
 
         if (memCache.size > maxMemCacheSize) {
@@ -406,6 +406,8 @@ class DbSearcher {
             await utils.sleep(50);
         }
 
+        this.searchCache = null;
+        
         if (this.timer) {
             clearTimeout(this.timer);
             this.timer = null;
