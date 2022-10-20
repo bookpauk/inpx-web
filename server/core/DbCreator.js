@@ -539,7 +539,7 @@ class DbCreator {
 
         //series
         callback({job: 'series save', jobMessage: 'Сохранение индекса серий', jobStep: 7, progress: 0});
-        await saveTable('series_temporary', seriesArr, () => {seriesArr = null}, true, true);
+        await saveTable('series', seriesArr, () => {seriesArr = null}, true, true);
 
         //title
         callback({job: 'title save', jobMessage: 'Сохранение индекса названий', jobStep: 8, progress: 0});
@@ -561,21 +561,33 @@ class DbCreator {
         await db.create({table: 'file_hash'});
 
         //-- завершающие шаги --------------------------------
-        //оптимизация series, превращаем массив bookId в books
-        callback({job: 'series optimization', jobMessage: 'Оптимизация', jobStep: 11, progress: 0});
-
         await db.open({
             table: 'book',
             cacheSize: (config.lowMemoryMode ? 5 : 500),
         });
-        await db.open({table: 'series_temporary'});
-        await db.create({
-            table: 'series',
-            index: {field: 'value', unique: true, depth: 1000000},
-        });
 
-        const count = await db.select({table: 'series_temporary', count: true});
-        const seriesCount = (count.length ? count[0].count : 0);
+        callback({job: 'series optimization', jobMessage: 'Оптимизация', jobStep: 11, progress: 0});
+        await this.optimizeSeries(db, callback);
+
+        callback({job: 'files count', jobMessage: 'Подсчет статистики', jobStep: 12, progress: 0});
+        await this.countStats(db, callback, stats);
+
+        //чистка памяти, ибо жрет как не в себя
+        await db.close({table: 'book'});
+        await db.freeMemory();
+        utils.freeMemory();
+
+        callback({job: 'done', jobMessage: ''});
+    }
+
+    async optimizeSeries(db, callback) {
+        //оптимизация series, превращаем массив bookId в books, кладем все в series_book
+        await db.open({table: 'series'});
+
+        await db.create({
+            table: 'series_book',
+            flag: {name: 'toDel', check: 'r => r.toDel'},
+        });
 
         const saveSeriesChunk = async(seriesChunk) => {
             const ids = [];
@@ -594,52 +606,62 @@ class DbCreator {
                 bookArr.set(row.id, row);
 
             for (const s of seriesChunk) {
-                const sBooks = [];
+                s.books = [];
                 for (const id of s.bookId) {
                     const rec = bookArr.get(id);
-                    sBooks.push(rec);
+                    s.books.push(rec);
                 }
 
-                s.books = JSON.stringify(sBooks);
+                if (s.books.length) {
+                    s.series = s.books[0].value;
+                } else {
+                    s.toDel = 1;
+                }
+
                 delete s.bookId;
             }
 
             await db.insert({
-                table: 'series',
+                table: 'series_book',
                 rows: seriesChunk,
             });
         };
 
-        const rows = await db.select({table: 'series_temporary'});
+        const rows = await db.select({table: 'series'});
 
-        idsLen = 0;
-        aChunk = [];
-        proc = 0;
+        let idsLen = 0;
+        let chunk = [];
+        let processed = 0;
         for (const row of rows) {// eslint-disable-line
-            aChunk.push(row);
+            chunk.push(row);
             idsLen += row.bookId.length;
-            proc++;
+            processed++;
 
             if (idsLen > 20000) {//константа выяснена эмпирическим путем "память/скорость"
-                await saveSeriesChunk(aChunk);
+                await saveSeriesChunk(chunk);
 
                 idsLen = 0;
-                aChunk = [];
+                chunk = [];
 
-                callback({progress: proc/seriesCount});
+                callback({progress: processed/rows.length});
 
                 await utils.sleep(100);
                 utils.freeMemory();
                 await db.freeMemory();
             }
         }
-        if (aChunk.length) {
-            await saveSeriesChunk(aChunk);
-            aChunk = null;
+        if (chunk.length) {
+            await saveSeriesChunk(chunk);
+            chunk = null;
         }
 
+        await db.delete({table: 'series_book', where: `@@flag('toDel')`});
+        await db.close({table: 'series_book'});
+        await db.close({table: 'series'});
+    }
+
+    async countStats(db, callback, stats) {
         //статистика по количеству файлов
-        callback({job: 'files count', jobMessage: 'Подсчет статистики', jobStep: 12, progress: 0});
 
         //эмуляция прогресса
         let countDone = false;
@@ -674,16 +696,6 @@ class DbCreator {
             ]});
         }
         countDone = true;
-
-        //чистка памяти, ибо жрет как не в себя
-        await db.drop({table: 'series_temporary'});//таблица больше не понадобится        
-
-        await db.close({table: 'book'});
-        await db.close({table: 'series'});
-        await db.freeMemory();
-        utils.freeMemory();
-
-        callback({job: 'done', jobMessage: ''});
     }
 }
 

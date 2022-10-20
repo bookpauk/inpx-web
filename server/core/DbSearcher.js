@@ -2,6 +2,8 @@
 
 const utils = require('./utils');
 
+const maxMemCacheSize = 100;
+
 const maxUtf8Char = String.fromCodePoint(0xFFFFF);
 const ruAlphabet = 'абвгдеёжзийклмнопрстуфхцчшщъыьэюя';
 const enAlphabet = 'abcdefghijklmnopqrstuvwxyz';
@@ -15,6 +17,11 @@ class DbSearcher {
         this.searchFlag = 0;
         this.timer = null;
         this.closed = false;
+
+        db.searchCache = {
+            memCache: new Map(),
+            authorIdsAll: false,
+        };
 
         this.periodicCleanCache();//no await
     }
@@ -180,58 +187,80 @@ class DbSearcher {
         return authorIds;
     }
 
-    async getAuthorIds(query) {
+    queryKey(q) {
+        return JSON.stringify([q.author, q.series, q.title, q.genre, q.lang]);
+    }
+
+    async getCached(key) {
+        if (!this.config.queryCacheEnabled)
+            return null;
+
+        let result = null;
+
         const db = this.db;
+        const memCache = db.searchCache.memCache;
 
-        if (!db.searchCache)
-            db.searchCache = {};
+        if (memCache.has(key)) {//есть в недавних
+            result = memCache.get(key);
 
-        let result;
+            //изменим порядок ключей, для последующей правильной чистки старых
+            memCache.delete(key);
+            memCache.set(key, result);
+        } else {//смотрим в таблице
+            const rows = await db.select({table: 'query_cache', where: `@@id(${db.esc(key)})`});
 
-        //сначала попробуем найти в кеше
-        const q = query;
-        const keyArr = [q.author, q.series, q.title, q.genre, q.lang];
-        const keyStr = `query-${keyArr.join('')}`;
-        
-        if (!keyStr) {//пустой запрос
-            if (db.searchCache.authorIdsAll)
-                result = db.searchCache.authorIdsAll;
-            else
-                result = await this.selectAuthorIds(query);
+            if (rows.length) {//нашли в кеше
+                await db.insert({
+                    table: 'query_time',
+                    replace: true,
+                    rows: [{id: key, time: Date.now()}],
+                });
 
-        } else {//непустой запрос
-            if (this.config.queryCacheEnabled) {
-                const key = JSON.stringify(keyArr);
-                const rows = await db.select({table: 'query_cache', where: `@@id(${db.esc(key)})`});
+                result = rows[0].value;
+                memCache.set(key, result);
 
-                if (rows.length) {//нашли в кеше
-                    await db.insert({
-                        table: 'query_time',
-                        replace: true,
-                        rows: [{id: key, time: Date.now()}],
-                    });
-
-                    result = rows[0].value;
-                } else {//не нашли в кеше, ищем в поисковых таблицах
-                    result = await this.selectAuthorIds(query);
-
-                    await db.insert({
-                        table: 'query_cache',
-                        replace: true,
-                        rows: [{id: key, value: result}],
-                    });
-                    await db.insert({
-                        table: 'query_time',
-                        replace: true,
-                        rows: [{id: key, time: Date.now()}],
-                    });
+                if (memCache.size > maxMemCacheSize) {
+                    //удаляем самый старый ключ-значение
+                    for (const k of memCache.keys()) {
+                        memCache.delete(k);
+                        break;
+                    }
                 }
-            } else {
-                result = await this.selectAuthorIds(query);
             }
         }
 
         return result;
+    }
+
+    async putCached(key, value) {
+        if (!this.config.queryCacheEnabled)
+            return;
+
+        const db = this.db;
+
+        const memCache = db.searchCache.memCache;
+        memCache.set(key, value);
+
+        if (memCache.size > maxMemCacheSize) {
+            //удаляем самый старый ключ-значение
+            for (const k of memCache.keys()) {
+                memCache.delete(k);
+                break;
+            }
+        }
+
+        //кладем в таблицу
+        await db.insert({
+            table: 'query_cache',
+            replace: true,
+            rows: [{id: key, value}],
+        });
+
+        await db.insert({
+            table: 'query_time',
+            replace: true,
+            rows: [{id: key, time: Date.now()}],
+        });
     }
 
     async search(query) {
@@ -243,7 +272,15 @@ class DbSearcher {
         try {
             const db = this.db;
 
-            const authorIds = await this.getAuthorIds(query);
+            const key = `author-ids-${this.queryKey(query)}`;
+
+            //сначала попробуем найти в кеше
+            let authorIds = await this.getCached(key);
+            if (authorIds === null) {//не нашли в кеше, ищем в поисковых таблицах
+                authorIds = await this.selectAuthorIds(query);
+
+                await this.putCached(key, authorIds);
+            }
 
             const totalFound = authorIds.length;
             let limit = (query.limit ? query.limit : 100);
@@ -251,7 +288,7 @@ class DbSearcher {
             const offset = (query.offset ? query.offset : 0);
 
             //выборка найденных авторов
-            let result = await db.select({
+            const result = await db.select({
                 table: 'author',
                 map: `(r) => ({id: r.id, author: r.author, bookCount: r.bookCount, bookDelCount: r.bookDelCount})`,
                 where: `@@id(${db.esc(authorIds.slice(offset, offset + limit))})`
@@ -272,7 +309,7 @@ class DbSearcher {
         try {
             const db = this.db;
 
-            //выборка автора по authorId
+            //выборка книг автора по authorId
             const rows = await db.select({
                 table: 'author_book',
                 where: `@@id(${db.esc(authorId)})`
@@ -302,13 +339,26 @@ class DbSearcher {
             const db = this.db;
 
             series = series.toLowerCase();
+
             //выборка серии по названию серии
-            const rows = await db.select({
+            let rows = await db.select({
                 table: 'series',
                 where: `@@dirtyIndexLR('value', ${db.esc(series)}, ${db.esc(series)})`
             });
 
-            return {books: (rows.length ? rows[0].books : '')};
+            let books = [];
+            if (rows.length) {
+                //выборка книг серии
+                rows = await db.select({
+                    table: 'series_book',
+                    where: `@@id(${rows[0].id})`
+                });
+
+                if (rows.length)
+                    books = rows[0].books;
+            }
+
+            return {books: (books && books.length ? JSON.stringify(books) : '')};
         } finally {
             this.searchFlag--;
         }
