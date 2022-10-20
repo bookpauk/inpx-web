@@ -205,10 +205,10 @@
                                     <div v-if="book.showAllBooks && book.showMore" class="row items-center q-mr-md">
                                         <i class="las la-ellipsis-h text-red" style="font-size: 40px"></i>
                                         <q-btn class="q-ml-md" color="red" style="width: 200px" dense rounded no-caps @click="showMoreSeries(book)">
-                                            Показать еще {{ showMoreCount }}
+                                            Показать еще ({{ showMoreCount }})
                                         </q-btn>
                                         <q-btn class="q-ml-sm" color="red" style="width: 200px" dense rounded no-caps @click="showMoreSeries(book, true)">
-                                            Показать все
+                                            Показать все ({{ (book.allBooksLoaded && book.allBooksLoaded.length) || '?' }})
                                         </q-btn>
                                     </div>
 
@@ -236,10 +236,10 @@
                 <div v-if="isExpanded(item) && item.showMore" class="row items-center book-row q-mb-sm">
                     <i class="las la-ellipsis-h text-blue-10" style="font-size: 40px"></i>
                     <q-btn class="q-ml-md" color="primary" style="width: 200px" dense rounded no-caps @click="showMore(item)">
-                        Показать еще {{ showMoreCount }}
+                        Показать еще ({{ showMoreCount }})
                     </q-btn>
                     <q-btn class="q-ml-sm" color="primary" style="width: 200px" dense rounded no-caps @click="showMore(item, true)">
-                        Показать все
+                        Показать все ({{ (item.booksLoaded && item.booksLoaded.length) || '?' }})
                     </q-btn>
                 </div>
             </div>
