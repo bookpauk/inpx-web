@@ -55,7 +55,7 @@ class DbSearcher {
     async selectAuthorIds(query) {
         const db = this.db;
 
-        let authorIds = new Set();
+        let authorIds = [];
 
         //сначала выберем все id авторов по фильтру
         //порядок id соответсвует ASC-сортировке по author
@@ -69,7 +69,7 @@ class DbSearcher {
             });
 
             for (const row of authorRows)
-                authorIds.add(row.id);
+                authorIds.push(row.id);
         } else {//все авторы
             if (!db.searchCache.authorIdsAll) {
                 const authorRows = await db.select({
@@ -77,18 +77,17 @@ class DbSearcher {
                     dirtyIdsOnly: true,
                 });
 
-                db.searchCache.authorIdsAll = [];
                 for (const row of authorRows) {
-                    authorIds.add(row.id);
-                    db.searchCache.authorIdsAll.push(row.id);
+                    authorIds.push(row.id);
                 }
+
+                db.searchCache.authorIdsAll = authorIds;
             } else {//оптимизация
-                authorIds = new Set(db.searchCache.authorIdsAll);
+                authorIds = db.searchCache.authorIdsAll;
             }
         }
 
         const idsArr = [];
-        idsArr.push(authorIds);
 
         //серии
         if (query.series && query.series !== '*') {
@@ -176,12 +175,13 @@ class DbSearcher {
             idsArr.push(ids);
         }
 
-        if (idsArr.length > 1)
-            authorIds = utils.intersectSet(idsArr);
+        if (idsArr.length) {
+            //ищем пересечение множеств
+            idsArr.push(new Set(authorIds));
+            authorIds = Array.from(utils.intersectSet(idsArr));
+        }
 
         //сортировка
-        authorIds = Array.from(authorIds);
-        
         authorIds.sort((a, b) => a - b);
 
         return authorIds;
