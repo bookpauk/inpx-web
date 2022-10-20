@@ -462,11 +462,7 @@ class DbCreator {
             titleRec.id = ++id;
         }
 
-        //config
-        await db.create({
-            table: 'config'
-        });
-
+        //stats
         const stats = {
             filesCount: 0,
             recsLoaded,
@@ -482,14 +478,6 @@ class DbCreator {
             langCount: langArr.length,
         };
         //console.log(stats);
-
-        const inpxHashCreator = new InpxHashCreator(config);
-
-        await db.insert({table: 'config', rows: [
-            {id: 'inpxInfo', value: (inpxFilter && inpxFilter.info ? inpxFilter.info : parser.info)},
-            {id: 'stats', value: stats},
-            {id: 'inpxHash', value: await inpxHashCreator.getHash()},
-        ]});
 
         //сохраним поисковые таблицы
         const chunkSize = 10000;
@@ -576,6 +564,19 @@ class DbCreator {
         await db.drop({table: 'book'});//больше не понадобится
         await db.freeMemory();
         utils.freeMemory();
+
+        //config сохраняем в самом конце, нет конфига - с базой что-то не так
+        const inpxHashCreator = new InpxHashCreator(config);
+
+        await db.create({
+            table: 'config'
+        });
+
+        await db.insert({table: 'config', rows: [
+            {id: 'inpxInfo', value: (inpxFilter && inpxFilter.info ? inpxFilter.info : parser.info)},
+            {id: 'stats', value: stats},
+            {id: 'inpxHash', value: await inpxHashCreator.getHash()},
+        ]});
 
         callback({job: 'done', jobMessage: ''});
     }
@@ -689,12 +690,9 @@ class DbCreator {
             });
         `});
 
-        if (countRes.length) {
+        if (countRes.length)
             stats.filesCount = countRes[0].count;
-            await db.insert({table: 'config', replace: true, rows: [
-                {id: 'stats', value: stats},
-            ]});
-        }
+
         countDone = true;
     }
 }
