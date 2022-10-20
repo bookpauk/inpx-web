@@ -114,7 +114,7 @@ async function init() {
             }
         }
     } else {
-        config.inpxFile = `${config.tempDir}/${utils.randomHexString(20)}`;
+        config.inpxFile = `${config.dataDir}/remote.inpx`;
         const RemoteLib = require('./core/RemoteLib');//singleton
         const remoteLib = new RemoteLib(config);
         await remoteLib.downloadInpxFile();

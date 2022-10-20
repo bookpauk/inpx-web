@@ -5,7 +5,7 @@ const _ = require('lodash');
 
 const ZipReader = require('./ZipReader');
 const WorkerState = require('./WorkerState');//singleton
-const { JembaDbThread } = require('jembadb');
+const { JembaDb, JembaDbThread } = require('jembadb');
 const DbCreator = require('./DbCreator');
 const DbSearcher = require('./DbSearcher');
 const InpxHashCreator = require('./InpxHashCreator');
@@ -141,10 +141,33 @@ class WebWorker {
 
             this.inpxFileHash = await this.inpxHashCreator.getInpxFileHash();
 
-            //пересоздаем БД из INPX если нужно
+            //проверим полный InxpHash (включая фильтр и версию БД)
+            //для этого заглянем в конфиг внутри БД, если он есть
+            if (!(config.recreateDb || recreate) && await fs.pathExists(dbPath)) {
+                const newInpxHash = await this.inpxHashCreator.getHash();
+
+                const tmpDb = new JembaDb();
+                await tmpDb.lock({dbPath, softLock: true});
+
+                try {
+                    await tmpDb.open({table: 'config'});
+                    const rows = await tmpDb.select({table: 'config', where: `@@id('inpxHash')`});
+
+                    if (!rows.length || newInpxHash !== rows[0].value)
+                        throw new Error('inpx file: changes found on start, recreating DB');
+                } catch (e) {
+                    log(LM_WARN, e.message);
+                    recreate = true;
+                } finally {
+                    await tmpDb.unlock();
+                }
+            }
+
+            //удалим БД если нужно
             if (config.recreateDb || recreate)
                 await fs.remove(dbPath);
 
+            //пересоздаем БД из INPX если нужно
             if (!await fs.pathExists(dbPath)) {
                 try {
                     await this.createDb(dbPath);
@@ -160,7 +183,7 @@ class WebWorker {
             this.setMyState(ssDbLoading);
             log('Searcher DB loading');
 
-            const db = new JembaDbThread();
+            const db = new JembaDbThread();//в отдельном потоке
             await db.lock({
                 dbPath,
                 softLock: true,
@@ -181,14 +204,13 @@ class WebWorker {
             db.wwCache = {};            
             this.db = db;
 
-            log('Searcher DB ready');
+            this.setMyState(ssNormal);
 
+            log('Searcher DB ready');
             this.logServerStats();
         } catch (e) {
             log(LM_FATAL, e.message);            
             ayncExit.exit(1);
-        } finally {
-            this.setMyState(ssNormal);
         }
     }
 
