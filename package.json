@@ -54,7 +54,7 @@
     "compression": "^1.7.4",
     "express": "^4.18.1",
     "fs-extra": "^10.1.0",
-    "jembadb": "^4.2.0",
+    "jembadb": "^4.3.0",
     "localforage": "^1.10.0",
     "lodash": "^4.17.21",
     "minimist": "^1.2.6",
