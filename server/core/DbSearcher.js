@@ -346,7 +346,7 @@ class DbSearcher {
                 where: `@@dirtyIndexLR('value', ${db.esc(series)}, ${db.esc(series)})`
             });
 
-            let books = [];
+            let books;
             if (rows.length) {
                 //выборка книг серии
                 rows = await db.select({
