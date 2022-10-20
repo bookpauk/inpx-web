@@ -573,7 +573,7 @@ class DbCreator {
         await this.countStats(db, callback, stats);
 
         //чистка памяти, ибо жрет как не в себя
-        await db.close({table: 'book'});
+        await db.drop({table: 'book'});//больше не понадобится
         await db.freeMemory();
         utils.freeMemory();
 
