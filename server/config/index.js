@@ -85,13 +85,22 @@ class ConfigManager {
     async load() {
         if (!this.inited)
             throw new Error('not inited');
-        if (!await fs.pathExists(this.userConfigFile)) {
-            await this.save();
-            return;
-        }
 
-        const data = await fs.readFile(this.userConfigFile, 'utf8');
-        this.config = JSON.parse(data);
+        if (await fs.pathExists(this.userConfigFile)) {
+            const data = JSON.parse(await fs.readFile(this.userConfigFile, 'utf8'));
+            const config = _.pick(data, propsToSave);
+            
+            this.config = config;
+
+            //сохраним конфиг, если не все атрибуты присутствуют в файле конфига
+            for (const prop of propsToSave)
+                if (!Object.prototype.hasOwnProperty.call(config, prop)) {
+                    await this.save();
+                    break;
+                }
+        } else {
+            await this.save();
+        }
     }
 
     async save() {
