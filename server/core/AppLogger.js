@@ -37,6 +37,10 @@ class AppLogger {
                 {log: 'FileLog', fileName: this.errLogFileName, exclude: [LM_OK, LM_INFO, LM_TOTAL]},
                 {log: 'FileLog', fileName: this.fatalLogFileName, exclude: [LM_OK, LM_INFO, LM_WARN, LM_ERR, LM_TOTAL]},//LM_FATAL only
             ];
+        } else {
+            loggerParams = [
+                {log: 'ConsoleLog'},
+            ];
         }
 
         this._logger = new Logger(loggerParams);
