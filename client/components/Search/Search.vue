@@ -680,19 +680,21 @@ class Search {
         info += `<div style="min-width: 250px" />`;
 
         info += `
-<div><div ${keyStyle}>Всего файлов книг:</div><span>${stat.filesCount}</span></div>
+<div><div ${keyStyle}>Всего файлов книг:</div><span>${stat.filesCountAll}</span></div>
+<div><div ${keyStyle}>Из них актуальных:</div><span>${stat.filesCount}</span></div>
+<div><div ${keyStyle}>Помеченных как удаленные:</div><span>${stat.filesDelCount}</span></div>
 <br>
-<div><div ${keyStyle}>Обработано ссылок на книги:</div><span>${stat.bookCountAll}</span></div>
+<div><div ${keyStyle}>Обработано ссылок на файлы:</div><span>${stat.bookCountAll}</span></div>
 <div><div ${keyStyle}>Из них актуальных:</div><span>${stat.bookCount}</span></div>
 <div><div ${keyStyle}>Помеченных как удаленные:</div><span>${stat.bookDelCount}</span></div>
 <div><div ${keyStyle}>Актуальных без автора:</div><span>${stat.noAuthorBookCount}</span></div>
 <br>
-<div><div ${keyStyle}>Всего записей об авторах:</div><span>${stat.authorCountAll}</span></div>
-<div><div ${keyStyle}>Записей без соавторов:</div><span>${stat.authorCount}</span></div>
+<div><div ${keyStyle}>Всего имен авторов:</div><span>${stat.authorCountAll}</span></div>
+<div><div ${keyStyle}>Уникальных имен без соавторов:</div><span>${stat.authorCount}</span></div>
 <div><div ${keyStyle}>С соавторами:</div><span>${stat.authorCountAll- stat.authorCount}</span></div>
 <br>
 <div><div ${keyStyle}>Уникальных названий книг:</div><span>${stat.titleCount}</span></div>
-<div><div ${keyStyle}>Уникальных серий:</div><span>${stat.seriesCount}</span></div>
+<div><div ${keyStyle}>Уникальных названий серий:</div><span>${stat.seriesCount}</span></div>
 <div><div ${keyStyle}>Найдено жанров:</div><span>${stat.genreCount}</span></div>
 <div><div ${keyStyle}>Найдено языков:</div><span>${stat.langCount}</span></div>
 `;        

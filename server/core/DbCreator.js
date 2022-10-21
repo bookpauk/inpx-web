@@ -464,7 +464,9 @@ class DbCreator {
 
         //stats
         const stats = {
-            filesCount: 0,
+            filesCount: 0,//вычислим позднее
+            filesCountAll: 0,//вычислим позднее
+            filesDelCount: 0,//вычислим позднее
             recsLoaded,
             authorCount,
             authorCountAll: authorArr.length,
@@ -554,10 +556,10 @@ class DbCreator {
             cacheSize: (config.lowMemoryMode ? 5 : 500),
         });
 
-        callback({job: 'series optimization', jobMessage: 'Оптимизация', jobStep: 11, progress: 0});
+        callback({job: 'optimization', jobMessage: 'Оптимизация', jobStep: 11, progress: 0});
         await this.optimizeSeries(db, callback);
 
-        callback({job: 'files count', jobMessage: 'Подсчет статистики', jobStep: 12, progress: 0});
+        callback({job: 'stats count', jobMessage: 'Подсчет статистики', jobStep: 12, progress: 0});
         await this.countStats(db, callback, stats);
 
         //чистка памяти, ибо жрет как не в себя
@@ -676,22 +678,33 @@ class DbCreator {
         })();
 
         //подчсет
-        const countRes = await db.select({table: 'book', count: true, where: `
-            const filesSet = new Set();
+        const countRes = await db.select({table: 'book', rawResult: true, where: `
+            const files = new Set();
+            const filesDel = new Set();
 
-            @@iter(@all(), (r) => {
+            for (const id of @all()) {
+                const r = @row(id);
                 const file = ${"`${r.folder}/${r.file}.${r.ext}`"};
-                if (filesSet.has(file)) {
-                    return false;
+                if (!r.del) {
+                    files.add(file);
                 } else {
-                    filesSet.add(file);
-                    return true;
+                    filesDel.add(file);
                 }
-            });
+            }
+
+            for (const file of filesDel)
+                if (files.has(file))
+                    filesDel.delete(file);
+
+            return {filesCount: files.size, filesDelCount: filesDel.size};
         `});
 
-        if (countRes.length)
-            stats.filesCount = countRes[0].count;
+        if (countRes.length) {
+            const res = countRes[0].rawResult;
+            stats.filesCount = res.filesCount;
+            stats.filesCountAll = res.filesCount + res.filesDelCount;
+            stats.filesDelCount = res.filesDelCount;
+        }
 
         countDone = true;
     }
