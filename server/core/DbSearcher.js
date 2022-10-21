@@ -35,18 +35,18 @@ class DbSearcher {
         //особая обработка префиксов
         if (a[0] == '=') {
             a = a.substring(1);
-            where = `@@dirtyIndexLR('value', ${db.esc(a)}, ${db.esc(a)})`;
+            where = `@dirtyIndexLR('value', ${db.esc(a)}, ${db.esc(a)})`;
         } else if (a[0] == '*') {
             a = a.substring(1);
-            where = `@@indexIter('value', (v) => (v.indexOf(${db.esc(a)}) >= 0) )`;
+            where = `@indexIter('value', (v) => (v.indexOf(${db.esc(a)}) >= 0) )`;
         } else if (a[0] == '#') {
             a = a.substring(1);
-            where = `@@indexIter('value', (v) => {                    
+            where = `@indexIter('value', (v) => {
                 const enru = new Set(${db.esc(enruArr)});
                 return !v || (!enru.has(v[0].toLowerCase()) && v.indexOf(${db.esc(a)}) >= 0);
             })`;
         } else {
-            where = `@@dirtyIndexLR('value', ${db.esc(a)}, ${db.esc(a + maxUtf8Char)})`;
+            where = `@dirtyIndexLR('value', ${db.esc(a)}, ${db.esc(a + maxUtf8Char)})`;
         }
 
         return where;
@@ -65,11 +65,10 @@ class DbSearcher {
             const authorRows = await db.select({
                 table: 'author',
                 rawResult: true,
-                where: `return Array.from(${where.substring(1)})`,
+                where: `return Array.from(${where})`,
             });
 
-            if (authorRows.length)
-                authorIds = authorRows[0].rawResult;
+            authorIds = authorRows[0].rawResult;
         } else {//все авторы
             if (!this.searchCache.authorIdsAll) {
                 const authorRows = await db.select({
@@ -78,8 +77,7 @@ class DbSearcher {
                     where: `return Array.from(@all())`,
                 });
 
-                if (authorRows.length)
-                    authorIds = authorRows[0].rawResult;
+                authorIds = authorRows[0].rawResult;
 
                 this.searchCache.authorIdsAll = authorIds;
             } else {//оптимизация
@@ -95,17 +93,22 @@ class DbSearcher {
 
             const seriesRows = await db.select({
                 table: 'series',
-                map: `(r) => ({authorId: r.authorId})`,
-                where
+                rawResult: true,
+                where: `
+                    const ids = ${where};
+
+                    const result = new Set();
+                    for (const id of ids) {
+                        const row = @row(id);
+                        for (const authorId of row.authorId)
+                            result.add(authorId);
+                    }
+
+                    return Array.from(result);
+                `
             });
 
-            const ids = new Set();
-            for (const row of seriesRows) {
-                for (const id of row.authorId)
-                    ids.add(id);
-            }
-
-            idsArr.push(ids);
+            idsArr.push(new Set(seriesRows[0].rawResult));
         }
 
         //названия
@@ -114,19 +117,25 @@ class DbSearcher {
 
             let titleRows = await db.select({
                 table: 'title',
-                map: `(r) => ({authorId: r.authorId})`,
-                where
+                rawResult: true,
+                where: `
+                    const ids = ${where};
+
+                    const result = new Set();
+                    for (const id of ids) {
+                        const row = @row(id);
+                        for (const authorId of row.authorId)
+                            result.add(authorId);
+                    }
+
+                    return Array.from(result);
+                `
             });
 
-            const ids = new Set();
-            for (const row of titleRows) {
-                for (const id of row.authorId)
-                    ids.add(id);
-            }
-            idsArr.push(ids);
+            idsArr.push(new Set(titleRows[0].rawResult));
 
             //чистки памяти при тяжелых запросах
-            if (query.title[0] == '*') {
+            if (this.config.lowMemoryMode && query.title[0] == '*') {
                 titleRows = null;
                 utils.freeMemory();
                 await db.freeMemory();
@@ -135,44 +144,58 @@ class DbSearcher {
 
         //жанры
         if (query.genre) {
-            const genres = query.genre.split(',');
+            const genreRows = await db.select({
+                table: 'genre',
+                rawResult: true,
+                where: `
+                    const genres = ${db.esc(query.genre.split(','))};
 
-            const ids = new Set();
-            for (const g of genres) {
-                const genreRows = await db.select({
-                    table: 'genre',
-                    map: `(r) => ({authorId: r.authorId})`,
-                    where: `@@indexLR('value', ${db.esc(g)}, ${db.esc(g)})`,
-                });
+                    const ids = new Set();
+                    for (const g of genres) {
+                        for (const id of @indexLR('value', g, g))
+                            ids.add(id);
+                    }
+                    
+                    const result = new Set();
+                    for (const id of ids) {
+                        const row = @row(id);
+                        for (const authorId of row.authorId)
+                            result.add(authorId);
+                    }
 
-                for (const row of genreRows) {
-                    for (const id of row.authorId)
-                        ids.add(id);
-                }
-            }
+                    return Array.from(result);
+                `
+            });
 
-            idsArr.push(ids);
+            idsArr.push(new Set(genreRows[0].rawResult));
         }
 
         //языки
         if (query.lang) {
-            const langs = query.lang.split(',');
+            const langRows = await db.select({
+                table: 'lang',
+                rawResult: true,
+                where: `
+                    const langs = ${db.esc(query.lang.split(','))};
 
-            const ids = new Set();
-            for (const l of langs) {
-                const langRows = await db.select({
-                    table: 'lang',
-                    map: `(r) => ({authorId: r.authorId})`,
-                    where: `@@indexLR('value', ${db.esc(l)}, ${db.esc(l)})`,
-                });
+                    const ids = new Set();
+                    for (const l of langs) {
+                        for (const id of @indexLR('value', l, l))
+                            ids.add(id);
+                    }
+                    
+                    const result = new Set();
+                    for (const id of ids) {
+                        const row = @row(id);
+                        for (const authorId of row.authorId)
+                            result.add(authorId);
+                    }
 
-                for (const row of langRows) {
-                    for (const id of row.authorId)
-                        ids.add(id);
-                }
-            }
-            
-            idsArr.push(ids);
+                    return Array.from(result);
+                `
+            });
+
+            idsArr.push(new Set(langRows[0].rawResult));
         }
 
         if (idsArr.length) {
