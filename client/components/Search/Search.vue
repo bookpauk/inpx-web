@@ -125,7 +125,7 @@
             </div>
 
             <div class="row justify-center" style="min-height: 48px">
-                <PageScroller v-show="pageCount > 1" v-model="search.page" :page-count="pageCount" />
+                <PageScroller v-show="pageCount > 1" ref="pageScroller1" v-model="search.page" :page-count="pageCount" />
             </div>
 
             <!-- Формирование списка ------------------------------------------------------------------------>
@@ -941,6 +941,22 @@ class Search {
         });
     }
 
+    highlightPageScroller(query) {
+        const q = _.cloneDeep(query);
+        delete q.limit;
+        delete q.offset;
+        delete q.page;
+
+        try {
+            if (this.search.page < 2 || !this._prevQuery || _.isEqual(this._prevQuery, q))
+                return;
+
+            this.$refs.pageScroller1.highlightScroller();
+        } finally {
+            this._prevQuery = q;
+        }
+    }
+
     async updateSearchFromRouteQuery(to) {
         if (this.liberamaReady)
             this.sendCurrentUrl();
@@ -1477,6 +1493,7 @@ class Search {
                         await this.updateGenreTreeIfNeeded();
                         await this.updateTableData();
                         this.scrollToTop();
+                        this.highlightPageScroller(query);
                     }
                 } catch (e) {
                     this.$root.stdDialog.alert(e.message, 'Ошибка');
