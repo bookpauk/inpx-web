@@ -205,7 +205,7 @@
                                     <div v-if="book.showAllBooks && book.showMore" class="row items-center q-mr-md">
                                         <i class="las la-ellipsis-h text-red" style="font-size: 40px"></i>
                                         <q-btn class="q-ml-md" color="red" style="width: 200px" dense rounded no-caps @click="showMoreSeries(book)">
-                                            Показать еще ({{ showMoreCount }})
+                                            Показать еще (~{{ showMoreCount }})
                                         </q-btn>
                                         <q-btn class="q-ml-sm" color="red" style="width: 200px" dense rounded no-caps @click="showMoreSeries(book, true)">
                                             Показать все ({{ (book.allBooksLoaded && book.allBooksLoaded.length) || '?' }})
@@ -236,7 +236,7 @@
                 <div v-if="isExpanded(item) && item.showMore" class="row items-center book-row q-mb-sm">
                     <i class="las la-ellipsis-h text-blue-10" style="font-size: 40px"></i>
                     <q-btn class="q-ml-md" color="primary" style="width: 200px" dense rounded no-caps @click="showMore(item)">
-                        Показать еще ({{ showMoreCount }})
+                        Показать еще (~{{ showMoreCount }})
                     </q-btn>
                     <q-btn class="q-ml-sm" color="primary" style="width: 200px" dense rounded no-caps @click="showMore(item, true)">
                         Показать все ({{ (item.booksLoaded && item.booksLoaded.length) || '?' }})
@@ -1197,7 +1197,7 @@ class Search {
         if (item.booksLoaded) {
             const currentLen = (item.books ? item.books.length : 0);
             let books;
-            if (all) {
+            if (all || currentLen + showMoreCount*1.5 > item.booksLoaded.length) {
                 books = item.booksLoaded;
             } else {
                 books = item.booksLoaded.slice(0, currentLen + showMoreCount);
@@ -1212,7 +1212,7 @@ class Search {
         if (seriesItem.allBooksLoaded) {
             const currentLen = (seriesItem.allBooks ? seriesItem.allBooks.length : 0);
             let books;
-            if (all) {
+            if (all || currentLen + showMoreCount*1.5 > seriesItem.allBooksLoaded.length) {
                 books = seriesItem.allBooksLoaded;
             } else {
                 books = seriesItem.allBooksLoaded.slice(0, currentLen + showMoreCount);
