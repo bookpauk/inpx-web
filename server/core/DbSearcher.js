@@ -44,7 +44,7 @@ class DbSearcher {
             where = `@@indexIter('value', (v) => {                    
                 const enru = new Set(${db.esc(enruArr)});
                 return !v || (!enru.has(v[0].toLowerCase()) && v.indexOf(${db.esc(a)}) >= 0);
-            });`;
+            })`;
         } else {
             where = `@@dirtyIndexLR('value', ${db.esc(a)}, ${db.esc(a + maxUtf8Char)})`;
         }
@@ -64,22 +64,22 @@ class DbSearcher {
 
             const authorRows = await db.select({
                 table: 'author',
-                dirtyIdsOnly: true,
-                where
+                rawResult: true,
+                where: `return Array.from(${where.substring(1)})`,
             });
 
-            for (const row of authorRows)
-                authorIds.push(row.id);
+            if (authorRows.length)
+                authorIds = authorRows[0].rawResult;
         } else {//все авторы
             if (!this.searchCache.authorIdsAll) {
                 const authorRows = await db.select({
                     table: 'author',
-                    dirtyIdsOnly: true,
+                    rawResult: true,
+                    where: `return Array.from(@all())`,
                 });
 
-                for (const row of authorRows) {
-                    authorIds.push(row.id);
-                }
+                if (authorRows.length)
+                    authorIds = authorRows[0].rawResult;
 
                 this.searchCache.authorIdsAll = authorIds;
             } else {//оптимизация
@@ -407,7 +407,7 @@ class DbSearcher {
         }
 
         this.searchCache = null;
-        
+
         if (this.timer) {
             clearTimeout(this.timer);
             this.timer = null;
