@@ -99,7 +99,7 @@ class DbSearcher {
 
                     const result = new Set();
                     for (const id of ids) {
-                        const row = @row(id);
+                        const row = @unsafeRow(id);
                         for (const authorId of row.authorId)
                             result.add(authorId);
                     }
@@ -123,7 +123,7 @@ class DbSearcher {
 
                     const result = new Set();
                     for (const id of ids) {
-                        const row = @row(id);
+                        const row = @unsafeRow(id);
                         for (const authorId of row.authorId)
                             result.add(authorId);
                     }
@@ -158,7 +158,7 @@ class DbSearcher {
                     
                     const result = new Set();
                     for (const id of ids) {
-                        const row = @row(id);
+                        const row = @unsafeRow(id);
                         for (const authorId of row.authorId)
                             result.add(authorId);
                     }
@@ -186,7 +186,7 @@ class DbSearcher {
                     
                     const result = new Set();
                     for (const id of ids) {
-                        const row = @row(id);
+                        const row = @unsafeRow(id);
                         for (const authorId of row.authorId)
                             result.add(authorId);
                     }
