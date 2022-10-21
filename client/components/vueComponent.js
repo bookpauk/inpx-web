@@ -35,15 +35,19 @@ export default function(componentClass) {
         for (const method of classMethods) {
             const desc = Object.getOwnPropertyDescriptor(classProto, method);
             if (desc.get) {//has getter, computed
-                computed[method] = {get: desc.get};
-                if (desc.set)
-                    computed[method].set = desc.set;
-            } else if ( ['beforeCreate', 'created', 'beforeMount', 'mounted', 'beforeUpdate', 'updated', 'activated',//life cycle hooks
-                        'deactivated', 'beforeUnmount', 'unmounted', 'errorCaptured', 'renderTracked', 'renderTriggered',//life cycle hooks
-                        'setup'].includes(method) ) {
-                comp[method] = obj[method];
+                if (!computed[method]) {
+                    computed[method] = {get: desc.get};
+                    if (desc.set)
+                        computed[method].set = desc.set;
+                }
+            } else if ( ['beforeCreate', 'created', 'beforeMount', 'mounted', 'beforeUpdate', 'updated', 'activated',
+                        'deactivated', 'beforeUnmount', 'unmounted', 'errorCaptured', 'renderTracked', 'renderTriggered',
+                        'setup'].includes(method) ) {//life cycle hooks
+                if (!comp[method])
+                    comp[method] = obj[method];
             } else if (method !== 'constructor') {//usual
-                methods[method] = obj[method];
+                if (!methods[method])
+                    methods[method] = obj[method];
             }
         }
 
