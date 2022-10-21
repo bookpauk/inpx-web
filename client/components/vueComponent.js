@@ -17,7 +17,7 @@ export default function(componentClass) {
                     }
                 }
             } else if (prop === '_props') {
-                comp['props'] = obj[prop];
+                comp.props = obj[prop];
             }
         } else {//usual prop
             data[prop] = obj[prop];
@@ -26,23 +26,28 @@ export default function(componentClass) {
     comp.data = () => _.cloneDeep(data);
     
     //methods
-    const classProto = Object.getPrototypeOf(obj);
-    const classMethods = Object.getOwnPropertyNames(classProto);
     const methods = {};
     const computed = {};
-    for (const method of classMethods) {
-        const desc = Object.getOwnPropertyDescriptor(classProto, method);
-        if (desc.get) {//has getter, computed
-            computed[method] = {get: desc.get};
-            if (desc.set)
-                computed[method].set = desc.set;
-        } else if ( ['beforeCreate', 'created', 'beforeMount', 'mounted', 'beforeUpdate', 'updated', 'activated',//life cycle hooks
-                    'deactivated', 'beforeUnmount', 'unmounted', 'errorCaptured', 'renderTracked', 'renderTriggered',//life cycle hooks
-                    'setup'].includes(method) ) {
-            comp[method] = obj[method];
-        } else if (method !== 'constructor') {//usual
-            methods[method] = obj[method];
+
+    let classProto = Object.getPrototypeOf(obj);
+    while (classProto) {
+        const classMethods = Object.getOwnPropertyNames(classProto);
+        for (const method of classMethods) {
+            const desc = Object.getOwnPropertyDescriptor(classProto, method);
+            if (desc.get) {//has getter, computed
+                computed[method] = {get: desc.get};
+                if (desc.set)
+                    computed[method].set = desc.set;
+            } else if ( ['beforeCreate', 'created', 'beforeMount', 'mounted', 'beforeUpdate', 'updated', 'activated',//life cycle hooks
+                        'deactivated', 'beforeUnmount', 'unmounted', 'errorCaptured', 'renderTracked', 'renderTriggered',//life cycle hooks
+                        'setup'].includes(method) ) {
+                comp[method] = obj[method];
+            } else if (method !== 'constructor') {//usual
+                methods[method] = obj[method];
+            }
         }
+
+        classProto = Object.getPrototypeOf(classProto);
     }
     comp.methods = methods;
     comp.computed = computed;
