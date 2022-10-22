@@ -697,6 +697,8 @@ class Search {
 <div><div ${keyStyle}>Уникальных названий серий:</div><span>${stat.seriesCount}</span></div>
 <div><div ${keyStyle}>Найдено жанров:</div><span>${stat.genreCount}</span></div>
 <div><div ${keyStyle}>Найдено языков:</div><span>${stat.langCount}</span></div>
+<br>
+<div><div ${keyStyle}>Версия поисковой БД:</div><span>${this.config.dbVersion}</span></div>
 `;        
 
         info += `
