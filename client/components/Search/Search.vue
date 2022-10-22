@@ -21,12 +21,12 @@
         <div ref="scroller" class="col fit column no-wrap" style="overflow: auto; position: relative" @scroll="onScroll">
             <div ref="toolPanel" class="tool-panel column bg-cyan-2" style="position: sticky; top: 0; z-index: 10;">
                 <div class="header q-mx-md q-mb-xs q-mt-sm row items-center">
-                    <div style="height: 33px">
-                        <img src="./assets/logo.png" class="clickable2" @click="newSearch" />
+                    <a :href="newSearchLink" style="height: 33px">
+                        <img src="./assets/logo.png" />
                         <q-tooltip :delay="1500" anchor="bottom middle" content-style="font-size: 80%" max-width="400px">
                             Новый поиск
                         </q-tooltip>
-                    </div>
+                    </a>
                     <div class="row items-center q-ml-sm" style="font-size: 150%;">
                         <div class="q-mr-xs">
                             Коллекция
@@ -709,8 +709,8 @@ class Search {
         this.$root.stdDialog.alert(info, 'Статистика по коллекции', {iconName: 'la la-info-circle'});
     }
 
-    newSearch() {
-        window.location = window.location.origin;
+    get newSearchLink() {
+        return window.location.origin;
     }
 
     async hideTooltip() {
