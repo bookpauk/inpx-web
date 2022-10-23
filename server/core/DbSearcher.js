@@ -1,5 +1,5 @@
 //const _ = require('lodash');
-
+const HeavyCalc = require('./HeavyCalc');
 const utils = require('./utils');
 
 const maxMemCacheSize = 100;
@@ -17,6 +17,8 @@ class DbSearcher {
         this.searchFlag = 0;
         this.timer = null;
         this.closed = false;
+
+        this.heavyCalc = new HeavyCalc({threads: 4});
 
         this.searchCache = {
             memCache: new Map(),
@@ -108,7 +110,7 @@ class DbSearcher {
                 `
             });
 
-            idsArr.push(new Set(seriesRows[0].rawResult));
+            idsArr.push(seriesRows[0].rawResult);
         }
 
         //названия
@@ -132,7 +134,7 @@ class DbSearcher {
                 `
             });
 
-            idsArr.push(new Set(titleRows[0].rawResult));
+            idsArr.push(titleRows[0].rawResult);
 
             //чистки памяти при тяжелых запросах
             if (this.config.lowMemoryMode && query.title[0] == '*') {
@@ -167,7 +169,7 @@ class DbSearcher {
                 `
             });
 
-            idsArr.push(new Set(genreRows[0].rawResult));
+            idsArr.push(genreRows[0].rawResult);
         }
 
         //языки
@@ -195,17 +197,75 @@ class DbSearcher {
                 `
             });
 
-            idsArr.push(new Set(langRows[0].rawResult));
+            idsArr.push(langRows[0].rawResult);
         }
 
-        if (idsArr.length) {
-            //ищем пересечение множеств
-            idsArr.push(new Set(authorIds));
-            authorIds = Array.from(utils.intersectSet(idsArr));
+/*
+        //ищем пересечение множеств
+        idsArr.push(authorIds);
+
+        if (idsArr.length > 1) {
+            const idsSetArr = idsArr.map(ids => new Set(ids));
+            authorIds = Array.from(utils.intersectSet(idsSetArr));
         }
 
         //сортировка
         authorIds.sort((a, b) => a - b);
+*/
+        //ищем пересечение множеств в отдельном потоке
+        idsArr.push(authorIds);
+        authorIds = await this.heavyCalc.run({
+            args: idsArr,
+            fn: (args) => {
+                //из utils.intersectSet
+                const intersectSet = (arrSet) => {
+                    if (!arrSet.length)
+                        return new Set();
+
+                    let min = 0;
+                    let size = arrSet[0].size;
+                    for (let i = 1; i < arrSet.length; i++) {
+                        if (arrSet[i].size < size) {
+                            min = i;
+                            size = arrSet[i].size;
+                        }
+                    }
+
+                    const result = new Set();
+                    for (const elem of arrSet[min]) {
+                        let inAll = true;
+                        for (let i = 0; i < arrSet.length; i++) {
+                            if (i === min)
+                                continue;
+                            if (!arrSet[i].has(elem)) {
+                                inAll = false;
+                                break;
+                            }
+                        }
+
+                        if (inAll)
+                            result.add(elem);
+                    }
+
+                    return result;
+                };
+
+                //считаем пересечение, если надо
+                let result = [];
+
+                if (args.length > 1) {
+                    const arrSet = args.map(ids => new Set(ids));
+                    result = Array.from(intersectSet(arrSet));
+                } else if (args.length == 1) {
+                    result = args[0];
+                }
+
+                //сортировка
+                result.sort((a, b) => a - b);
+
+                return result;
+            }
+        });
 
         return authorIds;
     }
