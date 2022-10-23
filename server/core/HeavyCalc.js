@@ -66,7 +66,7 @@ class CalcThread {
     }    
 
     //async
-    run(params) {//args, fn
+    run(args, fn) {
         return new Promise((resolve, reject) => {
             this.requestId++;
 
@@ -78,7 +78,7 @@ class CalcThread {
             });
 
             if (this.worker) {
-                this.worker.postMessage({requestId: this.requestId, args: params.args, fn: params.fn.toString()});
+                this.worker.postMessage({requestId: this.requestId, args, fn: fn.toString()});
             } else {
                 reject(new Error('Worker does not exist'));
             }
@@ -112,7 +112,7 @@ class HeavyCalc {
         }
     }
 
-    async run(params) {
+    async run(args, fn) {
         if (this.terminated || !this.workers.length)
             throw new Error('All workers terminated');
 
@@ -125,7 +125,7 @@ class HeavyCalc {
 
         try {
             this.load[found]++;
-            return await this.workers[found].run(params);
+            return await this.workers[found].run(args, fn);
         } finally {
             this.load[found]--;
         }

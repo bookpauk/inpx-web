@@ -56,57 +56,54 @@ class DbSearcher {
     }
 
     async calcIntersect(idsArr) {
-        return await this.heavyCalc.run({
-            args: idsArr,
-            fn: (args) => {
-                //из utils.intersectSet
-                const intersectSet = (arrSet) => {
-                    if (!arrSet.length)
-                        return new Set();
+        return await this.heavyCalc.run(idsArr, (args) => {
+            //из utils.intersectSet
+            const intersectSet = (arrSet) => {
+                if (!arrSet.length)
+                    return new Set();
 
-                    let min = 0;
-                    let size = arrSet[0].size;
-                    for (let i = 1; i < arrSet.length; i++) {
-                        if (arrSet[i].size < size) {
-                            min = i;
-                            size = arrSet[i].size;
-                        }
+                let min = 0;
+                let size = arrSet[0].size;
+                for (let i = 1; i < arrSet.length; i++) {
+                    if (arrSet[i].size < size) {
+                        min = i;
+                        size = arrSet[i].size;
                     }
-
-                    const result = new Set();
-                    for (const elem of arrSet[min]) {
-                        let inAll = true;
-                        for (let i = 0; i < arrSet.length; i++) {
-                            if (i === min)
-                                continue;
-                            if (!arrSet[i].has(elem)) {
-                                inAll = false;
-                                break;
-                            }
-                        }
-
-                        if (inAll)
-                            result.add(elem);
-                    }
-
-                    return result;
-                };
-
-                //считаем пересечение, если надо
-                let result = [];
-
-                if (args.length > 1) {
-                    const arrSet = args.map(ids => new Set(ids));
-                    result = Array.from(intersectSet(arrSet));
-                } else if (args.length == 1) {
-                    result = args[0];
                 }
 
-                //сортировка
-                result.sort((a, b) => a - b);
+                const result = new Set();
+                for (const elem of arrSet[min]) {
+                    let inAll = true;
+                    for (let i = 0; i < arrSet.length; i++) {
+                        if (i === min)
+                            continue;
+                        if (!arrSet[i].has(elem)) {
+                            inAll = false;
+                            break;
+                        }
+                    }
+
+                    if (inAll)
+                        result.add(elem);
+                }
 
                 return result;
+            };
+
+            //считаем пересечение, если надо
+            let result = [];
+
+            if (args.length > 1) {
+                const arrSet = args.map(ids => new Set(ids));
+                result = Array.from(intersectSet(arrSet));
+            } else if (args.length == 1) {
+                result = args[0];
             }
+
+            //сортировка
+            result.sort((a, b) => a - b);
+
+            return result;
         });
     }
 
