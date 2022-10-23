@@ -41,7 +41,7 @@ class DbSearcher {
             where = `@dirtyIndexLR('value', ${db.esc(a)}, ${db.esc(a)})`;
         } else if (a[0] == '*') {
             a = a.substring(1);
-            where = `@indexIter('value', (v) => (v.indexOf(${db.esc(a)}) >= 0) )`;
+            where = `@indexIter('value', (v) => (v !== ${db.esc(emptyFieldValue)} && v.indexOf(${db.esc(a)}) >= 0) )`;
         } else if (a[0] == '#') {
             a = a.substring(1);
             where = `@indexIter('value', (v) => {

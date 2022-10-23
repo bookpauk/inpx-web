@@ -1145,6 +1145,9 @@ class Search {
             if (!searchValue)
                 return true;
 
+            if (!bookValue)
+                bookValue = emptyFieldValue;
+
             bookValue = bookValue.toLowerCase();
             searchValue = searchValue.toLowerCase();
 
@@ -1156,13 +1159,11 @@ class Search {
             } else if (searchValue[0] == '*') {
 
                 searchValue = searchValue.substring(1);
-                return bookValue.indexOf(searchValue) >= 0;
+                return bookValue !== emptyFieldValue && bookValue.indexOf(searchValue) >= 0;
             } else if (searchValue[0] == '#') {
 
                 searchValue = searchValue.substring(1);
                 return !bookValue || (bookValue !== emptyFieldValue && !enru.has(bookValue[0]) && bookValue.indexOf(searchValue) >= 0);
-            } else if (searchValue[0] == '?') {
-                return bookValue == '' || bookValue.indexOf(searchValue) == 0;
             } else {
                 //where = `@dirtyIndexLR('value', ${db.esc(a)}, ${db.esc(a + maxUtf8Char)})`;
                 return bookValue.localeCompare(searchValue) >= 0 && bookValue.localeCompare(searchValue + maxUtf8Char) <= 0;
