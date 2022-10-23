@@ -496,6 +496,7 @@ class DbSearcher {
             this.timer = null;
         }
 
+        this.heavyCalc.terminate();
         this.closed = true;
     }
 }
