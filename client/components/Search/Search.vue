@@ -1160,7 +1160,7 @@ class Search {
             } else if (searchValue[0] == '#') {
 
                 searchValue = searchValue.substring(1);
-                return !bookValue || (!enru.has(bookValue[0]) && bookValue.indexOf(searchValue) >= 0);
+                return !bookValue || (bookValue !== emptyFieldValue && !enru.has(bookValue[0]) && bookValue.indexOf(searchValue) >= 0);
             } else if (searchValue[0] == '?') {
                 return bookValue == '' || bookValue.indexOf(searchValue) == 0;
             } else {

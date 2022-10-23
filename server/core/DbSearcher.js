@@ -4,6 +4,7 @@ const utils = require('./utils');
 
 const maxMemCacheSize = 100;
 
+const emptyFieldValue = '?';
 const maxUtf8Char = String.fromCodePoint(0xFFFFF);
 const ruAlphabet = 'абвгдеёжзийклмнопрстуфхцчшщъыьэюя';
 const enAlphabet = 'abcdefghijklmnopqrstuvwxyz';
@@ -45,7 +46,7 @@ class DbSearcher {
             a = a.substring(1);
             where = `@indexIter('value', (v) => {
                 const enru = new Set(${db.esc(enruArr)});
-                return !v || (!enru.has(v[0]) && v.indexOf(${db.esc(a)}) >= 0);
+                return !v || (v !== ${db.esc(emptyFieldValue)} && !enru.has(v[0]) && v.indexOf(${db.esc(a)}) >= 0);
             })`;
         } else {
             where = `@dirtyIndexLR('value', ${db.esc(a)}, ${db.esc(a + maxUtf8Char)})`;
