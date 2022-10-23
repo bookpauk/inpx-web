@@ -45,7 +45,7 @@ class DbSearcher {
             a = a.substring(1);
             where = `@indexIter('value', (v) => {
                 const enru = new Set(${db.esc(enruArr)});
-                return !v || (!enru.has(v[0].toLowerCase()) && v.indexOf(${db.esc(a)}) >= 0);
+                return !v || (!enru.has(v[0]) && v.indexOf(${db.esc(a)}) >= 0);
             })`;
         } else {
             where = `@dirtyIndexLR('value', ${db.esc(a)}, ${db.esc(a + maxUtf8Char)})`;

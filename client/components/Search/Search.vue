@@ -1124,6 +1124,7 @@ class Search {
         const s = this.search;
 
         const emptyFieldValue = '?';
+        const maxUtf8Char = String.fromCodePoint(0xFFFFF);
         const ruAlphabet = 'абвгдеёжзийклмнопрстуфхцчшщъыьэюя';
         const enAlphabet = 'abcdefghijklmnopqrstuvwxyz';
         const enru = new Set((ruAlphabet + enAlphabet).split(''));
@@ -1151,7 +1152,7 @@ class Search {
             if (searchValue[0] == '=') {
 
                 searchValue = searchValue.substring(1);
-                return bookValue == searchValue;
+                return bookValue.localeCompare(searchValue) == 0;
             } else if (searchValue[0] == '*') {
 
                 searchValue = searchValue.substring(1);
@@ -1163,8 +1164,8 @@ class Search {
             } else if (searchValue[0] == '?') {
                 return bookValue == '' || bookValue.indexOf(searchValue) == 0;
             } else {
-
-                return bookValue.indexOf(searchValue) == 0;
+                //where = `@dirtyIndexLR('value', ${db.esc(a)}, ${db.esc(a + maxUtf8Char)})`;
+                return bookValue.localeCompare(searchValue) >= 0 && bookValue.localeCompare(searchValue + maxUtf8Char) <= 0;
             }
         };
 
