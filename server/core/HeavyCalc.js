@@ -86,10 +86,17 @@ class CalcThread {
     }
 }
 
+//singleton
+let instance = null;
+
 class HeavyCalc {
     constructor(opts = {}) {
+        const singleton = opts.singleton || false;
+
+        if (singleton && instance)
+            return instance;
+
         this.threads = opts.threads || 1;
-        this.singleton = opts.singleton || false;
         this.terminated = false;
 
         this.workers = [];
@@ -98,6 +105,10 @@ class HeavyCalc {
             const worker = new CalcThread();
             this.workers.push(worker);
             this.load.push(0);
+        }
+
+        if (singleton) {
+            instance = this;
         }
     }
 
