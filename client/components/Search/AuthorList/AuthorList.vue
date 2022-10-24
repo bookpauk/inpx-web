@@ -189,7 +189,6 @@ class AuthorList extends BaseList {
         list: Object,
         search: Object,
         genreMap: Object,
-        liberamaReady: Boolean,
     };
     
     loadingMessage = '';
@@ -243,7 +242,7 @@ class AuthorList extends BaseList {
     }
 
     get showReadLink() {
-        return this.config.bookReadLink != '' || this.liberamaReady;
+        return this.config.bookReadLink != '' || this.list.liberamaReady;
     }
 
     showHiddenHelp() {
@@ -356,7 +355,7 @@ class AuthorList extends BaseList {
 поэтому повторная попытка должна быть успешной.`, 'Ошибка');
             } else if (action == 'readBook') {
                 //читать
-                if (this.liberamaReady) {
+                if (this.list.liberamaReady) {
                     this.sendMessage({type: 'submitUrl', data: href});
                 } else {
                     const url = this.config.bookReadLink.replace('${DOWNLOAD_LINK}', href);

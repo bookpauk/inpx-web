@@ -111,7 +111,7 @@
             </div>
 
             <!-- Формирование списка ------------------------------------------------------------------------>
-            <AuthorList :ready="ready" :list="list" :search="search" :genre-map="genreMap" :liberama-ready="liberamaReady" @list-event="listEvent" />
+            <AuthorList :ready="ready" :list="list" :search="search" :genre-map="genreMap" @list-event="listEvent" />
             <!-- Формирование списка конец ------------------------------------------------------------------>
 
             <div class="row justify-center">
@@ -289,6 +289,7 @@ class Search {
         queryFound: -1,
         totalFound: 0,
         inpxHash: '',
+        liberamaReady: false,
     };
 
     genreTree = [];
@@ -309,8 +310,6 @@ class Search {
 
     searchResult = {};
     tableData = [];
-
-    liberamaReady = false;
 
     created() {
         this.commit = this.$store.commit;
@@ -365,7 +364,7 @@ class Search {
         if (d.type == 'mes') {
             switch(d.data) {
                 case 'ready':
-                    this.liberamaReady = true;
+                    this.list.liberamaReady = true;
                     this.sendMessage({type: 'mes', data: 'ready'});
                     this.sendCurrentUrl();
                     break;
@@ -447,7 +446,7 @@ class Search {
         }
 
         this.$root.setAppTitle(result);
-        if (this.liberamaReady)
+        if (this.list.liberamaReady)
             this.sendMessage({type: 'titleChange', data: result});
     }
 
@@ -672,7 +671,7 @@ class Search {
     }
 
     async updateSearchFromRouteQuery(to) {
-        if (this.liberamaReady)
+        if (this.list.liberamaReady)
             this.sendCurrentUrl();
             
         if (this.routeUpdating)
