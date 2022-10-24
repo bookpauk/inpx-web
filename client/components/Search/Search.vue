@@ -18,6 +18,16 @@
                         </div>
                     </div>
                     
+                    <q-btn-toggle
+                        v-model="selectedList"
+                        class="q-ml-md"
+                        toggle-color="primary"
+                        :options="listOptions"
+                        push
+                        no-caps
+                        rounded
+                    />
+
                     <DivBtn class="q-ml-md text-white bg-secondary" :size="30" :icon-size="24" :imt="1" icon="la la-cog" round @click="settingsDialogVisible = true">
                         <q-tooltip :delay="1500" anchor="bottom middle" content-style="font-size: 80%" max-width="400px">
                             Настройки
@@ -29,16 +39,6 @@
                             Памятка
                         </q-tooltip>
                     </DivBtn>
-
-                    <q-btn-toggle
-                        v-model="selectedList"
-                        class="q-ml-md"
-                        toggle-color="primary"
-                        :options="listOptions"
-                        push
-                        no-caps
-                        rounded
-                    />
 
                     <div class="col"></div>
                     <div class="q-px-sm q-py-xs bg-green-12 clickable2" style="border: 1px solid #aaaaaa; border-radius: 6px" @click="openReleasePage">
@@ -192,7 +192,7 @@ import _ from 'lodash';
 const route2component = {
     'author': {component: 'AuthorList', label: 'Авторы'},
     'series': {component: 'SeriesList', label: 'Серии'},
-    //'book': 'BookList',
+    'book': {component: 'AuthorList', label: 'Книги'},
 };
 
 const componentOptions = {
@@ -508,7 +508,7 @@ class Search {
         info += `<div style="min-width: 250px" />`;
         info += `
 <p>
-    Работу поискового движка можно описать простой фразой: найти авторов по указанным критериям.
+    Для раздела <b>Авторы</b>, работу поискового движка можно описать простой фразой: найти авторов по указанным критериям.
     По тем же критериям среди найденных авторов фильтруются книги, сортируются и группируются по сериям.
     <br><br>
     По умолчанию поисковое значение трактуется как "начинается с". Например значение автора "Пушкин"
@@ -541,6 +541,8 @@ class Search {
     </ul>
     <br>
     Специльное имя автора "?" служит для поиска и группировки книг без автора.
+    <br><br>
+    Для разделов <b>Серии</b>, <b>Книги</b> все по аналогии с авторами.
 </p>
 `;        
 
