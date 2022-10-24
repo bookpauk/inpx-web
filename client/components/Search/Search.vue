@@ -111,7 +111,7 @@
             </div>
 
             <!-- Формирование списка ------------------------------------------------------------------------>
-            <AuthorList v-model:list="list" :search="search" :genre-map="genreMap" :liberama-ready="liberamaReady" @list-event="listEvent" />
+            <AuthorList :list="list" :search="search" :genre-map="genreMap" :liberama-ready="liberamaReady" @list-event="listEvent" />
             <!-- Формирование списка конец ------------------------------------------------------------------>
 
             <div class="row justify-center">
@@ -233,9 +233,13 @@ const componentOptions = {
             this.updateSearchFromRouteQuery(this.$route);
         },
         list: {
-            handler() {
-                this.updatePageCount();
+            handler(newValue) {
                 this.updateGenreTreeIfNeeded();
+
+                if (this.prevList.totalFound != newValue.totalFound)
+                    this.updatePageCount();
+
+                this.prevList = _.cloneDeep(newValue);
             },
             deep: true,
         },
@@ -278,6 +282,7 @@ class Search {
     limit = 20;
 
     //stuff
+    prevList = {};
     list = {
         queryFound: -1,
         totalFound: 0,
