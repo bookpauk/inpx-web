@@ -85,7 +85,7 @@ class BookView {
     _options = componentOptions;
     _props = {
         book: Object,
-        genreTree: Array,
+        genreMap: Object,
         showAuthor: Boolean,
         showReadLink: Boolean,
         titleColor: { type: String, default: 'text-blue-10'},
@@ -140,12 +140,12 @@ class BookView {
 
     get bookGenre() {
         let result = [];
-        const genre = new Set(this.book.genre.split(','));
+        const genre = this.book.genre.split(',');
 
-        for (const section of this.genreTree) {
-            for (const g of section.value)
-                if (genre.has(g.value))
-                    result.push(g.name);
+        for (const g of genre) {
+            const name = this.genreMap.get(g);
+            if (name)
+                result.push(name);
         }
 
         return `(${result.join(' / ')})`;
