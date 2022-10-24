@@ -188,8 +188,10 @@ const componentOptions = {
         DivBtn
     },
     watch: {
-        config() {
+        config(newValue) {
             this.makeProjectName();
+            if (newValue.dbConfig)
+                this.list.inpxHash = newValue.dbConfig.inpxHash;
         },
         settings() {
             this.loadSettings();
@@ -718,6 +720,10 @@ class Search {
     }
 
     async updateGenreTreeIfNeeded() {
+        if (this.genreTreeUpdating)
+            return;
+        
+        this.genreTreeUpdating = true;
         try {
             if (this.genreTreeInpxHash !== this.list.inpxHash) {
                 let result;
@@ -748,6 +754,8 @@ class Search {
             }
         } catch (e) {
             this.$root.stdDialog.alert(e.message, 'Ошибка');
+        } finally {
+            this.genreTreeUpdating = false;
         }
     }
 }
