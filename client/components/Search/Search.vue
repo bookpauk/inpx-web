@@ -30,6 +30,16 @@
                         </q-tooltip>
                     </DivBtn>
 
+                    <q-btn-toggle
+                        v-model="selectedList"
+                        class="q-ml-md"
+                        toggle-color="primary"
+                        :options="listOptions"
+                        push
+                        no-caps
+                        rounded
+                    />
+
                     <div class="col"></div>
                     <div class="q-px-sm q-py-xs bg-green-12 clickable2" style="border: 1px solid #aaaaaa; border-radius: 6px" @click="openReleasePage">
                         {{ projectName }}
@@ -111,7 +121,7 @@
             </div>
 
             <!-- Формирование списка ------------------------------------------------------------------------>
-            <AuthorList :ready="ready" :list="list" :search="search" :genre-map="genreMap" @list-event="listEvent" />
+            <component :is="selectedListComponent" v-if="selectedListComponent" :list="list" :search="search" :genre-map="genreMap" @list-event="listEvent" />
             <!-- Формирование списка конец ------------------------------------------------------------------>
 
             <div class="row justify-center">
@@ -164,6 +174,7 @@
 import vueComponent from '../vueComponent.js';
 
 import AuthorList from './AuthorList/AuthorList.vue';
+import SeriesList from './SeriesList/SeriesList.vue';
 
 import PageScroller from './PageScroller/PageScroller.vue';
 import SelectGenreDialog from './SelectGenreDialog/SelectGenreDialog.vue';
@@ -178,9 +189,16 @@ import diffUtils from '../../share/diffUtils';
 
 import _ from 'lodash';
 
+const route2component = {
+    'author': {component: 'AuthorList', label: 'Авторы'},
+    'series': {component: 'SeriesList', label: 'Серии'},
+    //'book': 'BookList',
+};
+
 const componentOptions = {
     components: {
         AuthorList,
+        SeriesList,
         PageScroller,
         SelectGenreDialog,
         SelectLangDialog,
@@ -229,6 +247,7 @@ const componentOptions = {
             this.setSetting('abCacheEnabled', newValue);
         },
         $route(to) {
+            this.updateListFromRoute(to);
             this.updateSearchFromRouteQuery(to);
         },
         langDefault() {
@@ -245,12 +264,22 @@ const componentOptions = {
             },
             deep: true,
         },
+        selectedList(newValue) {
+            this.selectedListComponent = (route2component[newValue] ? route2component[newValue].component : null);
+
+            if (this.getListRoute() != newValue) {
+                this.updateRouteQueryFromSearch();
+            }
+        }
     },
 };
 class Search {
     _options = componentOptions;
     
     ready = false;
+
+    selectedList = '';
+    selectedListComponent = '';
 
     collection = '';
     projectName = '';
@@ -339,6 +368,7 @@ class Search {
                 this.$refs.authorInput.focus();
 
             this.setDefaults();
+            this.updateListFromRoute(this.$route);
             this.updateSearchFromRouteQuery(this.$route);
 
             this.sendMessage({type: 'mes', data: 'hello-from-inpx-web'});
@@ -401,6 +431,27 @@ class Search {
         }
 
         return result.join(', ');
+    }
+
+    get listOptions() {
+        const result = [];
+        for (const [route, rec] of Object.entries(route2component))
+            result.push({label: rec.label, value: route});
+        return result;
+    }
+
+    async updateListFromRoute(to) {
+        const newPath = to.path;
+        let newList = this.getListRoute(newPath);
+        newList = (newList ? newList : 'author');
+        if (this.selectedList != newList)
+            this.selectedList = newList;
+    }
+
+    getListRoute(newPath) {
+        newPath = (newPath ? newPath : this.$route.path);
+        const m = newPath.match(/^\/([^/]*).*$/i);
+        return (m ? m[1] : newPath);
     }
 
     openReleasePage() {
@@ -672,7 +723,7 @@ class Search {
         }
     }
 
-    async updateSearchFromRouteQuery(to) {
+    updateSearchFromRouteQuery(to) {
         if (this.list.liberamaReady)
             this.sendCurrentUrl();
             
@@ -709,7 +760,7 @@ class Search {
 
             const diff = diffUtils.getObjDiff(oldQuery, query);
             if (!diffUtils.isEmptyObjDiff(diff)) {
-                this.$router.replace({query});
+                this.$router.replace({path: this.selectedList, query});
             }
         } finally {
             (async() => {
@@ -722,7 +773,7 @@ class Search {
     async updateGenreTreeIfNeeded() {
         if (this.genreTreeUpdating)
             return;
-        
+
         this.genreTreeUpdating = true;
         try {
             if (this.genreTreeInpxHash !== this.list.inpxHash) {

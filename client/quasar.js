@@ -14,7 +14,7 @@ import {QLinearProgress} from 'quasar/src/components/linear-progress';
 import {QInput} from 'quasar/src/components/input';
 import {QBtn} from 'quasar/src/components/btn';
 //import {QBtnGroup} from 'quasar/src/components/btn-group';
-//import {QBtnToggle} from 'quasar/src/components/btn-toggle';
+import {QBtnToggle} from 'quasar/src/components/btn-toggle';
 import {QIcon} from 'quasar/src/components/icon';
 //import {QSlider} from 'quasar/src/components/slider';
 //import {QTabs, QTab} from 'quasar/src/components/tabs';
@@ -48,7 +48,7 @@ const components = {
     QInput,
     QBtn,
     //QBtnGroup,
-    //QBtnToggle,
+    QBtnToggle,
     QIcon,
     //QSlider,
     //QTabs, QTab,

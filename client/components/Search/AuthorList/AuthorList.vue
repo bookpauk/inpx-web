@@ -122,7 +122,7 @@
         </div>
         <!-- Формирование списка конец ------------------------------------------------------------------>
 
-        <div v-if="ready && !refreshing && !tableData.length" class="row items-center q-ml-md" style="font-size: 120%">
+        <div v-if="!refreshing && !tableData.length" class="row items-center q-ml-md" style="font-size: 120%">
             <q-icon class="la la-meh q-mr-xs" size="28px" />
             Поиск не дал результатов
         </div>
@@ -176,16 +176,11 @@ const componentOptions = {
         showDeleted() {
             this.updateTableData();
         },
-        ready(newValue) {
-            if (newValue)
-                this.refresh();//no await
-        }
     },
 };
 class AuthorList extends BaseList {
     _options = componentOptions;
     _props = {
-        ready: Boolean,
         list: Object,
         search: Object,
         genreMap: Object,
@@ -219,6 +214,10 @@ class AuthorList extends BaseList {
         this.api = this.$root.api;
 
         this.loadSettings();
+    }
+
+    mounted() {
+        this.refresh();//no await
     }
 
     loadSettings() {
@@ -811,9 +810,6 @@ class AuthorList extends BaseList {
     }
 
     async refresh() {
-        if (!this.ready)
-            return;
-
         //параметры запроса
         const newQuery = _.cloneDeep(this.search);
         newQuery.offset = (newQuery.page - 1)*newQuery.limit;
