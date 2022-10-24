@@ -176,19 +176,22 @@ const componentOptions = {
         showDeleted() {
             this.updateTableData();
         },
+        ready(newValue) {
+            if (newValue)
+                this.refresh();//no await
+        }
     },
 };
 class AuthorList extends BaseList {
     _options = componentOptions;
     _props = {
+        ready: Boolean,
         list: Object,
         search: Object,
         genreMap: Object,
         liberamaReady: Boolean,
     };
     
-    ready = false;
-
     loadingMessage = '';
     loadingMessage2 = '';
 
@@ -214,18 +217,9 @@ class AuthorList extends BaseList {
 
     created() {
         this.commit = this.$store.commit;
+        this.api = this.$root.api;
 
         this.loadSettings();
-    }
-
-    mounted() {
-        (async() => {
-            //локальный кеш
-            this.api = this.$root.api;
-
-            this.ready = true;
-            this.refresh();//no await
-        })();
     }
 
     loadSettings() {
@@ -821,7 +815,15 @@ class AuthorList extends BaseList {
         if (!this.ready)
             return;
 
-        //оптимизация
+        //параметры запроса
+        const newQuery = _.cloneDeep(this.search);
+        newQuery.offset = (newQuery.page - 1)*newQuery.limit;
+
+        if (_.isEqual(newQuery, this.prevQuery))
+            return;
+        this.prevQuery = newQuery;
+
+        //оптимизация, вместо запроса к серверу, берем из кеша
         if (this.abCacheEnabled && this.search.author && this.search.author[0] == '=') {
             const authorSearch = this.search.author.substring(1);
             const author = this.cachedAuthors[authorSearch];
@@ -839,12 +841,6 @@ class AuthorList extends BaseList {
                 }
             }
         }
-
-        //параметры запроса
-        const offset = (this.search.page - 1)*this.search.limit;
-
-        const newQuery = _.cloneDeep(this.search);
-        newQuery.offset = offset;
 
         this.queryExecute = newQuery;
 

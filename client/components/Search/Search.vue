@@ -111,7 +111,7 @@
             </div>
 
             <!-- Формирование списка ------------------------------------------------------------------------>
-            <AuthorList :list="list" :search="search" :genre-map="genreMap" :liberama-ready="liberamaReady" @list-event="listEvent" />
+            <AuthorList :ready="ready" :list="list" :search="search" :genre-map="genreMap" :liberama-ready="liberamaReady" @list-event="listEvent" />
             <!-- Формирование списка конец ------------------------------------------------------------------>
 
             <div class="row justify-center">
@@ -248,6 +248,8 @@ const componentOptions = {
 class Search {
     _options = componentOptions;
     
+    ready = false;
+
     collection = '';
     projectName = '';
 
@@ -312,6 +314,7 @@ class Search {
 
     created() {
         this.commit = this.$store.commit;
+        this.api = this.$root.api;
 
         this.loadSettings();
     }
@@ -331,8 +334,6 @@ class Search {
             //локальный кеш
             await authorBooksStorage.init();
 
-            this.api = this.$root.api;
-
             if (!this.$root.isMobileDevice)
                 this.$refs.authorInput.focus();
 
@@ -340,6 +341,8 @@ class Search {
             this.updateSearchFromRouteQuery(this.$route);
 
             this.sendMessage({type: 'mes', data: 'hello-from-inpx-web'});
+
+            this.ready = true;
         })();
     }
 
