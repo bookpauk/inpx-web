@@ -106,7 +106,7 @@
 
                 <div v-if="isExpandedAuthor(item) && item.books && !item.books.length" class="book-row row items-center">
                     <q-icon class="la la-meh q-mr-xs" size="24px" />
-                    По каждому из заданных критериев у этого автора были найдены разные книги, но нет полного совпадения                    
+                    По каждому из заданных критериев у этой серии были найдены разные книги, но нет полного совпадения                    
                 </div>
             </div>
 
@@ -126,12 +126,6 @@
             <q-icon class="la la-meh q-mr-xs" size="28px" />
             Поиск не дал результатов
         </div>
-
-        <div v-show="hiddenCount" class="row">
-            <div class="q-ml-lg q-py-sm clickable2 text-red" style="font-size: 120%" @click="showHiddenHelp">
-                {{ hiddenResultsMessage }}
-            </div>
-        </div>
     </div>
 </template>
 
@@ -148,50 +142,8 @@ import * as utils from '../../../share/utils';
 
 import _ from 'lodash';
 
-class AuthorList extends BaseList {
-    cachedAuthors = {};
-    hiddenCount = 0;
-
-    showHiddenHelp() {
-        this.$root.stdDialog.alert(`
-            Книги скрытых авторов помечены как удаленные. Для того, чтобы их увидеть, необходимо установить опцию "Показывать удаленные" в настройках.
-        `, 'Пояснение', {iconName: 'la la-info-circle'});
-    }
-
-    get hiddenResultsMessage() {
-        return `+${this.hiddenCount} результат${utils.wordEnding(this.hiddenCount)} скрыт${utils.wordEnding(this.hiddenCount, 2)}`;
-    }
-
-    getBookCount(item) {
-        let result = '';
-        if (!this.showCounts || item.count === undefined)
-            return result;
-
-        if (item.booksLoaded) {
-            let count = 0;
-            for (const book of item.booksLoaded) {
-                if (book.type == 'series')
-                    count += book.seriesBooks.length;
-                else
-                    count++;
-            }
-
-            result = `${count}/${item.count}`;
-        } else 
-            result = `#/${item.count}`;
-
-        return `(${result})`;
-    }
-
-    isFoundSeriesBook(seriesItem, seriesBook) {
-        if (!seriesItem.booksSet) {
-            seriesItem.booksSet = new Set(seriesItem.seriesBooks.map(b => b.id));
-        }
-
-        return seriesItem.booksSet.has(seriesBook.id);
-    }
-
-    async updateTableData() {
+class SeriesList extends BaseList {
+    /*async updateTableData() {
         let result = [];
 
         const expandedSet = new Set(this.expandedAuthor);
@@ -238,9 +190,10 @@ class AuthorList extends BaseList {
         }
 
         this.tableData = result;
-    }
+    }*/
 
     async refresh() {
+        return;
         //параметры запроса
         let newQuery = _.cloneDeep(this.search);
         newQuery = newQuery.setDefaults(newQuery);
@@ -316,7 +269,7 @@ class AuthorList extends BaseList {
     }
 }
 
-export default vueComponent(AuthorList);
+export default vueComponent(SeriesList);
 //-----------------------------------------------------------------------------
 </script>
 

@@ -4,7 +4,7 @@ const state = {
     settings: {
         accessToken: '',
         limit: 20,
-        expanded: [],
+        expandedAuthor: [],
         expandedSeries: [],
         showCounts: true,
         showRate: true,
