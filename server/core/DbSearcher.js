@@ -269,6 +269,48 @@ class DbSearcher {
         return authorIds;
     }
 
+    async selectSeriesIds(query) {
+        const db = this.db;
+
+        let seriesIds = [];
+
+        //серии
+        if (query.series && query.series !== '*') {
+            const where = this.getWhere(query.series);
+
+            const seriesRows = await db.select({
+                table: 'series',
+                rawResult: true,
+                where: `
+                    const ids = ${where};
+
+                    const result = new Set();
+                    for (const id of ids) {
+                        const row = @unsafeRow(id);
+                        for (const authorId of row.authorId)
+                            result.add(authorId);
+                    }
+
+                    return Array.from(result);
+                `
+            });
+
+            seriesIds = seriesRows[0].rawResult;
+        } else {
+            const authorRows = await db.select({
+                table: 'series',
+                rawResult: true,
+                where: `return Array.from(@all())`,
+            });
+
+            seriesIds = authorRows[0].rawResult;
+        }
+
+        seriesIds.sort((a, b) => a - b);
+
+        return seriesIds;
+    }
+
     queryKey(q) {
         return JSON.stringify([q.author, q.series, q.title, q.genre, q.lang]);
     }
@@ -374,6 +416,43 @@ class DbSearcher {
                 table: 'author',
                 map: `(r) => ({id: r.id, author: r.author, bookCount: r.bookCount, bookDelCount: r.bookDelCount})`,
                 where: `@@id(${db.esc(authorIds.slice(offset, offset + limit))})`
+            });
+
+            return {result, totalFound};
+        } finally {
+            this.searchFlag--;
+        }
+    }
+
+    async seriesSearch(query) {
+        if (this.closed)
+            throw new Error('DbSearcher closed');
+
+        this.searchFlag++;
+
+        try {
+            const db = this.db;
+
+            const key = `series-ids-${this.queryKey(query)}`;
+
+            //сначала попробуем найти в кеше
+            let seriesIds = await this.getCached(key);
+            if (seriesIds === null) {//не нашли в кеше, ищем в поисковых таблицах
+                seriesIds = await this.selectSeriesIds(query);
+
+                await this.putCached(key, seriesIds);
+            }
+
+            const totalFound = seriesIds.length;
+            let limit = (query.limit ? query.limit : 100);
+            limit = (limit > 1000 ? 1000 : limit);
+            const offset = (query.offset ? query.offset : 0);
+
+            //выборка найденных авторов
+            const result = await db.select({
+                table: 'series_book',
+                map: `(r) => ({id: r.id, series: r.series, bookCount: r.bookCount, bookDelCount: r.bookDelCount})`,
+                where: `@@id(${db.esc(seriesIds.slice(offset, offset + limit))})`
             });
 
             return {result, totalFound};
