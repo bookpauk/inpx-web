@@ -320,7 +320,7 @@ class Search {
     prevList = {};
     list = {
         queryFound: -1,
-        totalFound: 0,
+        totalFound: -1,
         inpxHash: '',
         liberamaReady: false,
     };
@@ -672,6 +672,9 @@ class Search {
     }
 
     updatePageCount() {
+        if (this.list.totalFound < 0)
+            return;
+
         const prevPageCount = this.pageCount;
 
         this.pageCount = Math.ceil(this.list.totalFound/this.limit);
