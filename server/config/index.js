@@ -6,6 +6,7 @@ const branchFilename = __dirname + '/application_env';
 
 const propsToSave = [
     'accessPassword',
+    'extendedSearch',
     'bookReadLink',
     'loggingEnabled',
     'dbCacheSize',

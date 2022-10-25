@@ -11,6 +11,7 @@ module.exports = {
     execDir,
 
     accessPassword: '',
+    extendedSearch: true,
     bookReadLink: '',
     loggingEnabled: true,
 
