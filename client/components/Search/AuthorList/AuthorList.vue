@@ -462,7 +462,7 @@ class AuthorList extends BaseList {
             let result;
 
             if (this.abCacheEnabled) {
-                const key = `${authorId}-${this.list.inpxHash}`;
+                const key = `author-${authorId}-${this.list.inpxHash}`;
                 const data = await authorBooksStorage.getData(key);
                 if (data) {
                     result = JSON.parse(data);
@@ -811,7 +811,9 @@ class AuthorList extends BaseList {
 
     async refresh() {
         //параметры запроса
-        const newQuery = _.cloneDeep(this.search);
+        let newQuery = _.cloneDeep(this.search);
+        newQuery = newQuery.setDefaults(newQuery);
+        delete newQuery.setDefaults;
         newQuery.offset = (newQuery.page - 1)*newQuery.limit;
 
         if (_.isEqual(newQuery, this.prevQuery))
@@ -824,7 +826,7 @@ class AuthorList extends BaseList {
             const author = this.cachedAuthors[authorSearch];
 
             if (author) {
-                const key = `${author.id}-${this.list.inpxHash}`;
+                const key = `author-${author.id}-${this.list.inpxHash}`;
                 let data = await authorBooksStorage.getData(key);
 
                 if (data) {

@@ -97,13 +97,6 @@
                         </q-tooltip>
                     </q-input>
 
-                    <!--div class="q-mx-xs" />
-                    <DivBtn class="text-white q-mt-xs bg-grey-13" :size="30" :icon-size="24" icon="la la-broom" round @click="setDefaults">
-                        <q-tooltip :delay="1500" anchor="bottom middle" content-style="font-size: 80%" max-width="400px">
-                            Сбросить поиск
-                        </q-tooltip>
-                    </DivBtn-->
-
                     <div class="q-mx-xs" />
                     <div class="row items-center q-mt-xs">
                         <div v-show="list.queryFound > 0">
@@ -296,13 +289,17 @@ class Search {
 
     //search fields
     search = {
-        author: '',
-        series: '',
-        title: '',
-        genre: '',
-        lang: '',
-        page: 1,
-        limit: 50,
+        setDefaults(search) {
+            return Object.assign({}, search, {
+                author: search.author || '',
+                series: search.series || '',
+                title: search.title || '',
+                genre: search.genre || '',
+                lang: search.lang || '',
+                page: search.page || 1,
+                limit: search.limit || 50,
+            });
+        },
     };
 
     //settings
@@ -346,6 +343,9 @@ class Search {
         this.commit = this.$store.commit;
         this.api = this.$root.api;
 
+        this.search = this.search.setDefaults(this.search);
+        this.search.lang = this.langDefault;
+
         this.loadSettings();
     }
 
@@ -367,7 +367,6 @@ class Search {
             if (!this.$root.isMobileDevice)
                 this.$refs.authorInput.focus();
 
-            this.setDefaults();
             this.updateListFromRoute(this.$route);
             this.updateSearchFromRouteQuery(this.$route);
 
@@ -699,16 +698,6 @@ class Search {
         this.commit('setSettings', {[name]: _.cloneDeep(newValue)});
     }
 
-    setDefaults() {
-        this.search = Object.assign({}, this.search, {
-            author: '',
-            series: '',
-            title: '',
-            genre: '',
-            lang: this.langDefault,
-        });
-    }
-
     highlightPageScroller(query) {
         const q = _.cloneDeep(query);
         delete q.limit;
@@ -728,31 +717,39 @@ class Search {
     updateSearchFromRouteQuery(to) {
         if (this.list.liberamaReady)
             this.sendCurrentUrl();
-            
+
         if (this.routeUpdating)
             return;
 
         const query = to.query;
 
-        this.search = Object.assign({}, this.search, {
-            author: query.author || '',
-            series: query.series || '',
-            title: query.title || '',
-            genre: query.genre || '',
-            lang: (typeof(query.lang) == 'string' ? query.lang : this.langDefault),
-            page: parseInt(query.page, 10) || 1,
-            limit: parseInt(query.limit, 10) || this.search.limit,
-        });
+        this.search = this.search.setDefaults(
+            Object.assign({}, this.search, {
+                author: query.author,
+                series: query.series,
+                title: query.title,
+                genre: query.genre,
+                lang: (typeof(query.lang) == 'string' ? query.lang : this.langDefault),
+                page: parseInt(query.page, 10),
+                limit: parseInt(query.limit, 10) || this.search.limit,
+            })
+        );
 
         if (this.search.limit > 1000)
             this.search.limit = 1000;
     }
 
     updateRouteQueryFromSearch() {
+        if (!this.ready)
+            return;
+
         this.routeUpdating = true;
         try {
             const oldQuery = this.$route.query;
-            const query = _.pickBy(this.search);
+            const cloned = _.cloneDeep(this.search);
+            delete cloned.setDefaults;
+
+            const query = _.pickBy(cloned);
 
             if (this.search.lang == this.langDefault) {
                 delete query.lang;
