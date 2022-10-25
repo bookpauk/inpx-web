@@ -101,7 +101,7 @@
                     <div class="q-mx-xs" />
                     <div class="row items-center q-mt-xs">
                         <div v-show="list.queryFound > 0">
-                            {{ foundAuthorsMessage }}
+                            {{ foundCountMessage }}
                         </div>
                         <div v-show="list.queryFound == 0">
                             Ничего не найдено
@@ -115,7 +115,7 @@
             </div>
 
             <!-- Формирование списка ------------------------------------------------------------------------>
-            <component :is="selectedListComponent" v-if="selectedListComponent" :list="list" :search="search" :genre-map="genreMap" @list-event="listEvent" />
+            <component :is="selectedListComponent" v-if="selectedListComponent" ref="list" :list="list" :search="search" :genre-map="genreMap" @list-event="listEvent" />
             <!-- Формирование списка конец ------------------------------------------------------------------>
 
             <div class="row justify-center">
@@ -251,8 +251,10 @@ const componentOptions = {
             handler(newValue) {
                 this.updateGenreTreeIfNeeded();
 
-                if (this.prevList.totalFound != newValue.totalFound)
+                if (this.prevList.totalFound != newValue.totalFound) {
                     this.updatePageCount();
+                    this.foundCountMessage = this.$refs.list.foundCountMessage;
+                }
 
                 this.prevList = _.cloneDeep(newValue);
             },
@@ -277,6 +279,8 @@ class Search {
 
     collection = '';
     projectName = '';
+
+    foundCountMessage = '';
 
     settingsDialogVisible = false;
     selectGenreDialogVisible = false;
@@ -665,10 +669,6 @@ class Search {
     scrollToTop() {
         this.$refs.scroller.scrollTop = 0;
         this.lastScrollTop = 0;
-    }
-
-    get foundAuthorsMessage() {
-        return `Найден${utils.wordEnding(this.list.totalFound, 2)} ${this.list.totalFound} автор${utils.wordEnding(this.list.totalFound)}`;
     }
 
     updatePageCount() {

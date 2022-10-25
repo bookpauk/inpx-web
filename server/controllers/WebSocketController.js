@@ -163,7 +163,7 @@ class WebSocketController {
     }
 
     async getSeriesBookList(req, ws) {
-        const result = await this.webWorker.getSeriesBookList(req.series, req.seriesId);
+        const result = await this.webWorker.getSeriesBookList(req.series);
 
         this.send(result, req, ws);
     }

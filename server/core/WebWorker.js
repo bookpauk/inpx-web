@@ -277,10 +277,10 @@ class WebWorker {
         return await this.dbSearcher.getAuthorBookList(authorId);
     }
 
-    async getSeriesBookList(series, seriesId) {
+    async getSeriesBookList(series) {
         this.checkMyState();
 
-        return await this.dbSearcher.getSeriesBookList(series, seriesId);
+        return await this.dbSearcher.getSeriesBookList(series);
     }
 
     async getGenreTree() {

@@ -75,16 +75,16 @@
                             </div>
 
                             <div
-                                v-if="book.allBooks && book.allBooks.length != book.seriesBooks.length"
+                                v-if="book.allBooksLoaded && book.allBooksLoaded.length != book.seriesBooks.length"
                                 class="row items-center q-my-sm"
                                 style="margin-left: 100px"
                             >
-                                <div v-if="book.showAllBooks && book.showMore" class="row items-center q-mr-md">
+                                <div v-if="book.showAllBooks && book.showMoreAll" class="row items-center q-mr-md">
                                     <i class="las la-ellipsis-h text-red" style="font-size: 40px"></i>
-                                    <q-btn class="q-ml-md" color="red" style="width: 200px" dense rounded no-caps @click="showMoreSeries(book)">
+                                    <q-btn class="q-ml-md" color="red" style="width: 200px" dense rounded no-caps @click="showMoreAll(book)">
                                         Показать еще (~{{ showMoreCount }})
                                     </q-btn>
-                                    <q-btn class="q-ml-sm" color="red" style="width: 200px" dense rounded no-caps @click="showMoreSeries(book, true)">
+                                    <q-btn class="q-ml-sm" color="red" style="width: 200px" dense rounded no-caps @click="showMoreAll(book, true)">
                                         Показать все ({{ (book.allBooksLoaded && book.allBooksLoaded.length) || '?' }})
                                     </q-btn>
                                 </div>
@@ -162,6 +162,18 @@ class AuthorList extends BaseList {
         return `+${this.hiddenCount} результат${utils.wordEnding(this.hiddenCount)} скрыт${utils.wordEnding(this.hiddenCount, 2)}`;
     }
 
+    get foundCountMessage() {
+        return `Найден${utils.wordEnding(this.list.totalFound, 2)} ${this.list.totalFound} автор${utils.wordEnding(this.list.totalFound)}`;
+    }    
+
+    isFoundSeriesBook(seriesItem, seriesBook) {
+        if (!seriesItem.booksSet) {
+            seriesItem.booksSet = new Set(seriesItem.seriesBooks.map(b => b.id));
+        }
+
+        return seriesItem.booksSet.has(seriesBook.id);
+    }
+
     getBookCount(item) {
         let result = '';
         if (!this.showCounts || item.count === undefined)
@@ -181,14 +193,6 @@ class AuthorList extends BaseList {
             result = `#/${item.count}`;
 
         return `(${result})`;
-    }
-
-    isFoundSeriesBook(seriesItem, seriesBook) {
-        if (!seriesItem.booksSet) {
-            seriesItem.booksSet = new Set(seriesItem.seriesBooks.map(b => b.id));
-        }
-
-        return seriesItem.booksSet.has(seriesBook.id);
     }
 
     async expandAuthor(item) {
@@ -263,13 +267,13 @@ class AuthorList extends BaseList {
                     if (index === undefined) {
                         index = books.length;
                         books.push(reactive({
-                            key: `${item.author}-${book.series}`,
+                            key: book.series,
                             type: 'series',
                             series: book.series,
-                            allBooksLoaded: null,
-                            allBooks: null,
+                            allBooksLoaded: false,
+                            allBooks: false,
                             showAllBooks: false,
-                            showMore: false,
+                            showMoreAll: false,
 
                             seriesBooks: [],
                         }));

@@ -296,20 +296,21 @@ export default class BaseList {
     }
 
     async getSeriesBooks(seriesItem) {
-        //асинхронно подгружаем все книги серии, блокируем повторный вызов
-        if (seriesItem.allBooksLoaded === null) {
-            seriesItem.allBooksLoaded = undefined;
-            (async() => {
-                seriesItem.allBooksLoaded = await this.loadSeriesBooks(seriesItem.series);
+        //блокируем повторный вызов
+        if (seriesItem.seriesBookLoading)
+            return;
+        seriesItem.seriesBookLoading = true;
 
-                if (seriesItem.allBooksLoaded) {
-                    seriesItem.allBooksLoaded = seriesItem.allBooksLoaded.filter(book => (this.showDeleted || !book.del));
-                    this.sortSeriesBooks(seriesItem.allBooksLoaded);
-                    this.showMoreSeries(seriesItem);
-                } else {
-                    seriesItem.allBooksLoaded = null;
-                }
-            })();
+        try {
+            seriesItem.allBooksLoaded = await this.loadSeriesBooks(seriesItem.series);
+
+            if (seriesItem.allBooksLoaded) {
+                seriesItem.allBooksLoaded = seriesItem.allBooksLoaded.filter(book => (this.showDeleted || !book.del));
+                this.sortSeriesBooks(seriesItem.allBooksLoaded);
+                this.showMoreAll(seriesItem);
+            }
+        } finally {
+            seriesItem.seriesBookLoading = false;
         }
     }
 
@@ -423,7 +424,7 @@ export default class BaseList {
         }
     }
 
-    showMoreSeries(seriesItem, all = false) {
+    showMoreAll(seriesItem, all = false) {
         if (seriesItem.allBooksLoaded) {
             const currentLen = (seriesItem.allBooks ? seriesItem.allBooks.length : 0);
             let books;
@@ -433,7 +434,7 @@ export default class BaseList {
                 books = seriesItem.allBooksLoaded.slice(0, currentLen + this.showMoreCount);
             }
 
-            seriesItem.showMore = (books.length < seriesItem.allBooksLoaded.length);
+            seriesItem.showMoreAll = (books.length < seriesItem.allBooksLoaded.length);
             seriesItem.allBooks = books;
         }
     }
@@ -446,5 +447,4 @@ export default class BaseList {
             return (dserno ? dserno : (dtitle ? dtitle : dext));
         });
     }
-
 }

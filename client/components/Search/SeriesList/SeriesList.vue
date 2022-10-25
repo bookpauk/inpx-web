@@ -8,9 +8,9 @@
         <!-- Формирование списка ------------------------------------------------------------------------>
         <div v-for="item in tableData" :key="item.key" class="column" :class="{'odd-author': item.num % 2}" style="font-size: 120%">
             <div class="row items-center q-ml-md q-mr-xs no-wrap">
-                <div class="row items-center clickable2 q-py-xs no-wrap" @click="expandAuthor(item)">
+                <div class="row items-center clickable2 q-py-xs no-wrap" @click="expandSeries(item)">
                     <div style="min-width: 30px">
-                        <div v-if="!isExpandedAuthor(item)">
+                        <div v-if="!isExpandedSeries(item)">
                             <q-icon name="la la-plus-square" size="28px" />
                         </div>
                         <div v-else>
@@ -19,8 +19,8 @@
                     </div>
                 </div>
 
-                <div class="clickable2 q-ml-xs q-py-sm text-green-10 text-bold" @click="selectAuthor(item.author)">
-                    {{ item.name }}                            
+                <div class="clickable2 q-ml-xs q-py-sm text-bold" @click="selectSeries(item.series)">
+                    Серия: {{ item.series }}
                 </div>
 
                 <div class="q-ml-sm text-bold" style="color: #555">
@@ -35,82 +35,57 @@
                 </div>
             </div>
 
-            <div v-if="isExpandedAuthor(item) && item.books">
-                <div v-for="book in item.books" :key="book.key" class="book-row column">
-                    <!-- серия книг -->
-                    <div v-if="book.type == 'series'" class="column">
-                        <div class="row items-center q-mr-xs no-wrap text-grey-9">
-                            <div class="row items-center clickable2 q-py-xs no-wrap" @click="expandSeries(book)">
-                                <div style="min-width: 30px">
-                                    <div v-if="!isExpandedSeries(book)">
-                                        <q-icon name="la la-plus-square" size="28px" />
-                                    </div>
-                                    <div v-else>
-                                        <q-icon name="la la-minus-square" size="28px" />
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="clickable2 q-ml-xs q-py-sm text-bold" @click="selectSeries(book.series)">
-                                Серия: {{ book.series }}
-                            </div>
-                        </div>
-
-                        <div v-if="isExpandedSeries(book) && book.seriesBooks">
-                            <div v-if="book.showAllBooks" class="book-row column">
-                                <BookView
-                                    v-for="seriesBook in book.allBooks" :key="seriesBook.id"
-                                    :book="seriesBook" :genre-map="genreMap"
-                                    show-author
-                                    :show-read-link="showReadLink"
-                                    :title-color="isFoundSeriesBook(book, seriesBook) ? 'text-blue-10' : 'text-red'"
-                                    @book-event="bookEvent"
-                                />
-                            </div>
-                            <div v-else class="book-row column">
-                                <BookView 
-                                    v-for="seriesBook in book.seriesBooks" :key="seriesBook.key"
-                                    :book="seriesBook" :genre-map="genreMap" :show-read-link="showReadLink" @book-event="bookEvent"
-                                />
-                            </div>
-
-                            <div
-                                v-if="book.allBooks && book.allBooks.length != book.seriesBooks.length"
-                                class="row items-center q-my-sm"
-                                style="margin-left: 100px"
-                            >
-                                <div v-if="book.showAllBooks && book.showMore" class="row items-center q-mr-md">
-                                    <i class="las la-ellipsis-h text-red" style="font-size: 40px"></i>
-                                    <q-btn class="q-ml-md" color="red" style="width: 200px" dense rounded no-caps @click="showMoreSeries(book)">
-                                        Показать еще (~{{ showMoreCount }})
-                                    </q-btn>
-                                    <q-btn class="q-ml-sm" color="red" style="width: 200px" dense rounded no-caps @click="showMoreSeries(book, true)">
-                                        Показать все ({{ (book.allBooksLoaded && book.allBooksLoaded.length) || '?' }})
-                                    </q-btn>
-                                </div>
-
-                                <div v-if="book.showAllBooks" class="row items-center clickable2 text-blue-10" @click="book.showAllBooks = false">
-                                    <q-icon class="la la-long-arrow-alt-up" size="28px" />
-                                    Только найденные книги
-                                </div>
-                                <div v-else class="row items-center clickable2 text-red" @click="book.showAllBooks = true">
-                                    <q-icon class="la la-long-arrow-alt-down" size="28px" />
-                                    Все книги серии
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <!-- книга без серии -->
-                    <BookView v-else :book="book" :genre-map="genreMap" :show-read-link="showReadLink" @book-event="bookEvent" />
+            <div v-if="isExpandedSeries(item) && item.books">
+                <div v-if="item.showAllBooks" class="book-row column">
+                    <BookView
+                        v-for="seriesBook in item.allBooks" :key="seriesBook.id"
+                        :book="seriesBook" :genre-map="genreMap"
+                        show-author
+                        :show-read-link="showReadLink"
+                        :title-color="isFoundSeriesBook(item, seriesBook) ? 'text-blue-10' : 'text-red'"
+                        @book-event="bookEvent"
+                    />
+                </div>
+                <div v-else class="book-row column">
+                    <BookView 
+                        v-for="seriesBook in item.books" :key="seriesBook.key"
+                        show-author
+                        :book="seriesBook" :genre-map="genreMap" :show-read-link="showReadLink" @book-event="bookEvent"
+                    />
                 </div>
 
-                <div v-if="isExpandedAuthor(item) && item.books && !item.books.length" class="book-row row items-center">
-                    <q-icon class="la la-meh q-mr-xs" size="24px" />
-                    По каждому из заданных критериев у этой серии были найдены разные книги, но нет полного совпадения                    
+                <div
+                    v-if="item.allBooksLoaded && item.allBooksLoaded.length != item.booksLoaded.length"
+                    class="row items-center q-my-sm"
+                    style="margin-left: 100px"
+                >
+                    <div v-if="item.showAllBooks && item.showMoreAll" class="row items-center q-mr-md">
+                        <i class="las la-ellipsis-h text-red" style="font-size: 40px"></i>
+                        <q-btn class="q-ml-md" color="red" style="width: 200px" dense rounded no-caps @click="showMoreAll(item)">
+                            Показать еще (~{{ showMoreCount }})
+                        </q-btn>
+                        <q-btn class="q-ml-sm" color="red" style="width: 200px" dense rounded no-caps @click="showMoreAll(item, true)">
+                            Показать все ({{ (item.allBooksLoaded && item.allBooksLoaded.length) || '?' }})
+                        </q-btn>
+                    </div>
+
+                    <div v-if="item.showAllBooks" class="row items-center clickable2 text-blue-10" @click="item.showAllBooks = false">
+                        <q-icon class="la la-long-arrow-alt-up" size="28px" />
+                        Только найденные книги
+                    </div>
+                    <div v-else class="row items-center clickable2 text-red" @click="item.showAllBooks = true">
+                        <q-icon class="la la-long-arrow-alt-down" size="28px" />
+                        Все книги серии
+                    </div>
                 </div>
             </div>
 
-            <div v-if="isExpandedAuthor(item) && item.showMore" class="row items-center book-row q-mb-sm">
+            <div v-if="isExpandedSeries(item) && item.books && !item.books.length" class="book-row row items-center">
+                <q-icon class="la la-meh q-mr-xs" size="24px" />
+                По каждому из заданных критериев у этой серии были найдены разные книги, но нет полного совпадения                    
+            </div>
+
+            <div v-if="isExpandedSeries(item) && item.showMore" class="row items-center book-row q-mb-sm">
                 <i class="las la-ellipsis-h text-blue-10" style="font-size: 40px"></i>
                 <q-btn class="q-ml-md" color="primary" style="width: 200px" dense rounded no-caps @click="showMore(item)">
                     Показать еще (~{{ showMoreCount }})
@@ -141,6 +116,67 @@ import * as utils from '../../../share/utils';
 import _ from 'lodash';
 
 class SeriesList extends BaseList {
+    get foundCountMessage() {
+        return `Найден${utils.wordEnding(this.list.totalFound, 4)} ${this.list.totalFound} сери${utils.wordEnding(this.list.totalFound, 1)}`;
+    }
+
+    isFoundSeriesBook(seriesItem, seriesBook) {
+        if (!seriesItem.booksSet) {
+            seriesItem.booksSet = new Set(seriesItem.books.map(b => b.id));
+        }
+
+        return seriesItem.booksSet.has(seriesBook.id);
+    }
+
+    getBookCount(item) {
+        let result = '';
+        if (!this.showCounts || item.count === undefined)
+            return result;
+
+        if (item.books) {
+            result = `${item.books.length}/${item.count}`;
+        } else 
+            result = `#/${item.count}`;
+
+        return `(${result})`;
+    }
+
+    async getSeriesBooks(seriesItem) {
+        if (seriesItem.count > this.maxItemCount) {
+            seriesItem.bookLoading = true;
+            await this.$nextTick();
+        }
+
+        try {
+            await super.getSeriesBooks(seriesItem);
+
+            if (seriesItem.allBooksLoaded) {
+                const prepareBook = (book) => {
+                    return Object.assign(
+                        {
+                            key: book.id,
+                            type: 'book',
+                        },
+                        book
+                    );
+                };
+
+                const filtered = this.filterBooks(seriesItem.allBooksLoaded);
+
+                //объединение по сериям
+                const books = [];
+                for (const book of filtered) {
+                    books.push(prepareBook(book));
+                }
+
+                seriesItem.booksLoaded = books;
+                this.showMore(seriesItem);
+            }
+        } finally {
+            seriesItem.bookLoading = false;
+        }
+    }
+
     async updateTableData() {
         let result = [];
 
@@ -148,47 +184,44 @@ class SeriesList extends BaseList {
         const series = this.searchResult.series;
         if (!series)
             return;
-/*
-        let num = 0;
-        this.hiddenCount = 0;
-        for (const rec of authors) {
-            this.cachedAuthors[rec.author] = rec;
 
+        let num = 0;
+        for (const rec of series) {
             const count = (this.showDeleted ? rec.bookCount + rec.bookDelCount : rec.bookCount);
-            if (!count) {
-                this.hiddenCount++;
-                continue;
-            }
 
             const item = reactive({
-                key: rec.id,
+                key: rec.series,
+                series: rec.series,
                 num,
-                author: rec.author,
-                name: rec.author.replace(/,/g, ', '),
                 count,
+                bookLoading: false,
+
+                allBooksLoaded: false,
+                allBooks: false,
+                showAllBooks: false,
+                showMoreAll: false,
+
                 booksLoaded: false,
                 books: false,
-                bookLoading: false,
                 showMore: false,
             });
             num++;
 
-            if (expandedSet.has(item.author)) {
-                if (authors.length > 1 || item.count > this.maxItemCount)
-                    this.getBooks(item);//no await
+            if (expandedSet.has(item.series)) {
+                if (series.length > 1 || item.count > this.maxItemCount)
+                    this.getSeriesBooks(item);//no await
                 else 
-                    await this.getBooks(item);
+                    await this.getSeriesBooks(item);
             }
 
             result.push(item);
         }
 
-        if (result.length == 1 && !this.isExpandedAuthor(result[0])) {
-            this.expandAuthor(result[0]);
+        if (result.length == 1 && !this.isExpandedSeries(result[0])) {
+            this.expandSeries(result[0]);
         }
 
         this.tableData = result;
-*/        
     }
 
     async refresh() {

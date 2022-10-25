@@ -483,11 +483,11 @@ class DbSearcher {
         }
     }
 
-    async getSeriesBookList(series, seriesId) {
+    async getSeriesBookList(series) {
         if (this.closed)
             throw new Error('DbSearcher closed');
 
-        if (!series && !seriesId)
+        if (!series)
             return {books: ''};
 
         this.searchFlag++;
@@ -500,15 +500,16 @@ class DbSearcher {
             //выборка серии по названию серии
             let rows = await db.select({
                 table: 'series',
-                where: `@@dirtyIndexLR('value', ${db.esc(series)}, ${db.esc(series)})`
+                rawResult: true,
+                where: `return Array.from(@dirtyIndexLR('value', ${db.esc(series)}, ${db.esc(series)}))`
             });
 
             let books;
-            if (rows.length) {
+            if (rows.length && rows[0].rawResult.length) {
                 //выборка книг серии
                 rows = await db.select({
                     table: 'series_book',
-                    where: `@@id(${rows[0].id})`
+                    where: `@@id(${rows[0].rawResult[0]})`
                 });
 
                 if (rows.length)
