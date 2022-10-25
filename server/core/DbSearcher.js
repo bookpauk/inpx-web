@@ -1,5 +1,4 @@
 //const _ = require('lodash');
-const HeavyCalc = require('./HeavyCalc');
 const utils = require('./utils');
 
 const maxMemCacheSize = 100;
@@ -19,12 +18,7 @@ class DbSearcher {
         this.timer = null;
         this.closed = false;
 
-        this.heavyCalc = new HeavyCalc({threads: 4});
-
-        this.searchCache = {
-            memCache: new Map(),
-            authorIdsAll: false,
-        };
+        this.memCache = new Map();
 
         this.periodicCleanCache();//no await
     }
@@ -55,77 +49,26 @@ class DbSearcher {
         return where;
     }
 
-    async calcIntersect(idsArr) {
-        return await this.heavyCalc.run(idsArr, (args) => {
-            //из utils.intersectSet
-            const intersectSet = (arrSet) => {
-                if (!arrSet.length)
-                    return new Set();
-
-                let min = 0;
-                let size = arrSet[0].size;
-                for (let i = 1; i < arrSet.length; i++) {
-                    if (arrSet[i].size < size) {
-                        min = i;
-                        size = arrSet[i].size;
-                    }
-                }
-
-                const result = new Set();
-                for (const elem of arrSet[min]) {
-                    let inAll = true;
-                    for (let i = 0; i < arrSet.length; i++) {
-                        if (i === min)
-                            continue;
-                        if (!arrSet[i].has(elem)) {
-                            inAll = false;
-                            break;
-                        }
-                    }
-
-                    if (inAll)
-                        result.add(elem);
-                }
-
-                return result;
-            };
-
-            //считаем пересечение, если надо
-            let result = [];
-
-            if (args.length > 1) {
-                const arrSet = args.map(ids => new Set(ids));
-                result = Array.from(intersectSet(arrSet));
-            } else if (args.length == 1) {
-                result = args[0];
-            }
-
-            //сортировка
-            result.sort((a, b) => a - b);
-
-            return result;
-        });
-    }
-
     async selectAuthorIds(query) {
         const db = this.db;
 
-        let authorIds = [];
+        const authorKеy = `select-ids-author-${query.author}`;
+        let authorIds = await this.getCached(authorKеy);
 
         //сначала выберем все id авторов по фильтру
-        //порядок id соответсвует ASC-сортировке по author
-        if (query.author && query.author !== '*') {
-            const where = this.getWhere(query.author);
+        //порядок id соответствует ASC-сортировке по author    
+        if (authorIds === null) {
+            if (query.author && query.author !== '*') {
+                const where = this.getWhere(query.author);
 
-            const authorRows = await db.select({
-                table: 'author',
-                rawResult: true,
-                where: `return Array.from(${where})`,
-            });
+                const authorRows = await db.select({
+                    table: 'author',
+                    rawResult: true,
+                    where: `return Array.from(${where})`,
+                });
 
-            authorIds = authorRows[0].rawResult;
-        } else {//все авторы
-            if (!this.searchCache.authorIdsAll) {
+                authorIds = authorRows[0].rawResult;
+            } else {//все авторы
                 const authorRows = await db.select({
                     table: 'author',
                     rawResult: true,
@@ -133,65 +76,76 @@ class DbSearcher {
                 });
 
                 authorIds = authorRows[0].rawResult;
-
-                this.searchCache.authorIdsAll = authorIds;
-            } else {//оптимизация
-                authorIds = this.searchCache.authorIdsAll;
             }
+
+            await this.putCached(authorKеy, authorIds);
         }
 
         const idsArr = [];
 
         //серии
         if (query.series && query.series !== '*') {
-            const where = this.getWhere(query.series);
+            const seriesKеy = `select-ids-series-${query.series}`;
+            let seriesIds = await this.getCached(seriesKеy);
 
-            const seriesRows = await db.select({
-                table: 'series',
-                rawResult: true,
-                where: `
-                    const ids = ${where};
+            if (seriesIds === null) {
+                const where = this.getWhere(query.series);
 
-                    const result = new Set();
-                    for (const id of ids) {
-                        const row = @unsafeRow(id);
-                        for (const authorId of row.authorId)
-                            result.add(authorId);
-                    }
+                const seriesRows = await db.select({
+                    table: 'series',
+                    rawResult: true,
+                    where: `
+                        const ids = ${where};
 
-                    return Array.from(result);
-                `
-            });
+                        const result = new Set();
+                        for (const id of ids) {
+                            const row = @unsafeRow(id);
+                            for (const authorId of row.authorId)
+                                result.add(authorId);
+                        }
 
-            idsArr.push(seriesRows[0].rawResult);
+                        return Array.from(result);
+                    `
+                });
+
+                seriesIds = seriesRows[0].rawResult;
+            }
+
+            idsArr.push(seriesIds);
         }
 
         //названия
         if (query.title && query.title !== '*') {
-            const where = this.getWhere(query.title);
+            const titleKey = `select-ids-title-${query.title}`;
+            let titleIds = await this.getCached(titleKey);
 
-            let titleRows = await db.select({
-                table: 'title',
-                rawResult: true,
-                where: `
-                    const ids = ${where};
+            if (titleIds === null) {
+                const where = this.getWhere(query.title);
 
-                    const result = new Set();
-                    for (const id of ids) {
-                        const row = @unsafeRow(id);
-                        for (const authorId of row.authorId)
-                            result.add(authorId);
-                    }
+                let titleRows = await db.select({
+                    table: 'title',
+                    rawResult: true,
+                    where: `
+                        const ids = ${where};
 
-                    return Array.from(result);
-                `
-            });
+                        const result = new Set();
+                        for (const id of ids) {
+                            const row = @unsafeRow(id);
+                            for (const authorId of row.authorId)
+                                result.add(authorId);
+                        }
 
-            idsArr.push(titleRows[0].rawResult);
+                        return Array.from(result);
+                    `
+                });
+
+                titleIds = titleRows[0].rawResult;
+            }
+
+            idsArr.push(titleIds);
 
             //чистки памяти при тяжелых запросах
             if (this.config.lowMemoryMode && query.title[0] == '*') {
-                titleRows = null;
                 utils.freeMemory();
                 await db.freeMemory();
             }
@@ -199,58 +153,72 @@ class DbSearcher {
 
         //жанры
         if (query.genre) {
-            const genreRows = await db.select({
-                table: 'genre',
-                rawResult: true,
-                where: `
-                    const genres = ${db.esc(query.genre.split(','))};
+            const genreKey = `select-ids-genre-${query.genre}`;
+            let genreIds = await this.getCached(genreKey);
 
-                    const ids = new Set();
-                    for (const g of genres) {
-                        for (const id of @indexLR('value', g, g))
-                            ids.add(id);
-                    }
-                    
-                    const result = new Set();
-                    for (const id of ids) {
-                        const row = @unsafeRow(id);
-                        for (const authorId of row.authorId)
-                            result.add(authorId);
-                    }
+            if (genreIds === null) {
+                const genreRows = await db.select({
+                    table: 'genre',
+                    rawResult: true,
+                    where: `
+                        const genres = ${db.esc(query.genre.split(','))};
 
-                    return Array.from(result);
-                `
-            });
+                        const ids = new Set();
+                        for (const g of genres) {
+                            for (const id of @indexLR('value', g, g))
+                                ids.add(id);
+                        }
+                        
+                        const result = new Set();
+                        for (const id of ids) {
+                            const row = @unsafeRow(id);
+                            for (const authorId of row.authorId)
+                                result.add(authorId);
+                        }
 
-            idsArr.push(genreRows[0].rawResult);
+                        return Array.from(result);
+                    `
+                });
+
+                genreIds = genreRows[0].rawResult;
+            }
+
+            idsArr.push(genreIds);
         }
 
         //языки
         if (query.lang) {
-            const langRows = await db.select({
-                table: 'lang',
-                rawResult: true,
-                where: `
-                    const langs = ${db.esc(query.lang.split(','))};
+            const langKey = `select-ids-lang-${query.lang}`;
+            let langIds = await this.getCached(langKey);
 
-                    const ids = new Set();
-                    for (const l of langs) {
-                        for (const id of @indexLR('value', l, l))
-                            ids.add(id);
-                    }
-                    
-                    const result = new Set();
-                    for (const id of ids) {
-                        const row = @unsafeRow(id);
-                        for (const authorId of row.authorId)
-                            result.add(authorId);
-                    }
+            if (langIds === null) {
+                const langRows = await db.select({
+                    table: 'lang',
+                    rawResult: true,
+                    where: `
+                        const langs = ${db.esc(query.lang.split(','))};
 
-                    return Array.from(result);
-                `
-            });
+                        const ids = new Set();
+                        for (const l of langs) {
+                            for (const id of @indexLR('value', l, l))
+                                ids.add(id);
+                        }
+                        
+                        const result = new Set();
+                        for (const id of ids) {
+                            const row = @unsafeRow(id);
+                            for (const authorId of row.authorId)
+                                result.add(authorId);
+                        }
 
-            idsArr.push(langRows[0].rawResult);
+                        return Array.from(result);
+                    `
+                });
+
+                langIds = langRows[0].rawResult;
+            }
+
+            idsArr.push(langIds);
         }
 
 /*
@@ -262,17 +230,37 @@ class DbSearcher {
             authorIds = Array.from(utils.intersectSet(idsSetArr));
         }
 
-        //сортировка
+       //сортировка
         authorIds.sort((a, b) => a - b);
 */
+
+        //ищем пересечение множеств, работает быстрее предыдущего
         if (idsArr.length) {
-            //ищем пересечение множеств в отдельном потоке
             idsArr.push(authorIds);
-            authorIds = await this.calcIntersect(idsArr);
-        } else {
-            //просто сортировка
-            authorIds.sort((a, b) => a - b);
+
+            let proc = 0;
+            let nextProc = 0;
+            let inter = new Set(idsArr[0]);
+            for (let i = 1; i < idsArr.length; i++) {
+                const newInter = new Set();
+
+                for (const id of idsArr[i]) {
+                    if (inter.has(id))
+                        newInter.add(id);
+
+                    //прерываемся иногда, чтобы не блокировать Event Loop
+                    proc++;
+                    if (proc >= nextProc) {
+                        nextProc += 10000;
+                        await utils.processLoop();
+                    }
+                }
+                inter = newInter;
+            }
+            authorIds = Array.from(inter);
         }
+        //сортировка
+        authorIds.sort((a, b) => a - b);
 
         return authorIds;
     }
@@ -288,7 +276,7 @@ class DbSearcher {
         let result = null;
 
         const db = this.db;
-        const memCache = this.searchCache.memCache;
+        const memCache = this.memCache;
 
         if (memCache.has(key)) {//есть в недавних
             result = memCache.get(key);
@@ -328,7 +316,7 @@ class DbSearcher {
 
         const db = this.db;
 
-        const memCache = this.searchCache.memCache;
+        const memCache = this.memCache;
         memCache.set(key, value);
 
         if (memCache.size > maxMemCacheSize) {
@@ -503,7 +491,6 @@ class DbSearcher {
             this.timer = null;
         }
 
-        this.heavyCalc.terminate();
         this.closed = true;
     }
 }

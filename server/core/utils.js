@@ -7,6 +7,10 @@ function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+function processLoop() {
+    return new Promise(resolve => setImmediate(resolve));
+}
+
 function versionText(config) {
     return `${config.name} v${config.version}, Node.js ${process.version}`;
 }
@@ -114,6 +118,7 @@ function toUnixPath(dir) {
 
 module.exports = {
     sleep,
+    processLoop,
     versionText,
     findFiles,
     touchFile,
