@@ -2,6 +2,7 @@
 const utils = require('./utils');
 
 const maxMemCacheSize = 100;
+const maxLimit = 1000;
 
 const emptyFieldValue = '?';
 const maxUtf8Char = String.fromCodePoint(0xFFFFF);
@@ -281,18 +282,7 @@ class DbSearcher {
             const seriesRows = await db.select({
                 table: 'series',
                 rawResult: true,
-                where: `
-                    const ids = ${where};
-
-                    const result = new Set();
-                    for (const id of ids) {
-                        const row = @unsafeRow(id);
-                        for (const authorId of row.authorId)
-                            result.add(authorId);
-                    }
-
-                    return Array.from(result);
-                `
+                where: `return Array.from(${where})`,
             });
 
             seriesIds = seriesRows[0].rawResult;
@@ -408,7 +398,7 @@ class DbSearcher {
 
             const totalFound = authorIds.length;
             let limit = (query.limit ? query.limit : 100);
-            limit = (limit > 1000 ? 1000 : limit);
+            limit = (limit > maxLimit ? maxLimit : limit);
             const offset = (query.offset ? query.offset : 0);
 
             //выборка найденных авторов
@@ -445,7 +435,7 @@ class DbSearcher {
 
             const totalFound = seriesIds.length;
             let limit = (query.limit ? query.limit : 100);
-            limit = (limit > 1000 ? 1000 : limit);
+            limit = (limit > maxLimit ? maxLimit : limit);
             const offset = (query.offset ? query.offset : 0);
 
             //выборка найденных авторов
