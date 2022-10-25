@@ -19,6 +19,7 @@
                     </div>
                     
                     <q-btn-toggle
+                        v-if="extendedSearch"
                         v-model="selectedList"
                         class="q-ml-md"
                         toggle-color="primary"
@@ -415,6 +416,10 @@ class Search {
         return this.$store.state.config;
     }
 
+    get extendedSearch() {
+        return this.config.extendedSearch;
+    }
+
     get settings() {
         return this.$store.state.settings;
     }
@@ -442,7 +447,7 @@ class Search {
     async updateListFromRoute(to) {
         const newPath = to.path;
         let newList = this.getListRoute(newPath);
-        newList = (newList ? newList : 'author');
+        newList = (newList && this.extendedSearch ? newList : 'author');
         if (this.selectedList != newList)
             this.selectedList = newList;
     }

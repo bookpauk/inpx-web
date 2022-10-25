@@ -145,6 +145,9 @@ class WebSocketController {
     }
 
     async seriesSearch(req, ws) {
+        if (!this.config.extendedSearch)
+            throw new Error(`Extended search disabled`);
+
         if (!req.query)
             throw new Error(`query is empty`);
 

@@ -27,7 +27,7 @@ module.exports = {
     inpxCheckInterval: 60,//minutes
     lowMemoryMode: false,
 
-    webConfigParams: ['name', 'version', 'branch', 'bookReadLink', 'dbVersion'],
+    webConfigParams: ['name', 'version', 'branch', 'bookReadLink', 'dbVersion', 'extendedSearch'],
 
     allowRemoteLib: false,
     remoteLib: false,
