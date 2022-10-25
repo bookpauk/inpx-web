@@ -197,69 +197,41 @@ class Api {
             } else if (response && response.error == 'server_busy') {
                 await this.showBusyDialog();
             } else {
+                if (response.error) {
+                    throw new Error(response.error);
+                }
+
                 return response;
             }
         }
     }
 
     async authorSearch(query) {
-        const response = await this.request({action: 'author-search', query});
+        return await this.request({action: 'author-search', query});
+    }
 
-        if (response.error) {
-            throw new Error(response.error);
-        }
-
-        return response;
+    async seriesSearch(query) {
+        return await this.request({action: 'series-search', query});
     }
 
     async getAuthorBookList(authorId) {
-        const response = await this.request({action: 'get-author-book-list', authorId});
-
-        if (response.error) {
-            throw new Error(response.error);
-        }
-
-        return response;
+        return await this.request({action: 'get-author-book-list', authorId});
     }
 
     async getSeriesBookList(series) {
-        const response = await this.request({action: 'get-series-book-list', series});
-
-        if (response.error) {
-            throw new Error(response.error);
-        }
-
-        return response;
+        return await this.request({action: 'get-series-book-list', series});
     }
 
     async getGenreTree() {
-        const response = await this.request({action: 'get-genre-tree'});
-
-        if (response.error) {
-            throw new Error(response.error);
-        }
-
-        return response;
+        return await this.request({action: 'get-genre-tree'});
     }    
 
     async getBookLink(params) {
-        const response = await this.request(Object.assign({action: 'get-book-link'}, params), 120);
-
-        if (response.error) {
-            throw new Error(response.error);
-        }
-
-        return response;
+        return await this.request(Object.assign({action: 'get-book-link'}, params), 120);
     }
 
     async getConfig() {
-        const response = await this.request({action: 'get-config'});
-
-        if (response.error) {
-            throw new Error(response.error);
-        }
-
-        return response;
+        return await this.request({action: 'get-config'});
     }
 }
 
