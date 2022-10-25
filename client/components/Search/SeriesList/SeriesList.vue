@@ -136,21 +136,19 @@ import { reactive } from 'vue';
 
 import BaseList from '../BaseList';
 
-import authorBooksStorage from '../authorBooksStorage';
-
 import * as utils from '../../../share/utils';
 
 import _ from 'lodash';
 
 class SeriesList extends BaseList {
-    /*async updateTableData() {
+    async updateTableData() {
         let result = [];
 
-        const expandedSet = new Set(this.expandedAuthor);
-        const authors = this.searchResult.author;
-        if (!authors)
+        const expandedSet = new Set(this.expandedSeries);
+        const series = this.searchResult.series;
+        if (!series)
             return;
-
+/*
         let num = 0;
         this.hiddenCount = 0;
         for (const rec of authors) {
@@ -190,10 +188,10 @@ class SeriesList extends BaseList {
         }
 
         this.tableData = result;
-    }*/
+*/        
+    }
 
     async refresh() {
-        return;
         //параметры запроса
         let newQuery = _.cloneDeep(this.search);
         newQuery = newQuery.setDefaults(newQuery);
@@ -203,25 +201,6 @@ class SeriesList extends BaseList {
         if (_.isEqual(newQuery, this.prevQuery))
             return;
         this.prevQuery = newQuery;
-
-        //оптимизация, вместо запроса к серверу, берем из кеша
-        if (this.abCacheEnabled && this.search.author && this.search.author[0] == '=') {
-            const authorSearch = this.search.author.substring(1);
-            const author = this.cachedAuthors[authorSearch];
-
-            if (author) {
-                const key = `author-${author.id}-${this.list.inpxHash}`;
-                let data = await authorBooksStorage.getData(key);
-
-                if (data) {
-                    this.list.queryFound = 1;
-                    this.list.totalFound = 1;
-                    this.searchResult = {author: [author]};
-                    await this.updateTableData();
-                    return;
-                }
-            }
-        }
 
         this.queryExecute = newQuery;
 
@@ -238,13 +217,13 @@ class SeriesList extends BaseList {
                 (async() => {
                     await utils.sleep(500);
                     if (inSearch)
-                        this.loadingMessage = 'Поиск авторов...';
+                        this.loadingMessage = 'Поиск серий...';
                 })();
 
                 try {
-                    const result = await this.api.search(query);
+                    const result = await this.api.seriesSearch(query);
 
-                    this.list.queryFound = result.author.length;
+                    this.list.queryFound = result.series.length;
                     this.list.totalFound = result.totalFound;
                     this.list.inpxHash = result.inpxHash;
 
