@@ -109,6 +109,7 @@ class DbSearcher {
                 });
 
                 seriesIds = seriesRows[0].rawResult;
+                await this.putCached(seriesKеy, seriesIds);
             }
 
             idsArr.push(seriesIds);
@@ -140,6 +141,7 @@ class DbSearcher {
                 });
 
                 titleIds = titleRows[0].rawResult;
+                await this.putCached(titleKey, titleIds);
             }
 
             idsArr.push(titleIds);
@@ -181,6 +183,7 @@ class DbSearcher {
                 });
 
                 genreIds = genreRows[0].rawResult;
+                await this.putCached(genreKey, genreIds);
             }
 
             idsArr.push(genreIds);
@@ -216,6 +219,7 @@ class DbSearcher {
                 });
 
                 langIds = langRows[0].rawResult;
+                await this.putCached(langKey, langIds);
             }
 
             idsArr.push(langIds);
