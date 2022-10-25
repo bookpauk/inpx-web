@@ -241,17 +241,17 @@ class SeriesList extends BaseList {
             return;
 
         this.refreshing = true;
+
+        (async() => {
+            await utils.sleep(500);
+            if (this.refreshing)
+                this.loadingMessage = 'Поиск серий...';
+        })();
+
         try {
             while (this.queryExecute) {
                 const query = this.queryExecute;
                 this.queryExecute = null;
-
-                let inSearch = true;
-                (async() => {
-                    await utils.sleep(500);
-                    if (inSearch)
-                        this.loadingMessage = 'Поиск серий...';
-                })();
 
                 try {
                     const result = await this.api.seriesSearch(query);
@@ -270,13 +270,11 @@ class SeriesList extends BaseList {
                     }
                 } catch (e) {
                     this.$root.stdDialog.alert(e.message, 'Ошибка');
-                } finally {
-                    inSearch = false;
-                    this.loadingMessage = '';
                 }
             }
         } finally {
             this.refreshing = false;
+            this.loadingMessage = '';
         }
     }
 }

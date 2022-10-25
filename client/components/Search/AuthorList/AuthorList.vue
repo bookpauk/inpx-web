@@ -409,17 +409,17 @@ class AuthorList extends BaseList {
             return;
 
         this.refreshing = true;
+
+        (async() => {
+            await utils.sleep(500);
+            if (this.refreshing)
+                this.loadingMessage = 'Поиск серий...';
+        })();
+
         try {
             while (this.queryExecute) {
                 const query = this.queryExecute;
                 this.queryExecute = null;
-
-                let inSearch = true;
-                (async() => {
-                    await utils.sleep(500);
-                    if (inSearch)
-                        this.loadingMessage = 'Поиск авторов...';
-                })();
 
                 try {
                     const result = await this.api.authorSearch(query);
@@ -438,13 +438,11 @@ class AuthorList extends BaseList {
                     }
                 } catch (e) {
                     this.$root.stdDialog.alert(e.message, 'Ошибка');
-                } finally {
-                    inSearch = false;
-                    this.loadingMessage = '';
                 }
             }
         } finally {
             this.refreshing = false;
+            this.loadingMessage = '';
         }
     }
 }
