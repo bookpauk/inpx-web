@@ -191,6 +191,135 @@ class AuthorList extends BaseList {
         return seriesItem.booksSet.has(seriesBook.id);
     }
 
+    async expandAuthor(item) {
+        const expanded = _.cloneDeep(this.expandedAuthor);
+        const key = item.author;
+
+        if (!this.isExpandedAuthor(item)) {
+            expanded.push(key);
+
+            await this.getAuthorBooks(item);
+
+            if (expanded.length > 10) {
+                expanded.shift();
+            }
+
+            //this.$emit('listEvent', {action: 'ignoreScroll'});
+            this.setSetting('expandedAuthor', expanded);
+        } else {
+            const i = expanded.indexOf(key);
+            if (i >= 0) {
+                expanded.splice(i, 1);
+                this.setSetting('expandedAuthor', expanded);
+            }
+        }
+    }
+
+    async getAuthorBooks(item) {
+        if (item.books) {
+            if (item.count > this.maxItemCount) {
+                item.bookLoading = true;
+                await utils.sleep(1);//для перерисовки списка
+                item.bookLoading = false;
+            }
+            return;
+        }
+
+        if (!this.getBooksFlag)
+            this.getBooksFlag = 0;
+
+        this.getBooksFlag++;
+        if (item.count > this.maxItemCount)
+            item.bookLoading = true;
+
+        try {
+            if (this.getBooksFlag == 1) {
+                (async() => {
+                    await utils.sleep(500);
+                    if (this.getBooksFlag > 0)
+                        this.loadingMessage2 = 'Загрузка списка книг...';
+                })();
+            }
+
+            const booksToFilter = await this.loadAuthorBooks(item.key);
+            const filtered = this.filterBooks(booksToFilter);
+
+            const prepareBook = (book) => {
+                return Object.assign(
+                    {
+                        key: book.id,
+                        type: 'book',
+                    },
+                    book
+                );
+            };
+
+            //объединение по сериям
+            const books = [];
+            const seriesIndex = {};
+            for (const book of filtered) {
+                if (book.series) {
+                    let index = seriesIndex[book.series];
+                    if (index === undefined) {
+                        index = books.length;
+                        books.push(reactive({
+                            key: `${item.author}-${book.series}`,
+                            type: 'series',
+                            series: book.series,
+                            allBooksLoaded: null,
+                            allBooks: null,
+                            showAllBooks: false,
+                            showMore: false,
+
+                            seriesBooks: [],
+                        }));
+
+                        seriesIndex[book.series] = index;
+                    }
+
+                    books[index].seriesBooks.push(prepareBook(book));
+                } else {
+                    books.push(prepareBook(book));
+                }
+            }
+
+            //сортировка
+            books.sort((a, b) => {
+                if (a.type == 'series') {
+                    return (b.type == 'series' ? a.key.localeCompare(b.key) : -1);
+                } else {
+                    return (b.type == 'book' ? a.title.localeCompare(b.title) : 1);
+                }
+            });
+
+            //сортировка внутри серий
+            for (const book of books) {
+                if (book.type == 'series') {
+                    this.sortSeriesBooks(book.seriesBooks);
+
+                    //асинхронно подгрузим все книги серии, если она раскрыта
+                    if (this.isExpandedSeries(book)) {
+                        this.getSeriesBooks(book);//no await
+                    }
+                }
+            }
+
+            if (books.length == 1 && books[0].type == 'series' && !this.isExpandedSeries(books[0])) {
+                this.expandSeries(books[0]);
+            }
+
+            item.booksLoaded = books;
+            this.showMore(item);
+
+            await this.$nextTick();
+        } finally {
+            item.bookLoading = false;
+            this.getBooksFlag--;
+            if (this.getBooksFlag == 0)
+                this.loadingMessage2 = '';
+        }
+    }
+
     async updateTableData() {
         let result = [];
 
@@ -225,9 +354,9 @@ class AuthorList extends BaseList {
 
             if (expandedSet.has(item.author)) {
                 if (authors.length > 1 || item.count > this.maxItemCount)
-                    this.getBooks(item);//no await
+                    this.getAuthorBooks(item);//no await
                 else 
-                    await this.getBooks(item);
+                    await this.getAuthorBooks(item);
             }
 
             result.push(item);

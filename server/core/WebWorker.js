@@ -258,16 +258,16 @@ class WebWorker {
         };
     }
 
-    async getBookList(authorId) {
+    async getAuthorBookList(authorId) {
         this.checkMyState();
 
-        return await this.dbSearcher.getBookList(authorId);
+        return await this.dbSearcher.getAuthorBookList(authorId);
     }
 
-    async getSeriesBookList(seriesId) {
+    async getSeriesBookList(series, seriesId) {
         this.checkMyState();
 
-        return await this.dbSearcher.getSeriesBookList(seriesId);
+        return await this.dbSearcher.getSeriesBookList(series, seriesId);
     }
 
     async getGenreTree() {

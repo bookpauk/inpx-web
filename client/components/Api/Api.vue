@@ -212,8 +212,8 @@ class Api {
         return response;
     }
 
-    async getBookList(authorId) {
-        const response = await this.request({action: 'get-book-list', authorId});
+    async getAuthorBookList(authorId) {
+        const response = await this.request({action: 'get-author-book-list', authorId});
 
         if (response.error) {
             throw new Error(response.error);

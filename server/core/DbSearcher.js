@@ -382,9 +382,12 @@ class DbSearcher {
         }
     }
 
-    async getBookList(authorId) {
+    async getAuthorBookList(authorId) {
         if (this.closed)
             throw new Error('DbSearcher closed');
+
+        if (!authorId)
+            return {author: '', books: ''};
 
         this.searchFlag++;
 
@@ -411,9 +414,12 @@ class DbSearcher {
         }
     }
 
-    async getSeriesBookList(series) {
+    async getSeriesBookList(series, seriesId) {
         if (this.closed)
             throw new Error('DbSearcher closed');
+
+        if (!series && !seriesId)
+            return {books: ''};
 
         this.searchFlag++;
 

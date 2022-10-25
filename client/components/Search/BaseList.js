@@ -1,4 +1,3 @@
-import { reactive } from 'vue';
 import _ from 'lodash';
 
 import authorBooksStorage from './authorBooksStorage';
@@ -226,30 +225,6 @@ export default class BaseList {
         this.$emit('listEvent', {action: 'highlightPageScroller', query});
     }
 
-    async expandAuthor(item) {
-        const expanded = _.cloneDeep(this.expandedAuthor);
-        const key = item.author;
-
-        if (!this.isExpandedAuthor(item)) {
-            expanded.push(key);
-
-            await this.getBooks(item);
-
-            if (expanded.length > 10) {
-                expanded.shift();
-            }
-
-            //this.$emit('listEvent', {action: 'ignoreScroll'});
-            this.setSetting('expandedAuthor', expanded);
-        } else {
-            const i = expanded.indexOf(key);
-            if (i >= 0) {
-                expanded.splice(i, 1);
-                this.setSetting('expandedAuthor', expanded);
-            }
-        }
-    }
-
     async expandSeries(seriesItem) {
         const expandedSeries = _.cloneDeep(this.expandedSeries);
         const key = seriesItem.key;
@@ -274,7 +249,7 @@ export default class BaseList {
         }
     }
 
-    async loadBooks(authorId) {
+    async loadAuthorBooks(authorId) {
         try {
             let result;
 
@@ -284,11 +259,11 @@ export default class BaseList {
                 if (data) {
                     result = JSON.parse(data);
                 } else {
-                    result = await this.api.getBookList(authorId);
+                    result = await this.api.getAuthorBookList(authorId);
                     await authorBooksStorage.setData(key, JSON.stringify(result));
                 }
             } else {
-                result = await this.api.getBookList(authorId);
+                result = await this.api.getAuthorBookList(authorId);
             }
 
             return (result.books ? JSON.parse(result.books) : []);
@@ -472,108 +447,4 @@ export default class BaseList {
         });
     }
 
-    async getBooks(item) {
-        if (item.books) {
-            if (item.count > maxItemCount) {
-                item.bookLoading = true;
-                await utils.sleep(1);//для перерисовки списка
-                item.bookLoading = false;
-            }
-            return;
-        }
-
-        if (!this.getBooksFlag)
-            this.getBooksFlag = 0;
-
-        this.getBooksFlag++;
-        if (item.count > maxItemCount)
-            item.bookLoading = true;
-
-        try {
-            if (this.getBooksFlag == 1) {
-                (async() => {
-                    await utils.sleep(500);
-                    if (this.getBooksFlag > 0)
-                        this.loadingMessage2 = 'Загрузка списка книг...';
-                })();
-            }
-
-            const booksToFilter = await this.loadBooks(item.key);
-            const filtered = this.filterBooks(booksToFilter);
-
-            const prepareBook = (book) => {
-                return Object.assign(
-                    {
-                        key: book.id,
-                        type: 'book',
-                    },
-                    book
-                );
-            };
-
-            //объединение по сериям
-            const books = [];
-            const seriesIndex = {};
-            for (const book of filtered) {
-                if (book.series) {
-                    let index = seriesIndex[book.series];
-                    if (index === undefined) {
-                        index = books.length;
-                        books.push(reactive({
-                            key: `${item.author}-${book.series}`,
-                            type: 'series',
-                            series: book.series,
-                            allBooksLoaded: null,
-                            allBooks: null,
-                            showAllBooks: false,
-                            showMore: false,
-
-                            seriesBooks: [],
-                        }));
-
-                        seriesIndex[book.series] = index;
-                    }
-
-                    books[index].seriesBooks.push(prepareBook(book));
-                } else {
-                    books.push(prepareBook(book));
-                }
-            }
-
-            //сортировка
-            books.sort((a, b) => {
-                if (a.type == 'series') {
-                    return (b.type == 'series' ? a.key.localeCompare(b.key) : -1);
-                } else {
-                    return (b.type == 'book' ? a.title.localeCompare(b.title) : 1);
-                }
-            });
-
-            //сортировка внутри серий
-            for (const book of books) {
-                if (book.type == 'series') {
-                    this.sortSeriesBooks(book.seriesBooks);
-
-                    //асинхронно подгрузим все книги серии, если она раскрыта
-                    if (this.isExpandedSeries(book)) {
-                        this.getSeriesBooks(book);//no await
-                    }
-                }
-            }
-
-            if (books.length == 1 && books[0].type == 'series' && !this.isExpandedSeries(books[0])) {
-                this.expandSeries(books[0]);
-            }
-
-            item.booksLoaded = books;
-            this.showMore(item);
-
-            await this.$nextTick();
-        } finally {
-            item.bookLoading = false;
-            this.getBooksFlag--;
-            if (this.getBooksFlag == 0)
-                this.loadingMessage2 = '';
-        }
-    }
 }

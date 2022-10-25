@@ -76,8 +76,8 @@ class WebSocketController {
                     await this.getWorkerState(req, ws); break;
                 case 'author-search':
                     await this.authorSearch(req, ws); break;
-                case 'get-book-list':
-                    await this.getBookList(req, ws); break;
+                case 'get-author-book-list':
+                    await this.getAuthorBookList(req, ws); break;
                 case 'get-series-book-list':
                     await this.getSeriesBookList(req, ws); break;
                 case 'get-genre-tree':
@@ -142,20 +142,14 @@ class WebSocketController {
         this.send(result, req, ws);
     }
 
-    async getBookList(req, ws) {
-        if (!utils.hasProp(req, 'authorId'))
-            throw new Error(`authorId is empty`);
-
-        const result = await this.webWorker.getBookList(req.authorId);
+    async getAuthorBookList(req, ws) {
+        const result = await this.webWorker.getAuthorBookList(req.authorId);
 
         this.send(result, req, ws);
     }
 
     async getSeriesBookList(req, ws) {
-        if (!utils.hasProp(req, 'series'))
-            throw new Error(`series is empty`);
-
-        const result = await this.webWorker.getSeriesBookList(req.series);
+        const result = await this.webWorker.getSeriesBookList(req.series, req.seriesId);
 
         this.send(result, req, ws);
     }
