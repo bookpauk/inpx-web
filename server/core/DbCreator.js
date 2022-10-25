@@ -238,7 +238,7 @@ class DbCreator {
                 }
             }
 
-            ids.sort();// обязательно, иначе будет тормозить - особенности JembaDb
+            ids.sort((a, b) => a - b);// обязательно, иначе будет тормозить - особенности JembaDb
 
             callback(0.1);
             const rows = await db.select({table: 'book', where: `@@id(${db.esc(ids)})`});
@@ -600,7 +600,7 @@ class DbCreator {
                 }
             }
 
-            ids.sort();// обязательно, иначе будет тормозить - особенности JembaDb
+            ids.sort((a, b) => a - b);// обязательно, иначе будет тормозить - особенности JembaDb
 
             const rows = await db.select({table: 'book', where: `@@id(${db.esc(ids)})`});
 
@@ -610,17 +610,26 @@ class DbCreator {
 
             for (const s of seriesChunk) {
                 s.books = [];
+                s.bookCount = 0;
+                s.bookDelCount = 0;
                 for (const id of s.bookId) {
                     const rec = bookArr.get(id);
-                    s.books.push(rec);
+                    if (rec) {//на всякий случай
+                        s.books.push(rec);
+                        if (!rec.del)
+                            s.bookCount++;
+                        else
+                            s.bookDelCount++;
+                    }
                 }
 
                 if (s.books.length) {
-                    s.series = s.books[0].value;
+                    s.series = s.books[0].series;
                 } else {
                     s.toDel = 1;
                 }
 
+                delete s.authorId;
                 delete s.bookId;
             }
 
