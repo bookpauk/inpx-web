@@ -74,8 +74,8 @@ class WebSocketController {
                     await this.getConfig(req, ws); break;
                 case 'get-worker-state':
                     await this.getWorkerState(req, ws); break;
-                case 'search':
-                    await this.search(req, ws); break;
+                case 'author-search':
+                    await this.authorSearch(req, ws); break;
                 case 'get-book-list':
                     await this.getBookList(req, ws); break;
                 case 'get-series-book-list':
@@ -133,11 +133,11 @@ class WebSocketController {
         this.send((state ? state : {}), req, ws);
     }
 
-    async search(req, ws) {
+    async authorSearch(req, ws) {
         if (!req.query)
             throw new Error(`query is empty`);
 
-        const result = await this.webWorker.search(req.query);
+        const result = await this.webWorker.authorSearch(req.query);
 
         this.send(result, req, ws);
     }

@@ -289,7 +289,7 @@ class AuthorList extends BaseList {
                 })();
 
                 try {
-                    const result = await this.api.search(query);
+                    const result = await this.api.authorSearch(query);
 
                     this.list.queryFound = result.author.length;
                     this.list.totalFound = result.totalFound;

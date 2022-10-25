@@ -345,7 +345,7 @@ class DbSearcher {
         });
     }
 
-    async search(query) {
+    async authorSearch(query) {
         if (this.closed)
             throw new Error('DbSearcher closed');
 

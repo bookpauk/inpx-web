@@ -202,8 +202,8 @@ class Api {
         }
     }
 
-    async search(query) {
-        const response = await this.request({action: 'search', query});
+    async authorSearch(query) {
+        const response = await this.request({action: 'author-search', query});
 
         if (response.error) {
             throw new Error(response.error);

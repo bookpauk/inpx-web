@@ -245,11 +245,11 @@ class WebWorker {
         return db.wwCache.config;
     }
 
-    async search(query) {
+    async authorSearch(query) {
         this.checkMyState();
 
         const config = await this.dbConfig();
-        const result = await this.dbSearcher.search(query);
+        const result = await this.dbSearcher.authorSearch(query);
 
         return {
             author: result.result,
