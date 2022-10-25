@@ -54,6 +54,11 @@
                     />
                 </div>
 
+                <div v-if="!item.showAllBooks && isExpandedSeries(item) && item.books && !item.books.length" class="book-row row items-center">
+                    <q-icon class="la la-meh q-mr-xs" size="24px" />
+                    По каждому из заданных критериев у этой серии были найдены разные книги, но нет полного совпадения                    
+                </div>
+
                 <div
                     v-if="item.allBooksLoaded && item.allBooksLoaded.length != item.booksLoaded.length"
                     class="row items-center q-my-sm"
@@ -78,11 +83,6 @@
                         Все книги серии
                     </div>
                 </div>
-            </div>
-
-            <div v-if="isExpandedSeries(item) && item.books && !item.books.length" class="book-row row items-center">
-                <q-icon class="la la-meh q-mr-xs" size="24px" />
-                По каждому из заданных критериев у этой серии были найдены разные книги, но нет полного совпадения                    
             </div>
 
             <div v-if="isExpandedSeries(item) && item.showMore" class="row items-center book-row q-mb-sm">
