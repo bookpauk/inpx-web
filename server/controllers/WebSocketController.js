@@ -107,7 +107,7 @@ class WebSocketController {
             ws.send(message);
 
             if (this.isDevelopment) {
-                log(`WebSocket-OUT: ${message.substr(0, 4000)}`);
+                log(`WebSocket-OUT: ${message.substr(0, 200)}`);
             }
 
         }
