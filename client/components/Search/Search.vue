@@ -262,6 +262,7 @@ const componentOptions = {
         },
         selectedList(newValue) {
             this.selectedListComponent = (route2component[newValue] ? route2component[newValue].component : null);
+            this.pageCount = 1;
 
             if (this.getListRoute() != newValue) {
                 this.updateRouteQueryFromSearch();
