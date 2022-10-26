@@ -274,6 +274,19 @@ class WebWorker {
         };
     }
 
+    async titleSearch(query) {
+        this.checkMyState();
+
+        const config = await this.dbConfig();
+        const result = await this.dbSearcher.titleSearch(query);
+
+        return {
+            title: result.result,
+            totalFound: result.totalFound,
+            inpxHash: (config.inpxHash ? config.inpxHash : ''),
+        };
+    }
+
     async getAuthorBookList(authorId) {
         this.checkMyState();
 

@@ -513,6 +513,58 @@ class DbSearcher {
         return seriesIds;
     }
 
+    async selectTitleIds(query) {
+        const db = this.db;
+
+        let titleIds = false;
+        let isAll = !(query.title && query.title !== '*');
+
+        //серии
+        const titleKеy = `title-ids-title-${query.title}`;
+        titleIds = await this.getCached(titleKеy);
+
+        if (titleIds === null) {
+            if (query.title && query.title !== '*') {
+                const where = this.getWhere(query.title);
+
+                const seriesRows = await db.select({
+                    table: 'title',
+                    rawResult: true,
+                    where: `return Array.from(${where})`,
+                });
+
+                titleIds = seriesRows[0].rawResult;
+            } else {
+                const seriesRows = await db.select({
+                    table: 'title',
+                    rawResult: true,
+                    where: `return Array.from(@all())`,
+                });
+
+                titleIds = seriesRows[0].rawResult;
+            }
+
+            titleIds.sort((a, b) => a - b);
+
+            await this.putCached(titleKеy, titleIds);
+        }
+
+        const where = this.getWhere2(query, (isAll ? false : titleIds), 'title');
+
+        if (where) {
+            //тяжелый запрос перебором в series_book
+            const rows = await db.select({
+                table: 'title_book',
+                rawResult: true,
+                where,
+            });
+
+            titleIds = rows[0].rawResult;
+        }
+
+        return titleIds;
+    }
+
     queryKey(q) {
         return JSON.stringify([q.author, q.series, q.title, q.genre, q.lang]);
     }
@@ -653,6 +705,43 @@ class DbSearcher {
             //выборка найденных авторов
             const result = await db.select({
                 table: 'series_book',
+                map: `(r) => ({id: r.id, series: r.series, bookCount: r.bookCount, bookDelCount: r.bookDelCount})`,
+                where: `@@id(${db.esc(seriesIds.slice(offset, offset + limit))})`
+            });
+
+            return {result, totalFound};
+        } finally {
+            this.searchFlag--;
+        }
+    }
+
+    async titleSearch(query) {
+        if (this.closed)
+            throw new Error('DbSearcher closed');
+
+        this.searchFlag++;
+
+        try {
+            const db = this.db;
+
+            const key = `title-ids-${this.queryKey(query)}`;
+
+            //сначала попробуем найти в кеше
+            let seriesIds = await this.getCached(key);
+            if (seriesIds === null) {//не нашли в кеше, ищем в поисковых таблицах
+                seriesIds = await this.selectTitleIds(query);
+
+                await this.putCached(key, seriesIds);
+            }
+
+            const totalFound = seriesIds.length;
+            let limit = (query.limit ? query.limit : 100);
+            limit = (limit > maxLimit ? maxLimit : limit);
+            const offset = (query.offset ? query.offset : 0);
+
+            //выборка найденных авторов
+            const result = await db.select({
+                table: 'title_book',
                 map: `(r) => ({id: r.id, series: r.series, bookCount: r.bookCount, bookDelCount: r.bookDelCount})`,
                 where: `@@id(${db.esc(seriesIds.slice(offset, offset + limit))})`
             });

@@ -78,6 +78,8 @@ class WebSocketController {
                     await this.authorSearch(req, ws); break;
                 case 'series-search':
                     await this.seriesSearch(req, ws); break;
+                case 'title-search':
+                    await this.titleSearch(req, ws); break;
                 case 'get-author-book-list':
                     await this.getAuthorBookList(req, ws); break;
                 case 'get-series-book-list':
@@ -152,6 +154,18 @@ class WebSocketController {
             throw new Error(`query is empty`);
 
         const result = await this.webWorker.seriesSearch(req.query);
+
+        this.send(result, req, ws);
+    }
+
+    async titleSearch(req, ws) {
+        if (!this.config.extendedSearch)
+            throw new Error(`Extended search disabled`);
+
+        if (!req.query)
+            throw new Error(`query is empty`);
+
+        const result = await this.webWorker.titleSearch(req.query);
 
         this.send(result, req, ws);
     }
