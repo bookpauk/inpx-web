@@ -199,7 +199,7 @@ class WebWorker {
             //откроем таблицу 'author' с бОльшим размером кеша блоков, для ускорения выборки
             await db.open({table: 'author', cacheSize: (config.dbCacheSize > 100 ? config.dbCacheSize : 100)});
 
-            if (!config.extendedSearch)
+            if (config.extendedSearch)
                 await db.open({table: 'title_book'});
 
             this.dbSearcher = new DbSearcher(config, db);

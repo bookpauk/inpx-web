@@ -298,45 +298,8 @@ class DbSearcher {
         let filter = '';
         let closures = '';
 
-        //авторы
-        if (exclude !== 'author' && query.author && query.author !== '*') {
-            closures += `
-                const splitAuthor = (author) => {
-                    if (!author)
-                        author = ${db.esc(emptyFieldValue)};
-
-                    const result = author.split(',');
-                    if (result.length > 1)
-                        result.push(author);
-
-                    return result;
-                };
-
-                const checkAuthor = (bookValue) => {
-                    if (!bookValue)
-                        bookValue = ${db.esc(emptyFieldValue)};
-
-                    bookValue = bookValue.toLowerCase();
-
-                    return ${filterBySearch(query.author)};
-                };
-            `;
-
-            filter += `
-                const author = splitAuthor(book.author);
-                let found = false;
-                for (const a of author) {
-                    if (checkAuthor(a)) {
-                        found = true;
-                        break;
-                    }
-                }
-
-                if (!found)
-                    return false;
-            `;
-        }
-
+        //порядок важен, более простые проверки вперед
+        
         //серии
         if (exclude !== 'series' && query.series && query.series !== '*') {
             closures += `
@@ -373,6 +336,26 @@ class DbSearcher {
             `;
         }
 
+        //языки
+        if (exclude !== 'lang' && query.lang) {
+            const queryLangs = query.lang.split(',');
+
+            closures += `
+                const queryLangs = new Set(${db.esc(queryLangs)});
+
+                const checkLang = (bookValue) => {
+                    if (!bookValue)
+                        bookValue = ${db.esc(emptyFieldValue)};
+
+                    return queryLangs.has(bookValue);
+                };
+            `;
+            filter += `
+                if (!checkLang(book.lang))
+                    return false;
+            `;
+        }
+
         //жанры
         if (exclude !== 'genre' && query.genre) {
             const queryGenres = query.genre.split(',');
@@ -402,22 +385,41 @@ class DbSearcher {
             `;
         }
 
-        //языки
-        if (exclude !== 'lang' && query.lang) {
-            const queryLangs = query.lang.split(',');
-
+        //авторы
+        if (exclude !== 'author' && query.author && query.author !== '*') {
             closures += `
-                const queryLangs = new Set(${db.esc(queryLangs)});
+                const splitAuthor = (author) => {
+                    if (!author)
+                        author = ${db.esc(emptyFieldValue)};
 
-                const checkLang = (bookValue) => {
+                    const result = author.split(',');
+                    if (result.length > 1)
+                        result.push(author);
+
+                    return result;
+                };
+
+                const checkAuthor = (bookValue) => {
                     if (!bookValue)
                         bookValue = ${db.esc(emptyFieldValue)};
 
-                    return queryLangs.has(bookValue);
+                    bookValue = bookValue.toLowerCase();
+
+                    return ${filterBySearch(query.author)};
                 };
             `;
+
             filter += `
-                if (!checkLang(book.lang))
+                const author = splitAuthor(book.author);
+                let found = false;
+                for (const a of author) {
+                    if (checkAuthor(a)) {
+                        found = true;
+                        break;
+                    }
+                }
+
+                if (!found)
                     return false;
             `;
         }
@@ -527,21 +529,21 @@ class DbSearcher {
             if (query.title && query.title !== '*') {
                 const where = this.getWhere(query.title);
 
-                const seriesRows = await db.select({
+                const titleRows = await db.select({
                     table: 'title',
                     rawResult: true,
                     where: `return Array.from(${where})`,
                 });
 
-                titleIds = seriesRows[0].rawResult;
+                titleIds = titleRows[0].rawResult;
             } else {
-                const seriesRows = await db.select({
+                const titleRows = await db.select({
                     table: 'title',
                     rawResult: true,
                     where: `return Array.from(@all())`,
                 });
 
-                titleIds = seriesRows[0].rawResult;
+                titleIds = titleRows[0].rawResult;
             }
 
             titleIds.sort((a, b) => a - b);
@@ -552,7 +554,7 @@ class DbSearcher {
         const where = this.getWhere2(query, (isAll ? false : titleIds), 'title');
 
         if (where) {
-            //тяжелый запрос перебором в series_book
+            //тяжелый запрос перебором в title_book
             const rows = await db.select({
                 table: 'title_book',
                 rawResult: true,
@@ -727,14 +729,14 @@ class DbSearcher {
             const key = `title-ids-${this.queryKey(query)}`;
 
             //сначала попробуем найти в кеше
-            let seriesIds = await this.getCached(key);
-            if (seriesIds === null) {//не нашли в кеше, ищем в поисковых таблицах
-                seriesIds = await this.selectTitleIds(query);
+            let titleIds = await this.getCached(key);
+            if (titleIds === null) {//не нашли в кеше, ищем в поисковых таблицах
+                titleIds = await this.selectTitleIds(query);
 
-                await this.putCached(key, seriesIds);
+                await this.putCached(key, titleIds);
             }
 
-            const totalFound = seriesIds.length;
+            const totalFound = titleIds.length;
             let limit = (query.limit ? query.limit : 100);
             limit = (limit > maxLimit ? maxLimit : limit);
             const offset = (query.offset ? query.offset : 0);
@@ -742,8 +744,8 @@ class DbSearcher {
             //выборка найденных авторов
             const result = await db.select({
                 table: 'title_book',
-                map: `(r) => ({id: r.id, series: r.series, bookCount: r.bookCount, bookDelCount: r.bookDelCount})`,
-                where: `@@id(${db.esc(seriesIds.slice(offset, offset + limit))})`
+                map: `(r) => ({id: r.id, title: r.title, books: r.books, bookCount: r.bookCount, bookDelCount: r.bookDelCount})`,
+                where: `@@id(${db.esc(titleIds.slice(offset, offset + limit))})`
             });
 
             return {result, totalFound};
