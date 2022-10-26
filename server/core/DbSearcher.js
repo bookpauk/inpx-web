@@ -53,7 +53,7 @@ class DbSearcher {
     async selectAuthorIds(query) {
         const db = this.db;
 
-        const authorKеy = `select-ids-author-${query.author}`;
+        const authorKеy = `author-ids-author-${query.author}`;
         let authorIds = await this.getCached(authorKеy);
 
         //сначала выберем все id авторов по фильтру
@@ -86,7 +86,7 @@ class DbSearcher {
 
         //серии
         if (query.series && query.series !== '*') {
-            const seriesKеy = `select-ids-series-${query.series}`;
+            const seriesKеy = `author-ids-series-${query.series}`;
             let seriesIds = await this.getCached(seriesKеy);
 
             if (seriesIds === null) {
@@ -118,7 +118,7 @@ class DbSearcher {
 
         //названия
         if (query.title && query.title !== '*') {
-            const titleKey = `select-ids-title-${query.title}`;
+            const titleKey = `author-ids-title-${query.title}`;
             let titleIds = await this.getCached(titleKey);
 
             if (titleIds === null) {
@@ -156,7 +156,7 @@ class DbSearcher {
 
         //жанры
         if (query.genre) {
-            const genreKey = `select-ids-genre-${query.genre}`;
+            const genreKey = `author-ids-genre-${query.genre}`;
             let genreIds = await this.getCached(genreKey);
 
             if (genreIds === null) {
@@ -192,7 +192,7 @@ class DbSearcher {
 
         //языки
         if (query.lang) {
-            const langKey = `select-ids-lang-${query.lang}`;
+            const langKey = `author-ids-lang-${query.lang}`;
             let langIds = await this.getCached(langKey);
 
             if (langIds === null) {
@@ -270,33 +270,248 @@ class DbSearcher {
         return authorIds;
     }
 
+    getWhere2(query, ids, exclude = '') {
+        const db = this.db;
+
+        const filterBySearch = (searchValue) => {
+            searchValue = searchValue.toLowerCase();
+
+            //особая обработка префиксов
+            if (searchValue[0] == '=') {
+
+                searchValue = searchValue.substring(1);
+                return `bookValue.localeCompare(${db.esc(searchValue)}) == 0`;
+            } else if (searchValue[0] == '*') {
+
+                searchValue = searchValue.substring(1);
+                return `bookValue !== ${db.esc(emptyFieldValue)} && bookValue.indexOf(${db.esc(searchValue)}) >= 0`;
+            } else if (searchValue[0] == '#') {
+
+                searchValue = searchValue.substring(1);
+                return `!bookValue || (bookValue !== ${db.esc(emptyFieldValue)} && !enru.has(bookValue[0]) && bookValue.indexOf(${db.esc(searchValue)}) >= 0)`;
+            } else {
+                return `bookValue.localeCompare(${db.esc(searchValue)}) >= 0 && bookValue.localeCompare(${db.esc(searchValue + maxUtf8Char)}) <= 0`;
+            }
+        };
+
+        //подготовка фильтра
+        let filter = '';
+        let closures = '';
+
+        //авторы
+        if (exclude !== 'author' && query.author && query.author !== '*') {
+            closures += `
+                const splitAuthor = (author) => {
+                    if (!author)
+                        author = ${db.esc(emptyFieldValue)};
+
+                    const result = author.split(',');
+                    if (result.length > 1)
+                        result.push(author);
+
+                    return result;
+                };
+
+                const checkAuthor = (bookValue) => {
+                    if (!bookValue)
+                        bookValue = ${db.esc(emptyFieldValue)};
+
+                    bookValue = bookValue.toLowerCase();
+
+                    return ${filterBySearch(query.author)};
+                };
+            `;
+
+            filter += `
+                const author = splitAuthor(book.author);
+                let found = false;
+                for (const a of author) {
+                    if (checkAuthor(a)) {
+                        found = true;
+                        break;
+                    }
+                }
+
+                if (!found)
+                    return false;
+            `;
+        }
+
+        //серии
+        if (exclude !== 'series' && query.series && query.series !== '*') {
+            closures += `
+                const checkSeries = (bookValue) => {
+                    if (!bookValue)
+                        bookValue = ${db.esc(emptyFieldValue)};
+
+                    bookValue = bookValue.toLowerCase();
+
+                    return ${filterBySearch(query.series)};
+                };
+            `;
+            filter += `
+                if (!checkSeries(book.series))
+                    return false;
+            `;
+        }
+
+        //названия
+        if (exclude !== 'title' && query.title && query.title !== '*') {
+            closures += `
+                const checkTitle = (bookValue) => {
+                    if (!bookValue)
+                        bookValue = ${db.esc(emptyFieldValue)};
+
+                    bookValue = bookValue.toLowerCase();
+
+                    return ${filterBySearch(query.title)};
+                };
+            `;
+            filter += `
+                if (!checkTitle(book.title))
+                    return false;
+            `;
+        }
+
+        //жанры
+        if (exclude !== 'genre' && query.genre) {
+            const queryGenres = query.genre.split(',');
+
+            closures += `
+                const queryGenres = new Set(${db.esc(queryGenres)});
+
+                const checkGenre = (bookValue) => {
+                    if (!bookValue)
+                        bookValue = ${db.esc(emptyFieldValue)};
+
+                    return queryGenres.has(bookValue);
+                };
+            `;
+            filter += `
+                const genres = book.genre.split(',');
+                let found = false;
+                for (const g of genres) {
+                    if (checkGenre(g)) {
+                        found = true;
+                        break;
+                    }
+                }
+
+                if (!found)
+                    return false;
+            `;
+        }
+
+        //языки
+        if (exclude !== 'lang' && query.lang) {
+            const queryLangs = query.lang.split(',');
+
+            closures += `
+                const queryLangs = new Set(${db.esc(queryLangs)});
+
+                const checkLang = (bookValue) => {
+                    if (!bookValue)
+                        bookValue = ${db.esc(emptyFieldValue)};
+
+                    return queryLangs.has(bookValue);
+                };
+            `;
+            filter += `
+                if (!checkLang(book.lang))
+                    return false;
+            `;
+        }
+
+        //формируем where
+        let where = '';
+        if (filter) {
+            where = `
+                const enru = new Set(${db.esc(enruArr)});
+
+                ${closures}
+
+                const filterBook = (book) => {
+                    ${filter}
+                    return true;
+                };
+
+                let ids;
+                if (${!ids}) {
+                    ids = @all();
+                } else {
+                    ids = ${db.esc(ids)};
+                }
+
+                const result = new Set();
+                for (const id of ids) {
+                    const row = @unsafeRow(id);
+
+                    for (const book of row.books) {
+                        if (filterBook(book)) {
+                            result.add(id);
+                            break;
+                        }
+                    }
+                }
+
+                return Array.from(result);
+            `;
+        }
+
+        return where;
+    }
+
     async selectSeriesIds(query) {
         const db = this.db;
 
-        let seriesIds = [];
+        let seriesIds = false;
+        let isAll = false;
 
         //серии
-        if (query.series && query.series !== '*') {
-            const where = this.getWhere(query.series);
+        const seriesKеy = `series-ids-series-${query.series}`;
+        seriesIds = await this.getCached(seriesKеy);
 
-            const seriesRows = await db.select({
-                table: 'series',
-                rawResult: true,
-                where: `return Array.from(${where})`,
-            });
+        if (seriesIds === null) {
+            if (query.series && query.series !== '*') {
+                const where = this.getWhere(query.series);
 
-            seriesIds = seriesRows[0].rawResult;
-        } else {
-            const authorRows = await db.select({
-                table: 'series',
-                rawResult: true,
-                where: `return Array.from(@all())`,
-            });
+                const seriesRows = await db.select({
+                    table: 'series',
+                    rawResult: true,
+                    where: `return Array.from(${where})`,
+                });
 
-            seriesIds = authorRows[0].rawResult;
+                seriesIds = seriesRows[0].rawResult;
+            } else {
+                isAll = true;
+
+                const seriesRows = await db.select({
+                    table: 'series',
+                    rawResult: true,
+                    where: `return Array.from(@all())`,
+                });
+
+                seriesIds = seriesRows[0].rawResult;
+            }
+
+            seriesIds.sort((a, b) => a - b);
+
+            await this.putCached(seriesKеy, seriesIds);
         }
 
-        seriesIds.sort((a, b) => a - b);
+
+        const where = this.getWhere2(query, (isAll ? false : seriesIds), 'series');
+
+        if (where) {
+            //тяжелый запрос перебором в series_book
+            const rows = await db.select({
+                table: 'series_book',
+                rawResult: true,
+                where,
+            });
+
+            seriesIds = rows[0].rawResult;
+        }
 
         return seriesIds;
     }
