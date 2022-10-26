@@ -465,7 +465,7 @@ class DbSearcher {
         const db = this.db;
 
         let seriesIds = false;
-        let isAll = false;
+        let isAll = !(query.series && query.series !== '*');
 
         //серии
         const seriesKеy = `series-ids-series-${query.series}`;
@@ -483,8 +483,6 @@ class DbSearcher {
 
                 seriesIds = seriesRows[0].rawResult;
             } else {
-                isAll = true;
-
                 const seriesRows = await db.select({
                     table: 'series',
                     rawResult: true,
@@ -498,7 +496,6 @@ class DbSearcher {
 
             await this.putCached(seriesKеy, seriesIds);
         }
-
 
         const where = this.getWhere2(query, (isAll ? false : seriesIds), 'series');
 
