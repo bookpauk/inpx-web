@@ -557,12 +557,12 @@ class DbCreator {
         });
 
         callback({job: 'optimization', jobMessage: 'Оптимизация', jobStep: 11, progress: 0});
-        await this.optimizeSeries(db, (p) => {
+        await this.optimizeTable('series', 'series_book', 'series', db, (p) => {
             if (p.progress)
                 p.progress = 0.5*p.progress;
             callback(p);
         });
-        await this.optimizeTitle(db, (p) => {
+        await this.optimizeTable('title', 'title_book', 'title', db, (p) => {
             if (p.progress)
                 p.progress = 0.5*(1 + p.progress);
             callback(p);
@@ -592,18 +592,18 @@ class DbCreator {
         callback({job: 'done', jobMessage: ''});
     }
 
-    async optimizeSeries(db, callback) {
-        //оптимизация series, превращаем массив bookId в books, кладем все в series_book
-        await db.open({table: 'series'});
+    async optimizeTable(from, to, restoreProp, db, callback) {
+        //оптимизация таблицы from, превращаем массив bookId в books, кладем все в таблицу to
+        await db.open({table: from});
 
         await db.create({
-            table: 'series_book',
+            table: to,
             flag: {name: 'toDel', check: 'r => r.toDel'},
         });
 
-        const saveSeriesChunk = async(seriesChunk) => {
+        const saveChunk = async(chunk) => {
             const ids = [];
-            for (const s of seriesChunk) {
+            for (const s of chunk) {
                 for (const id of s.bookId) {
                     ids.push(id);
                 }
@@ -617,7 +617,7 @@ class DbCreator {
             for (const row of rows)
                 bookArr.set(row.id, row);
 
-            for (const s of seriesChunk) {
+            for (const s of chunk) {
                 s.books = [];
                 s.bookCount = 0;
                 s.bookDelCount = 0;
@@ -633,22 +633,23 @@ class DbCreator {
                 }
 
                 if (s.books.length) {
-                    s.series = s.books[0].series;
+                    s[restoreProp] = s.books[0][restoreProp];
                 } else {
                     s.toDel = 1;
                 }
 
+                delete s.value;
                 delete s.authorId;
                 delete s.bookId;
             }
 
             await db.insert({
-                table: 'series_book',
-                rows: seriesChunk,
+                table: to,
+                rows: chunk,
             });
         };
 
-        const rows = await db.select({table: 'series'});
+        const rows = await db.select({table: from});
 
         let idsLen = 0;
         let chunk = [];
@@ -659,7 +660,7 @@ class DbCreator {
             processed++;
 
             if (idsLen > 20000) {//константа выяснена эмпирическим путем "память/скорость"
-                await saveSeriesChunk(chunk);
+                await saveChunk(chunk);
 
                 idsLen = 0;
                 chunk = [];
@@ -672,102 +673,13 @@ class DbCreator {
             }
         }
         if (chunk.length) {
-            await saveSeriesChunk(chunk);
+            await saveChunk(chunk);
             chunk = null;
         }
 
-        await db.delete({table: 'series_book', where: `@@flag('toDel')`});
-        await db.close({table: 'series_book'});
-        await db.close({table: 'series'});
-    }
-
-    async optimizeTitle(db, callback) {
-        //оптимизация title, превращаем массив bookId в books, кладем все в title_book
-        await db.open({table: 'title'});
-
-        await db.create({
-            table: 'title_book',
-            flag: {name: 'toDel', check: 'r => r.toDel'},
-        });
-
-        const saveTitleChunk = async(titleChunk) => {
-            const ids = [];
-            for (const s of titleChunk) {
-                for (const id of s.bookId) {
-                    ids.push(id);
-                }
-            }
-
-            ids.sort((a, b) => a - b);// обязательно, иначе будет тормозить - особенности JembaDb
-
-            const rows = await db.select({table: 'book', where: `@@id(${db.esc(ids)})`});
-
-            const bookArr = new Map();
-            for (const row of rows)
-                bookArr.set(row.id, row);
-
-            for (const s of titleChunk) {
-                s.books = [];
-                s.bookCount = 0;
-                s.bookDelCount = 0;
-                for (const id of s.bookId) {
-                    const rec = bookArr.get(id);
-                    if (rec) {//на всякий случай
-                        s.books.push(rec);
-                        if (!rec.del)
-                            s.bookCount++;
-                        else
-                            s.bookDelCount++;
-                    }
-                }
-
-                if (s.books.length) {
-                    s.series = s.books[0].series;
-                } else {
-                    s.toDel = 1;
-                }
-
-                delete s.authorId;
-                delete s.bookId;
-            }
-
-            await db.insert({
-                table: 'title_book',
-                rows: titleChunk,
-            });
-        };
-
-        const rows = await db.select({table: 'title'});
-
-        let idsLen = 0;
-        let chunk = [];
-        let processed = 0;
-        for (const row of rows) {// eslint-disable-line
-            chunk.push(row);
-            idsLen += row.bookId.length;
-            processed++;
-
-            if (idsLen > 20000) {//константа выяснена эмпирическим путем "память/скорость"
-                await saveTitleChunk(chunk);
-
-                idsLen = 0;
-                chunk = [];
-
-                callback({progress: processed/rows.length});
-
-                await utils.sleep(100);
-                utils.freeMemory();
-                await db.freeMemory();
-            }
-        }
-        if (chunk.length) {
-            await saveTitleChunk(chunk);
-            chunk = null;
-        }
-
-        await db.delete({table: 'title_book', where: `@@flag('toDel')`});
-        await db.close({table: 'title_book'});
-        await db.close({table: 'title'});
+        await db.delete({table: to, where: `@@flag('toDel')`});
+        await db.close({table: to});
+        await db.close({table: from});
     }
 
     async countStats(db, callback, stats) {
