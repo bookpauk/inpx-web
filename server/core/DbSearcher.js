@@ -299,7 +299,7 @@ class DbSearcher {
         let closures = '';
 
         //порядок важен, более простые проверки вперед
-        
+
         //серии
         if (exclude !== 'series' && query.series && query.series !== '*') {
             closures += `
@@ -448,10 +448,12 @@ class DbSearcher {
                 for (const id of ids) {
                     const row = @unsafeRow(id);
 
-                    for (const book of row.books) {
-                        if (filterBook(book)) {
-                            result.add(id);
-                            break;
+                    if (row) {
+                        for (const book of row.books) {
+                            if (filterBook(book)) {
+                                result.add(id);
+                                break;
+                            }
                         }
                     }
                 }
