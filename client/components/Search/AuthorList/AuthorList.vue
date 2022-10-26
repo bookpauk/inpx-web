@@ -6,7 +6,7 @@
         <LoadingMessage :message="loadingMessage2" z-index="1" />
 
         <!-- Формирование списка ------------------------------------------------------------------------>
-        <div v-for="item in tableData" :key="item.key" class="column" :class="{'odd-author': item.num % 2}" style="font-size: 120%">
+        <div v-for="item in tableData" :key="item.key" class="column" :class="{'odd-item': item.num % 2}" style="font-size: 120%">
             <div class="row items-center q-ml-md q-mr-xs no-wrap">
                 <div class="row items-center clickable2 q-py-xs no-wrap" @click="expandAuthor(item)">
                     <div style="min-width: 30px">
@@ -106,7 +106,7 @@
 
                 <div v-if="isExpandedAuthor(item) && item.books && !item.books.length" class="book-row row items-center">
                     <q-icon class="la la-meh q-mr-xs" size="24px" />
-                    По каждому из заданных критериев у этого автора были найдены разные книги, но нет полного совпадения                    
+                    По каждому из заданных критериев у этого автора были найдены разные книги, но нет полного совпадения
                 </div>
             </div>
 
@@ -456,7 +456,7 @@ export default vueComponent(AuthorList);
     cursor: pointer;
 }
 
-.odd-author {
+.odd-item {
     background-color: #e8e8e8;
 }
 

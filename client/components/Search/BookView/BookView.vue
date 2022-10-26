@@ -31,7 +31,7 @@
                 </div>
             </div>
 
-            <div class="q-ml-sm row items-center">
+            <div v-if="!titleList" class="q-ml-sm row items-center">
                 {{ book.serno ? `${book.serno}. ` : '' }}
                 <div v-if="showAuthor && book.author">
                     <span class="clickable2 text-green-10" @click="selectAuthor">{{ bookAuthor }}</span>
@@ -39,6 +39,20 @@
                     <span class="clickable2" :class="titleColor" @click="selectTitle">{{ book.title }}</span>
                 </div>
                 <span v-else class="clickable2" :class="titleColor" @click="selectTitle">{{ book.title }}</span>
+            </div>
+            <div v-else class="q-ml-sm row items-center">
+                <span class="clickable2" :class="titleColor" @click="selectTitle">{{ book.title }}</span>
+
+                <div v-if="book.author || bookSeries" class="row">
+                    &nbsp;-&nbsp;
+                    <div v-if="book.author">
+                        <span class="clickable2 text-green-10" @click="selectAuthor">{{ bookAuthor }}</span>
+                        &nbsp;
+                    </div>
+                    <div v-if="bookSeries">
+                        <span class="clickable2" @click="selectSeries">{{ bookSeries }}</span>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -88,6 +102,7 @@ class BookView {
         genreMap: Object,
         showAuthor: Boolean,
         showReadLink: Boolean,
+        titleList: Boolean,
         titleColor: { type: String, default: 'text-blue-10'},
     };
 
@@ -112,9 +127,17 @@ class BookView {
     }
 
     get bookAuthor() {
-        if (this.showAuthor && this.book.author) {
+        if ((this.showAuthor || this.titleList) && this.book.author) {
             let a = this.book.author.split(',');
             return a.slice(0, 2).join(', ') + (a.length > 2 ? ' и др.' : '');
+        }
+
+        return '';
+    }
+
+    get bookSeries() {
+        if (this.book.series) {
+            return `(${this.book.series})`;
         }
 
         return '';
@@ -153,6 +176,10 @@ class BookView {
 
     selectAuthor() {
         this.$emit('bookEvent', {action: 'authorClick', book: this.book});
+    }
+
+    selectSeries() {
+        this.$emit('bookEvent', {action: 'seriesClick', book: this.book});
     }
 
     selectTitle() {

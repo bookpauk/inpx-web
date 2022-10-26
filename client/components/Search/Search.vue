@@ -169,6 +169,7 @@ import vueComponent from '../vueComponent.js';
 
 import AuthorList from './AuthorList/AuthorList.vue';
 import SeriesList from './SeriesList/SeriesList.vue';
+import TitleList from './TitleList/TitleList.vue';
 
 import PageScroller from './PageScroller/PageScroller.vue';
 import SelectGenreDialog from './SelectGenreDialog/SelectGenreDialog.vue';
@@ -186,13 +187,14 @@ import _ from 'lodash';
 const route2component = {
     'author': {component: 'AuthorList', label: 'Авторы'},
     'series': {component: 'SeriesList', label: 'Серии'},
-    'book': {component: 'AuthorList', label: 'Книги'},
+    'book': {component: 'TitleList', label: 'Книги'},
 };
 
 const componentOptions = {
     components: {
         AuthorList,
         SeriesList,
+        TitleList,
         PageScroller,
         SelectGenreDialog,
         SelectLangDialog,
@@ -263,6 +265,7 @@ const componentOptions = {
         selectedList(newValue) {
             this.selectedListComponent = (route2component[newValue] ? route2component[newValue].component : null);
             this.pageCount = 1;
+            this.foundCountMessage = '';
 
             if (this.getListRoute() != newValue) {
                 this.updateRouteQueryFromSearch();

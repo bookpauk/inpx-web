@@ -198,6 +198,9 @@ export default class BaseList {
             case 'authorClick':
                 this.selectAuthor(event.book.author);
                 break;
+            case 'seriesClick':
+                this.selectSeries(event.book.series);
+                break;
             case 'titleClick':
                 this.selectTitle(event.book.title);
                 break;
