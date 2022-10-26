@@ -194,10 +194,13 @@ class WebWorker {
             });
 
             //открываем почти все таблицы
-            await db.openAll({exclude: ['author']});
+            await db.openAll({exclude: ['author', 'title_book']});
 
             //откроем таблицу 'author' с бОльшим размером кеша блоков, для ускорения выборки
             await db.open({table: 'author', cacheSize: (config.dbCacheSize > 100 ? config.dbCacheSize : 100)});
+
+            if (!config.extendedSearch)
+                await db.open({table: 'title_book'});
 
             this.dbSearcher = new DbSearcher(config, db);
 

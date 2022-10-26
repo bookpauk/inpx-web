@@ -425,8 +425,8 @@ class DbCreator {
             } else
                 break;
 
-            await utils.sleep(100);
             if (config.lowMemoryMode) {
+                await utils.sleep(100);
                 utils.freeMemory();
                 await db.freeMemory();
             }
@@ -441,7 +441,7 @@ class DbCreator {
         utils.freeMemory();
 
         //сортировка серий
-        callback({job: 'series sort', jobMessage: 'Сортировка серий', jobStep: 5, progress: 0});
+        callback({job: 'sort', jobMessage: 'Сортировка', jobStep: 5, progress: 0});
         await utils.sleep(100);
         seriesArr.sort((a, b) => a.value.localeCompare(b.value));
         await utils.sleep(100);
@@ -559,12 +559,12 @@ class DbCreator {
         callback({job: 'optimization', jobMessage: 'Оптимизация', jobStep: 11, progress: 0});
         await this.optimizeTable('series', 'series_book', 'series', db, (p) => {
             if (p.progress)
-                p.progress = 0.5*p.progress;
+                p.progress = 0.2*p.progress;
             callback(p);
         });
         await this.optimizeTable('title', 'title_book', 'title', db, (p) => {
             if (p.progress)
-                p.progress = 0.5*(1 + p.progress);
+                p.progress = 0.2 + 0.8*p.progress;
             callback(p);
         });
 
@@ -649,32 +649,46 @@ class DbCreator {
             });
         };
 
-        const rows = await db.select({table: from});
+        const rows = await db.select({table: from, count: true});
+        const fromLength = rows[0].count;
 
-        let idsLen = 0;
-        let chunk = [];
         let processed = 0;
-        for (const row of rows) {// eslint-disable-line
-            chunk.push(row);
-            idsLen += row.bookId.length;
-            processed++;
+        while (1) {// eslint-disable-line
+            const chunk = await db.select({
+                table: from,
+                where: `
+                    let iter = @getItem('optimize');
+                    if (!iter) {
+                        iter = @all();
+                        @setItem('optimize', iter);
+                    }
 
-            if (idsLen > 20000) {//константа выяснена эмпирическим путем "память/скорость"
+                    const ids = new Set();
+                    let id = iter.next();
+                    while (!id.done) {
+                        ids.add(id.value);
+                        if (ids.size >= 20000)
+                            break;
+                        id = iter.next();
+                    }
+
+                    return ids;
+                `
+            });
+
+            if (chunk.length) {
                 await saveChunk(chunk);
 
-                idsLen = 0;
-                chunk = [];
+                processed += chunk.length;
+                callback({progress: processed/fromLength});
+            } else
+                break;
 
-                callback({progress: processed/rows.length});
-
-                await utils.sleep(100);
+            if (this.config.lowMemoryMode) {
+                await utils.sleep(10);
                 utils.freeMemory();
                 await db.freeMemory();
             }
-        }
-        if (chunk.length) {
-            await saveChunk(chunk);
-            chunk = null;
         }
 
         await db.delete({table: to, where: `@@flag('toDel')`});
