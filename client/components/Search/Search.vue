@@ -75,20 +75,6 @@
                     </q-input>
                     <div class="q-mx-xs" />
                     <q-input
-                        v-model="genreNames" :maxlength="inputMaxLength" :debounce="inputDebounce"
-                        class="q-mt-xs" :bg-color="inputBgColor()" input-style="cursor: pointer" style="width: 200px;" label="Жанр" stack-label outlined dense clearable readonly
-                        @click="selectGenre"
-                    >
-                        <template v-if="genreNames" #append>
-                            <q-icon name="la la-times-circle" class="q-field__focusable-action" @click.stop.prevent="search.genre = ''" />
-                        </template>
-
-                        <q-tooltip v-if="genreNames && showTooltips" :delay="500" anchor="bottom middle" content-style="font-size: 80%" max-width="400px">
-                            {{ genreNames }}
-                        </q-tooltip>
-                    </q-input>
-                    <div class="q-mx-xs" />
-                    <q-input
                         v-model="search.lang" :maxlength="inputMaxLength" :debounce="inputDebounce"
                         class="q-mt-xs" :bg-color="inputBgColor()" input-style="cursor: pointer" style="width: 80px;" label="Язык" stack-label outlined dense clearable readonly
                         @click="selectLang"
@@ -99,6 +85,17 @@
                     </q-input>
 
                     <div class="q-mx-xs" />
+                    <DivBtn
+                        class="text-white bg-info q-mt-xs" :size="34" :icon-size="24" :imt="1" 
+                        :icon="(extendedParams ? 'la la-angle-double-up' : 'la la-angle-double-down')"
+                        @click="extendedParams = !extendedParams"
+                    >
+                        <q-tooltip :delay="1500" anchor="bottom middle" content-style="font-size: 80%" max-width="400px">
+                            {{ `${(extendedParams ? 'Скрыть' : 'Показать')} дополнительные критерии поиска` }}
+                        </q-tooltip>
+                    </DivBtn>
+
+                    <div class="q-mx-xs" />
                     <div class="row items-center q-mt-xs">
                         <div v-show="list.queryFound > 0">
                             {{ foundCountMessage }}
@@ -107,6 +104,21 @@
                             Ничего не найдено
                         </div>
                     </div>
+                </div>
+                <div v-show="extendedParams" class="row q-mx-md q-mb-sm items-center">
+                    <q-input
+                        v-model="genreNames" :maxlength="inputMaxLength" :debounce="inputDebounce"
+                        :bg-color="inputBgColor()" input-style="cursor: pointer" style="width: 200px;" label="Жанр" stack-label outlined dense clearable readonly
+                        @click="selectGenre"
+                    >
+                        <template v-if="genreNames" #append>
+                            <q-icon name="la la-times-circle" class="q-field__focusable-action" @click.stop.prevent="search.genre = ''" />
+                        </template>
+
+                        <q-tooltip v-if="genreNames && showTooltips" :delay="500" anchor="bottom middle" content-style="font-size: 80%" max-width="400px">
+                            {{ genreNames }}
+                        </q-tooltip>
+                    </q-input>
                 </div>
             </div>
 
@@ -222,6 +234,9 @@ const componentOptions = {
             },
             deep: true,
         },
+        extendedParams(newValue) {
+            this.setSetting('extendedParams', newValue);
+        },
         limit(newValue) {
             this.setSetting('limit', newValue);
 
@@ -290,7 +305,7 @@ class Search {
     selectGenreDialogVisible = false;
     selectLangDialogVisible = false;
 
-    pageCount = 1;
+    pageCount = 1;    
 
     //input field consts 
     inputMaxLength = 1000;
@@ -319,6 +334,7 @@ class Search {
     abCacheEnabled = true;
     langDefault = '';
     limit = 20;
+    extendedParams = false;
 
     //stuff
     prevList = {};
@@ -344,9 +360,6 @@ class Search {
         {label: '500', value: 500},
         {label: '1000', value: 1000},
     ];
-
-    searchResult = {};
-    tableData = [];
 
     created() {
         this.commit = this.$store.commit;
@@ -390,6 +403,7 @@ class Search {
 
         this.search.limit = settings.limit;
 
+        this.extendedParams = settings.extendedParams;
         this.expanded = _.cloneDeep(settings.expanded);
         this.expandedSeries = _.cloneDeep(settings.expandedSeries);
         this.showCounts = settings.showCounts;
