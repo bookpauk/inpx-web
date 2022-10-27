@@ -113,22 +113,20 @@
             </div>
 
             <div class="row items-center q-ml-lg q-mt-sm">
-                <div style="width: 400px; height: 48px">
+                <div style="width: 400px; height: 50px">
                     <PageScroller v-show="pageCount > 1" ref="pageScroller1" v-model="search.page" :page-count="pageCount" />
                 </div>
 
-                <div class="row items-center">
-                    <div v-show="list.queryFound > 0" class="q-pl-sm">
-                        {{ foundCountMessage }}
-                    </div>
+                <div v-show="list.totalFound > 0" class="row items-center">
+                    {{ foundCountMessage }}
                 </div>
             </div>
 
             <!-- Формирование списка ------------------------------------------------------------------------>
             <div v-if="selectedListComponent">
-                <div><hr></div>
+                <div class="separator" />
                 <component :is="selectedListComponent" ref="list" :list="list" :search="search" :genre-map="genreMap" @list-event="listEvent" />
-                <div><hr></div>
+                <div class="separator" />
             </div>
             <!-- Формирование списка конец ------------------------------------------------------------------>
 
@@ -271,7 +269,10 @@ const componentOptions = {
 
                 if (this.prevList.totalFound != newValue.totalFound) {
                     this.updatePageCount();
-                    this.foundCountMessage = this.$refs.list.foundCountMessage;
+                    if (this.$refs.list)
+                        this.foundCountMessage = this.$refs.list.foundCountMessage;
+                    else
+                        this.foundCountMessage = '';
                 }
 
                 this.prevList = _.cloneDeep(newValue);
@@ -281,7 +282,7 @@ const componentOptions = {
         selectedList(newValue) {
             this.selectedListComponent = (route2component[newValue] ? route2component[newValue].component : null);
             this.pageCount = 1;
-            this.foundCountMessage = '';
+            this.list.totalFound = 0;
 
             if (this.getListRoute() != newValue) {
                 this.updateRouteQueryFromSearch();
@@ -853,7 +854,7 @@ export default vueComponent(Search);
 }
 
 .tool-panel {
-    border-bottom: 1px solid black;
+    border-bottom: 1px solid #bbb;
 }
 
 .header {
@@ -869,4 +870,8 @@ export default vueComponent(Search);
     cursor: pointer;
 }
 
+.separator {
+    border-bottom: 2px solid #ddd;
+    margin: 5px 0 5px 0;
+}
 </style>

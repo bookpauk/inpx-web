@@ -152,7 +152,7 @@ class AuthorList extends BaseList {
     }
 
     get foundCountMessage() {
-        return `Всего найден${utils.wordEnding(this.list.totalFound, 2)} ${this.list.totalFound} автор${utils.wordEnding(this.list.totalFound)}`;
+        return `${this.list.totalFound} автор${utils.wordEnding(this.list.totalFound)} найден${utils.wordEnding(this.list.totalFound, 2)}`;
     }    
 
     isFoundSeriesBook(seriesItem, seriesBook) {
