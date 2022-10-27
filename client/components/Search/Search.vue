@@ -110,6 +110,9 @@
                         </q-tooltip>
                     </q-input>
                 </div>
+                <div v-show="!extendedParams && extendedParamsMessage" class="row q-mx-md q-mb-sm items-center clickable" @click="extendedParams = true">
+                    +{{ extendedParamsMessage }}
+                </div>
             </div>
 
             <div class="row items-center q-ml-lg q-mt-sm">
@@ -466,6 +469,14 @@ class Search {
         for (const [route, rec] of Object.entries(route2component))
             result.push({label: rec.label, value: route});
         return result;
+    }
+
+    get extendedParamsMessage() {
+        const s = this.search;
+        const result = [];
+        result.push(s.genre ? 'Жанр' : '');
+
+        return result.join(', ');
     }
 
     inputBgColor(inp) {
