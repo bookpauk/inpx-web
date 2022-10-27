@@ -186,22 +186,34 @@ class Api {
     }
 
     async request(params, timeoutSecs = 10) {
+        let errCount = 0;
         while (1) {// eslint-disable-line
-            if (this.accessToken)
-                params.accessToken = this.accessToken;
+            try {
+                if (this.accessToken)
+                    params.accessToken = this.accessToken;
 
-            const response = await wsc.message(await wsc.send(params), timeoutSecs);
+                const response = await wsc.message(await wsc.send(params), timeoutSecs);
 
-            if (response && response.error == 'need_access_token') {
-                await this.showPasswordDialog();
-            } else if (response && response.error == 'server_busy') {
-                await this.showBusyDialog();
-            } else {
-                if (response.error) {
-                    throw new Error(response.error);
+                if (response && response.error == 'need_access_token') {
+                    await this.showPasswordDialog();
+                } else if (response && response.error == 'server_busy') {
+                    await this.showBusyDialog();
+                } else {
+                    if (response.error) {
+                        throw new Error(response.error);
+                    }
+
+                    return response;
                 }
 
-                return response;
+                errCount = 0;
+            } catch(e) {
+                errCount++;
+                if (e.message !== 'WebSocket не отвечает' || errCount > 10) {
+                    errCount = 0;
+                    throw e;
+                }
+                await utils.sleep(100);
             }
         }
     }
