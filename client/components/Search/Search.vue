@@ -49,7 +49,7 @@
                 <div class="row q-mx-md q-mb-sm items-center">
                     <q-input
                         ref="authorInput" v-model="search.author" :maxlength="5000" :debounce="inputDebounce"
-                        class="bg-white q-mt-xs" style="width: 300px;" label="Автор" stack-label outlined dense clearable
+                        class="q-mt-xs" :bg-color="inputBgColor('author')" style="width: 200px;" label="Автор" stack-label outlined dense clearable
                     >
                         <q-tooltip v-if="search.author" :delay="500" anchor="bottom middle" content-style="font-size: 80%" max-width="400px">
                             {{ search.author }}
@@ -58,7 +58,7 @@
                     <div class="q-mx-xs" />
                     <q-input
                         v-model="search.series" :maxlength="inputMaxLength" :debounce="inputDebounce"
-                        class="bg-white q-mt-xs" style="width: 200px;" label="Серия" stack-label outlined dense clearable
+                        class="q-mt-xs" :bg-color="inputBgColor('series')" style="width: 200px;" label="Серия" stack-label outlined dense clearable
                     >
                         <q-tooltip v-if="search.series" :delay="500" anchor="bottom middle" content-style="font-size: 80%" max-width="400px">
                             {{ search.series }}
@@ -67,7 +67,7 @@
                     <div class="q-mx-xs" />
                     <q-input
                         v-model="search.title" :maxlength="inputMaxLength" :debounce="inputDebounce"
-                        class="bg-white q-mt-xs" style="width: 200px;" label="Название" stack-label outlined dense clearable
+                        class="q-mt-xs" :bg-color="inputBgColor('title')" style="width: 200px;" label="Название" stack-label outlined dense clearable
                     >
                         <q-tooltip v-if="search.title" :delay="500" anchor="bottom middle" content-style="font-size: 80%" max-width="400px">
                             {{ search.title }}
@@ -76,7 +76,7 @@
                     <div class="q-mx-xs" />
                     <q-input
                         v-model="genreNames" :maxlength="inputMaxLength" :debounce="inputDebounce"
-                        class="bg-white q-mt-xs" input-style="cursor: pointer" style="width: 200px;" label="Жанр" stack-label outlined dense clearable readonly
+                        class="q-mt-xs" :bg-color="inputBgColor()" input-style="cursor: pointer" style="width: 200px;" label="Жанр" stack-label outlined dense clearable readonly
                         @click="selectGenre"
                     >
                         <template v-if="genreNames" #append>
@@ -90,7 +90,7 @@
                     <div class="q-mx-xs" />
                     <q-input
                         v-model="search.lang" :maxlength="inputMaxLength" :debounce="inputDebounce"
-                        class="bg-white q-mt-xs" input-style="cursor: pointer" style="width: 80px;" label="Язык" stack-label outlined dense clearable readonly
+                        class="q-mt-xs" :bg-color="inputBgColor()" input-style="cursor: pointer" style="width: 80px;" label="Язык" stack-label outlined dense clearable readonly
                         @click="selectLang"
                     >
                         <q-tooltip v-if="search.lang && showTooltips" :delay="500" anchor="bottom middle" content-style="font-size: 80%" max-width="400px">
@@ -187,7 +187,7 @@ import _ from 'lodash';
 const route2component = {
     'author': {component: 'AuthorList', label: 'Авторы'},
     'series': {component: 'SeriesList', label: 'Серии'},
-    'book': {component: 'TitleList', label: 'Книги'},
+    'title': {component: 'TitleList', label: 'Книги'},
 };
 
 const componentOptions = {
@@ -450,6 +450,13 @@ class Search {
         for (const [route, rec] of Object.entries(route2component))
             result.push({label: rec.label, value: route});
         return result;
+    }
+
+    inputBgColor(inp) {
+        if (inp === this.selectedList)
+            return 'white';
+        else
+            return 'yellow-1';
     }
 
     async updateListFromRoute(to) {

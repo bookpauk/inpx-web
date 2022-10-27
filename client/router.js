@@ -7,7 +7,7 @@ const myRoutes = [
     ['/', Search],
     ['/author', Search],
     ['/series', Search],
-    ['/book', Search],
+    ['/title', Search],
     ['/:pathMatch(.*)*', null, null, '/'],
 ];
 

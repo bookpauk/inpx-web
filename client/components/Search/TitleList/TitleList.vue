@@ -43,7 +43,7 @@ import _ from 'lodash';
 
 class TitleList extends BaseList {
     get foundCountMessage() {
-        return `Найден${utils.wordEnding(this.list.totalFound, 4)} ${this.list.totalFound} уникальн${utils.wordEnding(this.list.totalFound, 6)} назван${utils.wordEnding(this.list.totalFound, 3)}`;
+        return `Найден${utils.wordEnding(this.list.totalFound, 7)} ${this.list.totalFound} уникальн${utils.wordEnding(this.list.totalFound, 6)} назван${utils.wordEnding(this.list.totalFound, 3)}`;
     }
 
     async updateTableData() {
