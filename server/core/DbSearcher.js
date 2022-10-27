@@ -413,7 +413,7 @@ class DbSearcher {
             `;
             filter += `
                 const genres = book.genre.split(',');
-                let found = false;
+                found = false;
                 for (const g of genres) {
                     if (checkGenre(g)) {
                         found = true;
@@ -452,7 +452,7 @@ class DbSearcher {
 
             filter += `
                 const author = splitAuthor(book.author);
-                let found = false;
+                found = false;
                 for (const a of author) {
                     if (checkAuthor(a)) {
                         found = true;
@@ -474,6 +474,7 @@ class DbSearcher {
                 ${closures}
 
                 const filterBook = (book) => {
+                    let found = false;
                     ${filter}
                     return true;
                 };
