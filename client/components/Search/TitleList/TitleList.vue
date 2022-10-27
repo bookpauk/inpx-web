@@ -8,14 +8,14 @@
         <!-- Формирование списка ------------------------------------------------------------------------>
         <div v-for="item in tableData" :key="item.key" class="column" :class="{'odd-item': item.num % 2}" style="font-size: 120%">
             <BookView
-                class="book-row"
+                class="q-ml-md"
                 title-list
                 :book="item.book" :genre-map="genreMap" :show-read-link="showReadLink" @book-event="bookEvent"
             />
             <BookView
                 v-for="book in item.books" :key="book.id"
                 :book="book" :genre-map="genreMap"
-                class="book-row"
+                class="q-ml-md"
                 title-list
                 :show-read-link="showReadLink"
                 @book-event="bookEvent"
@@ -43,7 +43,7 @@ import _ from 'lodash';
 
 class TitleList extends BaseList {
     get foundCountMessage() {
-        return `Найден${utils.wordEnding(this.list.totalFound, 7)} ${this.list.totalFound} уникальн${utils.wordEnding(this.list.totalFound, 6)} назван${utils.wordEnding(this.list.totalFound, 3)}`;
+        return `Всего найден${utils.wordEnding(this.list.totalFound, 7)} ${this.list.totalFound} уникальн${utils.wordEnding(this.list.totalFound, 6)} назван${utils.wordEnding(this.list.totalFound, 3)}`;
     }
 
     async updateTableData() {
@@ -152,9 +152,5 @@ export default vueComponent(TitleList);
 
 .odd-item {
     background-color: #e8e8e8;
-}
-
-.book-row {
-    margin-left: 50px;
 }
 </style>

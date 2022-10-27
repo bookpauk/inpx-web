@@ -94,16 +94,6 @@
                             {{ `${(extendedParams ? 'Скрыть' : 'Показать')} дополнительные критерии поиска` }}
                         </q-tooltip>
                     </DivBtn>
-
-                    <div class="q-mx-xs" />
-                    <div class="row items-center q-mt-xs">
-                        <div v-show="list.queryFound > 0">
-                            {{ foundCountMessage }}
-                        </div>
-                        <div v-show="list.queryFound == 0">
-                            Ничего не найдено
-                        </div>
-                    </div>
                 </div>
                 <div v-show="extendedParams" class="row q-mx-md q-mb-sm items-center">
                     <q-input
@@ -122,18 +112,29 @@
                 </div>
             </div>
 
-            <div class="row justify-center" style="min-height: 48px">
-                <PageScroller v-show="pageCount > 1" ref="pageScroller1" v-model="search.page" :page-count="pageCount" />
+            <div class="row items-center q-ml-lg q-mt-sm">
+                <div style="width: 400px; height: 48px">
+                    <PageScroller v-show="pageCount > 1" ref="pageScroller1" v-model="search.page" :page-count="pageCount" />
+                </div>
+
+                <div class="row items-center">
+                    <div v-show="list.queryFound > 0" class="q-pl-sm">
+                        {{ foundCountMessage }}
+                    </div>
+                </div>
             </div>
 
             <!-- Формирование списка ------------------------------------------------------------------------>
-            <component :is="selectedListComponent" v-if="selectedListComponent" ref="list" :list="list" :search="search" :genre-map="genreMap" @list-event="listEvent" />
+            <div v-if="selectedListComponent">
+                <div><hr></div>
+                <component :is="selectedListComponent" ref="list" :list="list" :search="search" :genre-map="genreMap" @list-event="listEvent" />
+                <div><hr></div>
+            </div>
             <!-- Формирование списка конец ------------------------------------------------------------------>
 
-            <div class="row justify-center">
+            <div class="row q-ml-lg q-mb-sm">
                 <PageScroller v-show="pageCount > 1" v-model="search.page" :page-count="pageCount" />
             </div>
-            <div v-show="pageCount <= 1" class="q-mt-lg" />
         </div>
 
         <Dialog v-model="settingsDialogVisible">

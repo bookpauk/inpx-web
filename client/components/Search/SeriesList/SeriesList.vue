@@ -117,7 +117,7 @@ import _ from 'lodash';
 
 class SeriesList extends BaseList {
     get foundCountMessage() {
-        return `Найден${utils.wordEnding(this.list.totalFound, 4)} ${this.list.totalFound} сери${utils.wordEnding(this.list.totalFound, 1)}`;
+        return `Всего найден${utils.wordEnding(this.list.totalFound, 4)} ${this.list.totalFound} сери${utils.wordEnding(this.list.totalFound, 1)}`;
     }
 
     isFoundSeriesBook(seriesItem, seriesBook) {
