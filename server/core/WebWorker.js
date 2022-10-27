@@ -169,13 +169,7 @@ class WebWorker {
 
             //пересоздаем БД из INPX если нужно
             if (!await fs.pathExists(dbPath)) {
-                try {
-                    await this.createDb(dbPath);
-                } catch (e) {
-                    //при ошибке создания БД удалим ее, чтобы не работать с поломанной базой при следующем запуске
-                    await fs.remove(dbPath);
-                    throw e;
-                }
+                await this.createDb(dbPath);
                 utils.freeMemory();
             }
 
