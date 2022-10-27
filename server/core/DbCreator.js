@@ -58,6 +58,8 @@ class DbCreator {
         let genreArr = [];
         let langMap = new Map();//языки
         let langArr = [];
+        let delMap = new Map();//удаленные
+        let delArr = [];
 
         //stats
         let authorCount = 0;
@@ -314,12 +316,16 @@ class DbCreator {
         //парсинг 2, подготовка
         const parseField = (fieldValue, fieldMap, fieldArr, authorIds, bookId) => {
             let addBookId = bookId;
-            if (!fieldValue) {
-                fieldValue = emptyFieldValue;
-                addBookId = 0;//!!!
-            }
+            let value = fieldValue;
 
-            const value = fieldValue.toLowerCase();
+            if (typeof(fieldValue) == 'string') {
+                if (!fieldValue) {
+                    fieldValue = emptyFieldValue;
+                    addBookId = 0;//!!!
+                }
+
+                value = fieldValue.toLowerCase();
+            }
 
             let fieldRec;
             if (fieldMap.has(value)) {
@@ -384,6 +390,9 @@ class DbCreator {
 
             //языки
             parseField(rec.lang, langMap, langArr, authorIds);
+            
+            //удаленные
+            parseField(rec.del, delMap, delArr, authorIds);
         };
 
         callback({job: 'search tables create', jobMessage: 'Создание поисковых таблиц', jobStep: 4, progress: 0});
@@ -437,6 +446,8 @@ class DbCreator {
         seriesMap = null;
         titleMap = null;
         genreMap = null;
+        langMap = null;
+        delMap = null;
 
         utils.freeMemory();
 
@@ -484,13 +495,16 @@ class DbCreator {
         //сохраним поисковые таблицы
         const chunkSize = 10000;
 
-        const saveTable = async(table, arr, nullArr, authorIdToArray = false, bookIdToArray = false) => {
+        const saveTable = async(table, arr, nullArr, authorIdToArray = false, bookIdToArray = false, indexType = 'string') => {
             
-            arr.sort((a, b) => a.value.localeCompare(b.value));
+            if (indexType == 'string')
+                arr.sort((a, b) => a.value.localeCompare(b.value));
+            else
+                arr.sort((a, b) => a.value - b.value);
 
             await db.create({
                 table,
-                index: {field: 'value', unique: true, depth: 1000000},
+                index: {field: 'value', unique: true, type: indexType, depth: 1000000},
             });
 
             //вставка в БД по кусочкам, экономим память
@@ -542,6 +556,9 @@ class DbCreator {
         //lang
         callback({job: 'lang save', jobMessage: 'Сохранение индекса языков', jobStep: 10, progress: 0});
         await saveTable('lang', langArr, () => {langArr = null}, true);
+
+        //del
+        await saveTable('del', delArr, () => {delArr = null}, true, false, 'number');
 
         //кэш-таблицы запросов
         await db.create({table: 'query_cache'});

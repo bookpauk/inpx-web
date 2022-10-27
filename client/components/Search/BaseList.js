@@ -30,7 +30,7 @@ const componentOptions = {
             deep: true,
         },
         showDeleted() {
-            this.updateTableData();
+            this.refresh();
         },
     },
 };

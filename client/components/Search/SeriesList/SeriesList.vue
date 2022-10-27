@@ -54,10 +54,10 @@
                     />
                 </div>
 
-                <div v-if="!item.showAllBooks && isExpandedSeries(item) && item.books && !item.books.length" class="book-row row items-center">
+                <!--div v-if="!item.showAllBooks && isExpandedSeries(item) && item.books && !item.books.length" class="book-row row items-center">
                     <q-icon class="la la-meh q-mr-xs" size="24px" />
                     Возможно у этой серии были найдены книги, помеченные как удаленные, но подходящие по критериям
-                </div>
+                </div-->
 
                 <div
                     v-if="item.allBooksLoaded && item.allBooksLoaded.length != item.booksLoaded.length"
@@ -230,6 +230,8 @@ class SeriesList extends BaseList {
         newQuery = newQuery.setDefaults(newQuery);
         delete newQuery.setDefaults;
         newQuery.offset = (newQuery.page - 1)*newQuery.limit;
+        if (!this.showDeleted)
+            newQuery.del = 0;
 
         if (_.isEqual(newQuery, this.prevQuery))
             return;

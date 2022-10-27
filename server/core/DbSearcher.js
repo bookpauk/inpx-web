@@ -24,6 +24,10 @@ class DbSearcher {
         this.periodicCleanCache();//no await
     }
 
+    queryKey(q) {
+        return JSON.stringify([q.author, q.series, q.title, q.genre, q.lang, q.del]);
+    }
+
     getWhere(a) {
         const db = this.db;
 
@@ -226,6 +230,35 @@ class DbSearcher {
             idsArr.push(langIds);
         }
 
+        //удаленные
+        if (query.del !== undefined) {
+            const delKey = `author-ids-del-${query.del}`;
+            let delIds = await this.getCached(delKey);
+
+            if (delIds === null) {
+                const delRows = await db.select({
+                    table: 'del',
+                    rawResult: true,
+                    where: `
+                        const ids = @indexLR('value', ${db.esc(query.del)}, ${db.esc(query.del)});
+                        
+                        const result = new Set();
+                        for (const id of ids) {
+                            const row = @unsafeRow(id);
+                            for (const authorId of row.authorId)
+                                result.add(authorId);
+                        }
+
+                        return Array.from(result);
+                    `
+                });
+
+                delIds = delRows[0].rawResult;
+                await this.putCached(delKey, delIds);
+            }
+
+            idsArr.push(delIds);
+        }
 /*
         //ищем пересечение множеств
         idsArr.push(authorIds);
@@ -299,6 +332,14 @@ class DbSearcher {
         let closures = '';
 
         //порядок важен, более простые проверки вперед
+
+        //удаленные
+        if (query.del !== undefined) {
+            filter += `
+                if (book.del !== ${db.esc(query.del)})
+                    return false;
+            `;            
+        }
 
         //серии
         if (exclude !== 'series' && query.series && query.series !== '*') {
@@ -567,10 +608,6 @@ class DbSearcher {
         }
 
         return titleIds;
-    }
-
-    queryKey(q) {
-        return JSON.stringify([q.author, q.series, q.title, q.genre, q.lang]);
     }
 
     async getCached(key) {

@@ -126,12 +126,6 @@
             <q-icon class="la la-meh q-mr-xs" size="28px" />
             Поиск не дал результатов
         </div>
-
-        <div v-show="hiddenCount" class="row">
-            <div class="q-ml-lg q-py-sm clickable2 text-red" style="font-size: 120%" @click="showHiddenHelp">
-                {{ hiddenResultsMessage }}
-            </div>
-        </div>
     </div>
 </template>
 
@@ -150,16 +144,11 @@ import _ from 'lodash';
 
 class AuthorList extends BaseList {
     cachedAuthors = {};
-    hiddenCount = 0;
 
     showHiddenHelp() {
         this.$root.stdDialog.alert(`
             Книги скрытых авторов помечены как удаленные. Для того, чтобы их увидеть, необходимо установить опцию "Показывать удаленные" в настройках.
         `, 'Пояснение', {iconName: 'la la-info-circle'});
-    }
-
-    get hiddenResultsMessage() {
-        return `+${this.hiddenCount} результат${utils.wordEnding(this.hiddenCount)} скрыт${utils.wordEnding(this.hiddenCount, 2)}`;
     }
 
     get foundCountMessage() {
@@ -333,15 +322,10 @@ class AuthorList extends BaseList {
             return;
 
         let num = 0;
-        this.hiddenCount = 0;
         for (const rec of authors) {
             this.cachedAuthors[rec.author] = rec;
 
             const count = (this.showDeleted ? rec.bookCount + rec.bookDelCount : rec.bookCount);
-            if (!count) {
-                this.hiddenCount++;
-                continue;
-            }
 
             const item = reactive({
                 key: rec.id,
@@ -379,6 +363,8 @@ class AuthorList extends BaseList {
         newQuery = newQuery.setDefaults(newQuery);
         delete newQuery.setDefaults;
         newQuery.offset = (newQuery.page - 1)*newQuery.limit;
+        if (!this.showDeleted)
+            newQuery.del = 0;
 
         if (_.isEqual(newQuery, this.prevQuery))
             return;
