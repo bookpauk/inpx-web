@@ -139,7 +139,7 @@
                         </q-tooltip>
                     </q-input>
                 </div>
-                <div v-show="!extendedParams && extendedParamsMessage" class="row q-mx-md q-mb-sm items-center clickable" @click="extendedParams = true">
+                <div v-show="!extendedParams && extendedParamsMessage" class="row q-mx-md items-center clickable" @click="extendedParams = true">
                     +{{ extendedParamsMessage }}
                 </div>
             </div>
@@ -521,8 +521,10 @@ class Search {
         const s = this.search;
         const result = [];
         result.push(s.genre ? 'Жанр' : '');
+        result.push(s.date ? 'Дата поступления' : '');
+        result.push(s.librate ? 'Оценка' : '');
 
-        return result.join(', ');
+        return result.filter(s => s).join(', ');
     }
 
     inputBgColor(inp) {
