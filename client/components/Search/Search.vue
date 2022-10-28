@@ -76,7 +76,7 @@
                     <div class="q-mx-xs" />
                     <q-input
                         v-model="search.lang" :maxlength="inputMaxLength" :debounce="inputDebounce"
-                        class="q-mt-xs" :bg-color="inputBgColor()" input-style="cursor: pointer" style="width: 80px;" label="Язык" stack-label outlined dense clearable readonly
+                        class="q-mt-xs" :bg-color="inputBgColor()" input-style="cursor: pointer" style="width: 100px;" label="Язык" stack-label outlined dense clearable readonly
                         @click="selectLang"
                     >
                         <template v-if="search.lang" #append>
@@ -126,15 +126,16 @@
 
                     <div class="q-mx-xs" />
                     <q-input
-                        v-model="search.librate" :maxlength="inputMaxLength" :debounce="inputDebounce"
-                        class="q-mt-xs" :bg-color="inputBgColor()" input-style="cursor: pointer" style="width: 180px;" label="Оценка" stack-label outlined dense clearable
+                        v-model="librateNames" :maxlength="inputMaxLength" :debounce="inputDebounce"
+                        class="q-mt-xs" :bg-color="inputBgColor()" input-style="cursor: pointer" style="width: 100px;" label="Оценка" stack-label outlined dense clearable readonly
+                        @click="selectLibRate"
                     >
-                        <template v-if="search.librate" #append>
+                        <template v-if="librateNames" #append>
                             <q-icon name="la la-times-circle" class="q-field__focusable-action" @click.stop.prevent="search.librate = ''" />
                         </template>
 
-                        <q-tooltip v-if="search.librate && showTooltips" :delay="500" anchor="bottom middle" content-style="font-size: 80%" max-width="400px">
-                            {{ search.librate }}
+                        <q-tooltip v-if="librateNames && showTooltips" :delay="500" anchor="bottom middle" content-style="font-size: 80%" max-width="400px">
+                            {{ librateNames }}
                         </q-tooltip>
                     </q-input>
                 </div>
@@ -202,6 +203,7 @@
 
         <SelectGenreDialog v-model="selectGenreDialogVisible" v-model:genre="search.genre" :genre-tree="genreTree" />
         <SelectLangDialog v-model="selectLangDialogVisible" v-model:lang="search.lang" :lang-list="langList" :lang-default="langDefault" />        
+        <SelectLibRateDialog v-model="selectLibRateDialogVisible" v-model:librate="search.librate" />
     </div>
 </template>
 
@@ -216,6 +218,7 @@ import TitleList from './TitleList/TitleList.vue';
 import PageScroller from './PageScroller/PageScroller.vue';
 import SelectGenreDialog from './SelectGenreDialog/SelectGenreDialog.vue';
 import SelectLangDialog from './SelectLangDialog/SelectLangDialog.vue';
+import SelectLibRateDialog from './SelectLibRateDialog/SelectLibRateDialog.vue';
 
 import authorBooksStorage from './authorBooksStorage';
 import DivBtn from '../share/DivBtn.vue';
@@ -240,6 +243,7 @@ const componentOptions = {
         PageScroller,
         SelectGenreDialog,
         SelectLangDialog,
+        SelectLibRateDialog,
         Dialog,
         DivBtn
     },
@@ -337,6 +341,7 @@ class Search {
     settingsDialogVisible = false;
     selectGenreDialogVisible = false;
     selectLangDialogVisible = false;
+    selectLibRateDialogVisible = false;
 
     pageCount = 1;    
 
@@ -489,6 +494,17 @@ class Search {
             const name = this.genreMap.get(g);
             if (name)
                 result.push(name);
+        }
+
+        return result.join(', ');
+    }
+
+    get librateNames() {
+        let result = [];
+        const rates = this.search.librate.split(',');
+
+        for (const r of rates) {
+            result.push(r == '0' ? 'Без оценки' : r);
         }
 
         return result.join(', ');
@@ -703,6 +719,11 @@ class Search {
     selectLang() {
         this.hideTooltip();
         this.selectLangDialogVisible = true;
+    }
+
+    selectLibRate() {
+        this.hideTooltip();
+        this.selectLibRateDialogVisible = true;
     }
     
     onScroll() {
