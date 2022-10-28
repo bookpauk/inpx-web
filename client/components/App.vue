@@ -121,7 +121,7 @@ body, html, #app {
     padding: 0;
     width: 100%;
     height: 100%;
-    font: normal 12px GameDefault;
+    font: normal 13px Web Default;
 }
 
 .dborder {
@@ -142,9 +142,13 @@ body, html, #app {
 }
 
 @font-face {
-  font-family: 'GameDefault';
-  src: url('fonts/web-default.woff') format('woff'),
-       url('fonts/web-default.ttf') format('truetype');
+    font-family: 'Web Default';
+    src: url('fonts/web-default.ttf') format('truetype');
 }
 
+@font-face {
+    font-family: 'Verdana';
+    font-weight: bold;
+    src: url('fonts/web-default-bold.ttf') format('truetype');
+}
 </style>
