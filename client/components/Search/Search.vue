@@ -1,7 +1,7 @@
 <template>
     <div class="root column fit" style="position: relative">
         <div ref="scroller" class="col fit column no-wrap" style="overflow: auto; position: relative" @scroll="onScroll">
-            <div ref="toolPanel" class="tool-panel column bg-cyan-2" style="position: sticky; top: 0; z-index: 10;">
+            <div ref="toolPanel" class="tool-panel q-pb-xs column bg-cyan-2" style="position: sticky; top: 0; z-index: 10;">
                 <div class="header q-mx-md q-mb-xs q-mt-sm row items-center">
                     <a :href="newSearchLink" style="height: 33px">
                         <img src="./assets/logo.png" />
@@ -46,7 +46,7 @@
                         {{ projectName }}
                     </div>
                 </div>
-                <div class="row q-mx-md q-mb-sm items-center">
+                <div class="row q-mx-md q-mb-xs items-center">
                     <q-input
                         ref="authorInput" v-model="search.author" :maxlength="5000" :debounce="inputDebounce"
                         class="q-mt-xs" :bg-color="inputBgColor('author')" style="width: 200px;" label="Автор" stack-label outlined dense clearable
@@ -79,6 +79,10 @@
                         class="q-mt-xs" :bg-color="inputBgColor()" input-style="cursor: pointer" style="width: 80px;" label="Язык" stack-label outlined dense clearable readonly
                         @click="selectLang"
                     >
+                        <template v-if="search.lang" #append>
+                            <q-icon name="la la-times-circle" class="q-field__focusable-action" @click.stop.prevent="search.lang = ''" />
+                        </template>
+
                         <q-tooltip v-if="search.lang && showTooltips" :delay="500" anchor="bottom middle" content-style="font-size: 80%" max-width="400px">
                             {{ search.lang }}
                         </q-tooltip>
@@ -95,10 +99,10 @@
                         </q-tooltip>
                     </DivBtn>
                 </div>
-                <div v-show="extendedParams" class="row q-mx-md q-mb-sm items-center">
+                <div v-show="extendedParams" class="row q-mx-md q-mb-xs items-center">
                     <q-input
                         v-model="genreNames" :maxlength="inputMaxLength" :debounce="inputDebounce"
-                        :bg-color="inputBgColor()" input-style="cursor: pointer" style="width: 200px;" label="Жанр" stack-label outlined dense clearable readonly
+                        class="q-mt-xs" :bg-color="inputBgColor()" input-style="cursor: pointer" style="width: 200px;" label="Жанр" stack-label outlined dense clearable readonly
                         @click="selectGenre"
                     >
                         <template v-if="genreNames" #append>
@@ -107,6 +111,30 @@
 
                         <q-tooltip v-if="genreNames && showTooltips" :delay="500" anchor="bottom middle" content-style="font-size: 80%" max-width="400px">
                             {{ genreNames }}
+                        </q-tooltip>
+                    </q-input>
+
+                    <div class="q-mx-xs" />
+                    <q-input
+                        v-model="search.date" :maxlength="inputMaxLength" :debounce="inputDebounce"
+                        class="q-mt-xs" :bg-color="inputBgColor()" input-style="cursor: pointer" style="width: 200px;" label="Дата поступления" stack-label outlined dense clearable
+                    >
+                        <q-tooltip v-if="search.date && showTooltips" :delay="500" anchor="bottom middle" content-style="font-size: 80%" max-width="400px">
+                            {{ search.date }}
+                        </q-tooltip>
+                    </q-input>
+
+                    <div class="q-mx-xs" />
+                    <q-input
+                        v-model="search.librate" :maxlength="inputMaxLength" :debounce="inputDebounce"
+                        class="q-mt-xs" :bg-color="inputBgColor()" input-style="cursor: pointer" style="width: 180px;" label="Оценка" stack-label outlined dense clearable
+                    >
+                        <template v-if="search.librate" #append>
+                            <q-icon name="la la-times-circle" class="q-field__focusable-action" @click.stop.prevent="search.librate = ''" />
+                        </template>
+
+                        <q-tooltip v-if="search.librate && showTooltips" :delay="500" anchor="bottom middle" content-style="font-size: 80%" max-width="400px">
+                            {{ search.librate }}
                         </q-tooltip>
                     </q-input>
                 </div>
@@ -325,6 +353,8 @@ class Search {
                 title: search.title || '',
                 genre: search.genre || '',
                 lang: search.lang || '',
+                date: search.date || '',
+                librate: search.librate || '',
                 page: search.page || 1,
                 limit: search.limit || 50,
             });
@@ -776,6 +806,8 @@ class Search {
                 title: query.title,
                 genre: query.genre,
                 lang: (typeof(query.lang) == 'string' ? query.lang : this.langDefault),
+                date: query.date,
+                librate: query.librate,
                 page: parseInt(query.page, 10),
                 limit: parseInt(query.limit, 10) || this.search.limit,
             })
@@ -793,6 +825,7 @@ class Search {
         try {
             const oldQuery = this.$route.query;
             const cloned = _.cloneDeep(this.search);
+
             delete cloned.setDefaults;
 
             const query = _.pickBy(cloned);

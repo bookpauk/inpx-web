@@ -60,6 +60,10 @@ class DbCreator {
         let langArr = [];
         let delMap = new Map();//удаленные
         let delArr = [];
+        let dateMap = new Map();//дата поступления
+        let dateArr = [];
+        let librateMap = new Map();//оценка
+        let librateArr = [];
 
         //stats
         let authorCount = 0;
@@ -393,6 +397,12 @@ class DbCreator {
             
             //удаленные
             parseField(rec.del, delMap, delArr, authorIds);
+
+            //дата поступления
+            parseField(rec.date, dateMap, dateArr, authorIds);
+
+            //оценка
+            parseField(rec.librate, librateMap, librateArr, authorIds);
         };
 
         callback({job: 'search tables create', jobMessage: 'Создание поисковых таблиц', jobStep: 4, progress: 0});
@@ -448,6 +458,8 @@ class DbCreator {
         genreMap = null;
         langMap = null;
         delMap = null;
+        dateMap = null;
+        librateMap = null;
 
         utils.freeMemory();
 
@@ -553,12 +565,18 @@ class DbCreator {
         callback({job: 'genre save', jobMessage: 'Сохранение индекса жанров', jobStep: 9, progress: 0});
         await saveTable('genre', genreArr, () => {genreArr = null}, true);
 
+        callback({job: 'others save', jobMessage: 'Сохранение остальных индексов', jobStep: 10, progress: 0});
         //lang
-        callback({job: 'lang save', jobMessage: 'Сохранение индекса языков', jobStep: 10, progress: 0});
         await saveTable('lang', langArr, () => {langArr = null}, true);
 
         //del
         await saveTable('del', delArr, () => {delArr = null}, true, false, 'number');
+
+        //date
+        await saveTable('date', dateArr, () => {dateArr = null}, true);
+
+        //librate
+        await saveTable('librate', librateArr, () => {librateArr = null}, true, false, 'number');
 
         //кэш-таблицы запросов
         await db.create({table: 'query_cache'});

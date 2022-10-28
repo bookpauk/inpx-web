@@ -25,7 +25,7 @@ class DbSearcher {
     }
 
     queryKey(q) {
-        return JSON.stringify([q.author, q.series, q.title, q.genre, q.lang, q.del]);
+        return JSON.stringify([q.author, q.series, q.title, q.genre, q.lang, q.del, q.date, q.librate]);
     }
 
     getWhere(a) {
@@ -259,6 +259,74 @@ class DbSearcher {
 
             idsArr.push(delIds);
         }
+
+        //дата поступления
+        if (query.date) {
+            const dateKey = `author-ids-date-${query.date}`;
+            let dateIds = await this.getCached(dateKey);
+
+            if (dateIds === null) {
+                let [from = '', to = ''] = query.date.split(',');
+
+                const dateRows = await db.select({
+                    table: 'date',
+                    rawResult: true,
+                    where: `
+                        const ids = @indexLR('value', ${db.esc(from)} || undefined, ${db.esc(to)} || undefined);
+                        
+                        const result = new Set();
+                        for (const id of ids) {
+                            const row = @unsafeRow(id);
+                            for (const authorId of row.authorId)
+                                result.add(authorId);
+                        }
+
+                        return Array.from(result);
+                    `
+                });
+
+                dateIds = dateRows[0].rawResult;
+                await this.putCached(dateKey, dateIds);
+            }
+
+            idsArr.push(dateIds);
+        }
+
+        //оценка
+        if (query.librate) {
+            const librateKey = `author-ids-librate-${query.librate}`;
+            let librateIds = await this.getCached(librateKey);
+
+            if (librateIds === null) {
+                const dateRows = await db.select({
+                    table: 'librate',
+                    rawResult: true,
+                    where: `
+                        const rates = ${db.esc(query.librate.split(',').map(n => parseInt(n, 10)).filter(n => !isNaN(n)))};
+
+                        const ids = new Set();
+                        for (const rate of rates) {
+                            for (const id of @indexLR('value', rate, rate))
+                                ids.add(id);
+                        }
+                        
+                        const result = new Set();
+                        for (const id of ids) {
+                            const row = @unsafeRow(id);
+                            for (const authorId of row.authorId)
+                                result.add(authorId);
+                        }
+
+                        return Array.from(result);
+                    `
+                });
+
+                librateIds = dateRows[0].rawResult;
+                await this.putCached(librateKey, librateIds);
+            }
+
+            idsArr.push(librateIds);
+        }
 /*
         //ищем пересечение множеств
         idsArr.push(authorIds);
@@ -339,6 +407,26 @@ class DbSearcher {
                 if (book.del !== ${db.esc(query.del)})
                     return false;
             `;            
+        }
+
+        //дата поступления
+        if (query.date) {
+            let [from = '0000-00-00', to = '9999-99-99'] = query.date.split(',');
+            filter += `
+                if (!(book.date >= ${db.esc(from)} && book.date <= ${db.esc(to)}))
+                    return false;
+            `;
+        }
+
+        //оценка
+        if (query.librate) {
+            closures += `
+                const searchLibrate = new Set(${db.esc(query.librate.split(',').map(n => parseInt(n, 10)).filter(n => !isNaN(n)))});
+            `;
+            filter += `
+                if (!searchLibrate.has(book.librate))
+                    return false;
+            `;
         }
 
         //серии

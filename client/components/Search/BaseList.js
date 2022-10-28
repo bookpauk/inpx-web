@@ -402,12 +402,28 @@ export default class BaseList {
                 langFound = searchLang.has(book.lang || emptyFieldValue);
             }
 
+            //date
+            let dateFound = !s.date;
+            if (!dateFound) {
+                let [from = '0000-00-00', to = '9999-99-99'] = s.date.split(',');
+                dateFound = (book.date >= from && book.date <= to);
+            }
+
+            //librate
+            let librateFound = !s.librate;
+            if (!librateFound) {
+                const searchLibrate = new Set(s.librate.split(',').map(n => parseInt(n, 10)).filter(n => !isNaN(n)));
+                librateFound = searchLibrate.has(book.librate);
+            }
+
             return (this.showDeleted || !book.del)
                 && authorFound
                 && filterBySearch(book.series, s.series)
                 && filterBySearch(book.title, s.title)
                 && genreFound
                 && langFound
+                && dateFound
+                && librateFound
             ;
         });
     }
