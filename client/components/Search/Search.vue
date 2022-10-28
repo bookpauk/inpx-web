@@ -30,15 +30,19 @@
                     />
 
                     <DivBtn class="q-ml-md text-white bg-secondary" :size="30" :icon-size="24" :imt="1" icon="la la-cog" round @click="settingsDialogVisible = true">
-                        <q-tooltip :delay="1500" anchor="bottom middle" content-style="font-size: 80%" max-width="400px">
-                            Настройки
-                        </q-tooltip>
+                        <template #tooltip>
+                            <q-tooltip :delay="1500" anchor="bottom middle" content-style="font-size: 80%" max-width="400px">
+                                Настройки
+                            </q-tooltip>
+                        </template>
                     </DivBtn>
 
                     <DivBtn class="q-ml-sm text-white bg-secondary" :size="30" :icon-size="24" icon="la la-question" round @click="showSearchHelp">
-                        <q-tooltip :delay="1500" anchor="bottom middle" content-style="font-size: 80%" max-width="400px">
-                            Памятка
-                        </q-tooltip>
+                        <template #tooltip>
+                            <q-tooltip :delay="1500" anchor="bottom middle" content-style="font-size: 80%" max-width="400px">
+                                Памятка
+                            </q-tooltip>
+                        </template>
                     </DivBtn>
 
                     <div class="col"></div>
@@ -90,13 +94,15 @@
 
                     <div class="q-mx-xs" />
                     <DivBtn
-                        class="text-white bg-info q-mt-xs" :size="34" :icon-size="24" :imt="1" 
+                        class="text-grey-5 bg-yellow-1 q-mt-xs" :size="34" :icon-size="24" round
                         :icon="(extendedParams ? 'la la-angle-double-up' : 'la la-angle-double-down')"
                         @click="extendedParams = !extendedParams"
                     >
-                        <q-tooltip :delay="1500" anchor="bottom middle" content-style="font-size: 80%" max-width="400px">
-                            {{ `${(extendedParams ? 'Скрыть' : 'Показать')} дополнительные критерии поиска` }}
-                        </q-tooltip>
+                        <template #tooltip>
+                            <q-tooltip :delay="1500" anchor="bottom middle" content-style="font-size: 80%" max-width="400px">
+                                {{ `${(extendedParams ? 'Скрыть' : 'Показать')} дополнительные критерии поиска` }}
+                            </q-tooltip>
+                        </template>
                     </DivBtn>
                 </div>
                 <div v-show="extendedParams" class="row q-mx-md q-mb-xs items-center">
@@ -188,8 +194,9 @@
                 </div>
 
                 <q-checkbox v-model="showCounts" size="36px" label="Показывать количество" />                
-                <q-checkbox v-model="showRate" size="36px" label="Показывать оценки" />
+                <q-checkbox v-model="showRates" size="36px" label="Показывать оценки" />
                 <q-checkbox v-model="showGenres" size="36px" label="Показывать жанры" />
+                <q-checkbox v-model="showDates" size="36px" label="Показывать даты поступления" />
                 <q-checkbox v-model="showDeleted" size="36px" label="Показывать удаленные" />
                 <q-checkbox v-model="abCacheEnabled" size="36px" label="Кешировать запросы" />
             </div>
@@ -279,11 +286,14 @@ const componentOptions = {
         showCounts(newValue) {
             this.setSetting('showCounts', newValue);
         },
-        showRate(newValue) {
-            this.setSetting('showRate', newValue);
+        showRates(newValue) {
+            this.setSetting('showRates', newValue);
         },
         showGenres(newValue) {
             this.setSetting('showGenres', newValue);
+        },
+        showDates(newValue) {
+            this.setSetting('showDates', newValue);
         },
         showDeleted(newValue) {
             this.setSetting('showDeleted', newValue);
@@ -368,8 +378,9 @@ class Search {
 
     //settings
     showCounts = true;
-    showRate = true;
-    showGenres = true;    
+    showRates = true;
+    showGenres = true;
+    showDates = true;
     showDeleted = false;
     abCacheEnabled = true;
     langDefault = '';
@@ -447,8 +458,9 @@ class Search {
         this.expanded = _.cloneDeep(settings.expanded);
         this.expandedSeries = _.cloneDeep(settings.expandedSeries);
         this.showCounts = settings.showCounts;
-        this.showRate = settings.showRate;
+        this.showRates = settings.showRates;
         this.showGenres = settings.showGenres;
+        this.showDates = settings.showDates;
         this.showDeleted = settings.showDeleted;
         this.abCacheEnabled = settings.abCacheEnabled;
         this.langDefault = settings.langDefault;

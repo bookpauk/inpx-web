@@ -50,7 +50,7 @@ export default class BaseList {
     expandedSeries = [];
 
     showCounts = true;
-    showRate = true;
+    showRates = true;
     showGenres = true;    
     showDeleted = false;
     abCacheEnabled = true;
@@ -81,7 +81,7 @@ export default class BaseList {
         this.expandedAuthor = _.cloneDeep(settings.expandedAuthor);
         this.expandedSeries = _.cloneDeep(settings.expandedSeries);
         this.showCounts = settings.showCounts;
-        this.showRate = settings.showRate;
+        this.showRates = settings.showRates;
         this.showGenres = settings.showGenres;
         this.showDeleted = settings.showDeleted;
         this.abCacheEnabled = settings.abCacheEnabled;

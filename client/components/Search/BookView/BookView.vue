@@ -1,8 +1,8 @@
 <template>
     <div class="row items-center q-my-sm">
         <div class="row items-center no-wrap">
-            <div v-if="showRate || showDeleted">
-                <div v-if="showRate && !book.del">
+            <div v-if="showRates || showDeleted">
+                <div v-if="showRates && !book.del">
                     <div v-if="book.librate">
                         <q-knob
                             :model-value="book.librate"
@@ -76,6 +76,10 @@
             {{ bookGenre }}
         </div>
 
+        <div v-if="showDates && book.date" class="q-ml-sm">
+            {{ bookDate }}
+        </div>
+
         <div v-show="false">
             {{ book }}
         </div>
@@ -85,6 +89,8 @@
 <script>
 //-----------------------------------------------------------------------------
 import vueComponent from '../../vueComponent.js';
+
+import * as utils from '../../../share/utils';
 
 const componentOptions = {
     components: {
@@ -106,9 +112,10 @@ class BookView {
         titleColor: { type: String, default: 'text-blue-10'},
     };
 
-    showRate = true;
+    showRates = true;
     showGenres = true;
     showDeleted = false;
+    showDates = false;
 
     created() {
         this.loadSettings();
@@ -117,8 +124,9 @@ class BookView {
     loadSettings() {
         const settings = this.settings;
 
-        this.showRate = settings.showRate;
+        this.showRates = settings.showRates;
         this.showGenres = settings.showGenres;
+        this.showDates = settings.showDates;
         this.showDeleted = settings.showDeleted;
     }
 
@@ -172,6 +180,14 @@ class BookView {
         }
 
         return `(${result.join(' / ')})`;
+    }
+
+    get bookDate() {
+        if (!this.book.date)
+            return '';
+
+        const date = utils.parseDate(this.book.date);
+        return utils.formatDate(date, 'noDate');
     }
 
     selectAuthor() {

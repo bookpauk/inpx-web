@@ -4,6 +4,7 @@
             <i :class="icon" :style="`font-size: ${iconSize}px; margin-top: ${imt}px`" />
             <slot></slot>
         </div>
+        <slot name="tooltip"></slot>
     </div>
 </template>
 
