@@ -318,8 +318,8 @@ class DbSearcher {
     async filterTableIds(tableIds, from, query) {
         let result = tableIds;
 
-        //т.к. авторы идут списком, то дополнительно фильтруем
-        if (query.author && query.author !== '*') {
+        //т.к. авторы у книги идут списком, то дополнительно фильтруем
+        if (from == 'author' && query.author && query.author !== '*') {
             const key = `filter-ids-author-${query.author}`;
             let authorIds = await this.getCached(key);
 
@@ -591,18 +591,24 @@ class DbSearcher {
             }
         }
 
-        //кладем в таблицу
-        await db.insert({
-            table: 'query_cache',
-            replace: true,
-            rows: [{id: key, value}],
-        });
+        //кладем в таблицу асинхронно
+        (async() => {
+            try {
+                await db.insert({
+                    table: 'query_cache',
+                    replace: true,
+                    rows: [{id: key, value}],
+                });
 
-        await db.insert({
-            table: 'query_time',
-            replace: true,
-            rows: [{id: key, time: Date.now()}],
-        });
+                await db.insert({
+                    table: 'query_time',
+                    replace: true,
+                    rows: [{id: key, time: Date.now()}],
+                });
+            } catch(e) {
+                console.error(`putCached: ${e.message}`);
+            }
+        })();
     }
 
     async periodicCleanCache() {
