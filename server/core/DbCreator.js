@@ -460,7 +460,7 @@ class DbCreator {
         await db.open({table: from});
         await db.create({table: to});
 
-        const bookId2RecId = new Map();
+        let bookId2RecId = new Map();
 
         const saveChunk = async(chunk) => {
             const ids = [];
@@ -544,7 +544,7 @@ class DbCreator {
                 await saveChunk(chunk);
 
                 processed += chunk.length;
-                callback({progress: processed/fromLength});
+                callback({progress: 0.5*processed/fromLength});
             } else
                 break;
 
@@ -559,12 +559,26 @@ class DbCreator {
         await db.close({table: from});
 
         await db.create({table: toId});
-        const idRows = [];
+
+        const chunkSize = 50000;
+        let idRows = [];
+        let proc = 0;
         for (const [id, value] of bookId2RecId) {
             idRows.push({id, value});
+            if (idRows.length >= chunkSize) {
+                await db.insert({table: toId, rows: idRows});
+                idRows = [];
+
+                proc += chunkSize;
+                callback({progress: 0.5 + 0.5*proc/bookId2RecId.size});
+            }
         }
-        await db.insert({table: toId, rows: idRows});
+        if (idRows.length)
+            await db.insert({table: toId, rows: idRows});
         await db.close({table: toId});
+
+        bookId2RecId = null;
+        utils.freeMemory();
     }
 
     async countStats(db, callback, stats) {
