@@ -464,6 +464,21 @@ class DbSearcher {
                 where: `@@id(${db.esc(ids.slice(offset, offset + limit))})`
             });
 
+            //для title восстановим books
+            if (from == 'title') {
+                const bookIds = found.map(r => r.id);
+                const rows = await this.restoreBooks(from, bookIds);
+                const rowsMap = new Map();
+                for (const row of rows)
+                    rowsMap.set(row.id, row);
+
+                for (const f of found) {
+                    const b = rowsMap.get(f.id);
+                    if (b)
+                        f.books = b.books;
+                }
+            }
+
             return {found, totalFound};
         } finally {
             this.searchFlag--;

@@ -104,10 +104,10 @@
                     <BookView v-else :book="book" :genre-map="genreMap" :show-read-link="showReadLink" @book-event="bookEvent" />
                 </div>
 
-                <div v-if="isExpandedAuthor(item) && item.books && !item.books.length" class="book-row row items-center">
+                <!--div v-if="isExpandedAuthor(item) && item.books && !item.books.length" class="book-row row items-center">
                     <q-icon class="la la-meh q-mr-xs" size="24px" />
                     По каждому из заданных критериев у этого автора были найдены разные книги, но нет полного совпадения
-                </div>
+                </div-->
             </div>
 
             <div v-if="isExpandedAuthor(item) && item.showMore" class="row items-center book-row q-mb-sm">
