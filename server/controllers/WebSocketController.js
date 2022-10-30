@@ -74,12 +74,8 @@ class WebSocketController {
                     await this.getConfig(req, ws); break;
                 case 'get-worker-state':
                     await this.getWorkerState(req, ws); break;
-                case 'author-search':
-                    await this.authorSearch(req, ws); break;
-                case 'series-search':
-                    await this.seriesSearch(req, ws); break;
-                case 'title-search':
-                    await this.titleSearch(req, ws); break;
+                case 'search':
+                    await this.search(req, ws); break;
                 case 'get-author-book-list':
                     await this.getAuthorBookList(req, ws); break;
                 case 'get-series-book-list':
@@ -137,35 +133,13 @@ class WebSocketController {
         this.send((state ? state : {}), req, ws);
     }
 
-    async authorSearch(req, ws) {
+    async search(req, ws) {
         if (!req.query)
             throw new Error(`query is empty`);
+        if (!req.from)
+            throw new Error(`from is empty`);
 
-        const result = await this.webWorker.authorSearch(req.query);
-
-        this.send(result, req, ws);
-    }
-
-    async seriesSearch(req, ws) {
-        if (!this.config.extendedSearch)
-            throw new Error(`Extended search disabled`);
-
-        if (!req.query)
-            throw new Error(`query is empty`);
-
-        const result = await this.webWorker.seriesSearch(req.query);
-
-        this.send(result, req, ws);
-    }
-
-    async titleSearch(req, ws) {
-        if (!this.config.extendedSearch)
-            throw new Error(`Extended search disabled`);
-
-        if (!req.query)
-            throw new Error(`query is empty`);
-
-        const result = await this.webWorker.titleSearch(req.query);
+        const result = await this.webWorker.search(req.from, req.query);
 
         this.send(result, req, ws);
     }

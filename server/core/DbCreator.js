@@ -494,7 +494,9 @@ class DbCreator {
                 }
 
                 if (rec.books.length) {
-                    rec[restoreProp] = rec.books[0][restoreProp];
+                    rec[restoreProp] = rec.value;//rec.books[0][restoreProp];
+                    if (!rec[restoreProp])
+                        rec[restoreProp] = emptyFieldValue;
                 } else {
                     rec.toDel = 1;
                 }

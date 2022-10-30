@@ -317,7 +317,7 @@ class AuthorList extends BaseList {
         let result = [];
 
         const expandedSet = new Set(this.expandedAuthor);
-        const authors = this.searchResult.author;
+        const authors = this.searchResult.found;
         if (!authors)
             return;
 
@@ -399,7 +399,7 @@ class AuthorList extends BaseList {
         (async() => {
             await utils.sleep(500);
             if (this.refreshing)
-                this.loadingMessage = 'Поиск серий...';
+                this.loadingMessage = 'Поиск авторов...';
         })();
 
         try {
@@ -408,13 +408,13 @@ class AuthorList extends BaseList {
                 this.queryExecute = null;
 
                 try {
-                    const result = await this.api.authorSearch(query);
+                    const response = await this.api.search('author', query);
 
-                    this.list.queryFound = result.author.length;
-                    this.list.totalFound = result.totalFound;
-                    this.list.inpxHash = result.inpxHash;
+                    this.list.queryFound = response.found.length;
+                    this.list.totalFound = response.totalFound;
+                    this.list.inpxHash = response.inpxHash;
 
-                    this.searchResult = result;
+                    this.searchResult = response;
 
                     await utils.sleep(1);
                     if (!this.queryExecute) {

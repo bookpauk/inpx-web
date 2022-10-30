@@ -187,14 +187,8 @@ class WebWorker {
                 },
             });
 
-            //открываем почти все таблицы
-            await db.openAll({exclude: ['author', 'title_book']});
-
-            //откроем таблицу 'author' с бОльшим размером кеша блоков, для ускорения выборки
-            await db.open({table: 'author', cacheSize: (config.dbCacheSize > 100 ? config.dbCacheSize : 100)});
-
-            if (config.extendedSearch)
-                await db.open({table: 'title_book'});
+            //открываем таблицы
+            await db.openAll({exclude: ['author_id', 'series_id', 'title_id']});
 
             this.dbSearcher = new DbSearcher(config, db);
 
@@ -242,43 +236,15 @@ class WebWorker {
         return db.wwCache.config;
     }
 
-    async authorSearch(query) {
+    async search(from, query) {
         this.checkMyState();
 
-        const config = await this.dbConfig();
-        const result = await this.dbSearcher.authorSearch(query);
-
-        return {
-            author: result.result,
-            totalFound: result.totalFound,
-            inpxHash: (config.inpxHash ? config.inpxHash : ''),
-        };
-    }
-
-    async seriesSearch(query) {
-        this.checkMyState();
+        const result = await this.dbSearcher.search(from, query);
 
         const config = await this.dbConfig();
-        const result = await this.dbSearcher.seriesSearch(query);
+        result.inpxHash = (config.inpxHash ? config.inpxHash : '');
 
-        return {
-            series: result.result,
-            totalFound: result.totalFound,
-            inpxHash: (config.inpxHash ? config.inpxHash : ''),
-        };
-    }
-
-    async titleSearch(query) {
-        this.checkMyState();
-
-        const config = await this.dbConfig();
-        const result = await this.dbSearcher.titleSearch(query);
-
-        return {
-            title: result.result,
-            totalFound: result.totalFound,
-            inpxHash: (config.inpxHash ? config.inpxHash : ''),
-        };
+        return result;
     }
 
     async getAuthorBookList(authorId) {
@@ -522,7 +488,7 @@ class WebWorker {
     async periodicLogServerStats() {
         while (1) {// eslint-disable-line
             this.logServerStats();
-            await utils.sleep(60*1000);
+            await utils.sleep(1000)//(60*1000);
         }
     }
 

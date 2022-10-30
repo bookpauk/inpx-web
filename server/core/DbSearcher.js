@@ -20,6 +20,7 @@ class DbSearcher {
         this.closed = false;
 
         this.memCache = new Map();
+        this.bookIdMap = {};
 
         this.periodicCleanCache();//no await
     }
@@ -54,40 +55,74 @@ class DbSearcher {
         return where;
     }
 
-    async selectAuthorIds(query) {
+    async selectBookIds(query) {
         const db = this.db;
-
-        const authorKеy = `author-ids-author-${query.author}`;
-        let authorIds = await this.getCached(authorKеy);
-
-        //сначала выберем все id авторов по фильтру
-        //порядок id соответствует ASC-сортировке по author    
-        if (authorIds === null) {
-            if (query.author && query.author !== '*') {
-                const where = this.getWhere(query.author);
-
-                const authorRows = await db.select({
-                    table: 'author',
-                    rawResult: true,
-                    where: `return Array.from(${where})`,
-                });
-
-                authorIds = authorRows[0].rawResult;
-            } else {//все авторы
-                const authorRows = await db.select({
-                    table: 'author',
-                    rawResult: true,
-                    where: `return Array.from(@all())`,
-                });
-
-                authorIds = authorRows[0].rawResult;
-            }
-
-            await this.putCached(authorKеy, authorIds);
-        }
 
         const idsArr = [];
 
+        const tableBookIds = async(table, where) => {
+            const rows = await db.select({
+                table,
+                rawResult: true,
+                where: `
+                    const ids = ${where};
+
+                    const result = new Set();
+                    for (const id of ids) {
+                        const row = @unsafeRow(id);
+                        for (const bookId of row.bookIds)
+                            result.add(bookId);
+                    }
+
+                    return Array.from(result);
+                `
+            });
+
+            return rows[0].rawResult;
+        };
+
+        //авторы
+        if (query.author && query.author !== '*') {
+            const key = `book-ids-author-${query.author}`;
+            let ids = await this.getCached(key);
+
+            if (ids === null) {
+                ids = await tableBookIds('author', this.getWhere(query.author));
+
+                await this.putCached(key, ids);
+            }
+
+            idsArr.push(ids);
+        }
+
+        //серии
+        if (query.series && query.series !== '*') {
+            const key = `book-ids-series-${query.series}`;
+            let ids = await this.getCached(key);
+
+            if (ids === null) {
+                ids = await tableBookIds('series', this.getWhere(query.series));
+
+                await this.putCached(key, ids);
+            }
+
+            idsArr.push(ids);
+        }
+
+        //названия
+        if (query.title && query.title !== '*') {
+            const key = `book-ids-title-${query.title}`;
+            let ids = await this.getCached(key);
+
+            if (ids === null) {
+                ids = await tableBookIds('title', this.getWhere(query.title));
+
+                await this.putCached(key, ids);
+            }
+
+            idsArr.push(ids);
+        }
+/*
         //серии
         if (query.series && query.series !== '*') {
             const seriesKеy = `author-ids-series-${query.series}`;
@@ -327,23 +362,9 @@ class DbSearcher {
 
             idsArr.push(librateIds);
         }
-/*
-        //ищем пересечение множеств
-        idsArr.push(authorIds);
-
+*/        
         if (idsArr.length > 1) {
-            const idsSetArr = idsArr.map(ids => new Set(ids));
-            authorIds = Array.from(utils.intersectSet(idsSetArr));
-        }
-
-       //сортировка
-        authorIds.sort((a, b) => a - b);
-*/
-
-        //ищем пересечение множеств, работает быстрее предыдущего
-        if (idsArr.length) {
-            idsArr.push(authorIds);
-
+            //ищем пересечение множеств
             let proc = 0;
             let nextProc = 0;
             let inter = new Set(idsArr[0]);
@@ -363,340 +384,120 @@ class DbSearcher {
                 }
                 inter = newInter;
             }
-            authorIds = Array.from(inter);
-        }
-        //сортировка
-        authorIds.sort((a, b) => a - b);
 
-        return authorIds;
+            return Array.from(inter);
+        } else if (idsArr.length == 1) {            
+            return idsArr[0];
+        } else {
+            return false;
+        }
     }
 
-    getWhere2(query, ids, exclude = '') {
-        const db = this.db;
+    async fillBookIdMap(from) {
+        if (!this.bookIdMap[from]) {
+            const db = this.db;
+            const map = new Map();
+            const table = `${from}_id`;
 
-        const filterBySearch = (searchValue) => {
-            searchValue = searchValue.toLowerCase();
+            await db.open({table});
+            const rows = await db.select({table});
+            await db.close({table});
 
-            //особая обработка префиксов
-            if (searchValue[0] == '=') {
+            for (const row of rows) {
+                if (!row.value.length)
+                    continue;
 
-                searchValue = searchValue.substring(1);
-                return `bookValue.localeCompare(${db.esc(searchValue)}) == 0`;
-            } else if (searchValue[0] == '*') {
-
-                searchValue = searchValue.substring(1);
-                return `bookValue !== ${db.esc(emptyFieldValue)} && bookValue.indexOf(${db.esc(searchValue)}) >= 0`;
-            } else if (searchValue[0] == '#') {
-
-                searchValue = searchValue.substring(1);
-                return `!bookValue || (bookValue !== ${db.esc(emptyFieldValue)} && !enru.has(bookValue[0]) && bookValue.indexOf(${db.esc(searchValue)}) >= 0)`;
-            } else {
-                return `bookValue.localeCompare(${db.esc(searchValue)}) >= 0 && bookValue.localeCompare(${db.esc(searchValue + maxUtf8Char)}) <= 0`;
+                if (row.value.length > 1)
+                    map.set(row.id, row.value);
+                else
+                    map.set(row.id, row.value[0]);
             }
-        };
 
-        //подготовка фильтра
-        let filter = '';
-        let closures = '';
-
-        //порядок важен, более простые проверки вперед
-
-        //удаленные
-        if (query.del !== undefined) {
-            filter += `
-                if (book.del !== ${db.esc(query.del)})
-                    return false;
-            `;            
+            this.bookIdMap[from] = map;
         }
-
-        //дата поступления
-        if (query.date) {
-            let [from = '0000-00-00', to = '9999-99-99'] = query.date.split(',');
-            filter += `
-                if (!(book.date >= ${db.esc(from)} && book.date <= ${db.esc(to)}))
-                    return false;
-            `;
-        }
-
-        //оценка
-        if (query.librate) {
-            closures += `
-                const searchLibrate = new Set(${db.esc(query.librate.split(',').map(n => parseInt(n, 10)).filter(n => !isNaN(n)))});
-            `;
-            filter += `
-                if (!searchLibrate.has(book.librate))
-                    return false;
-            `;
-        }
-
-        //серии
-        if (exclude !== 'series' && query.series && query.series !== '*') {
-            closures += `
-                const checkSeries = (bookValue) => {
-                    if (!bookValue)
-                        bookValue = ${db.esc(emptyFieldValue)};
-
-                    bookValue = bookValue.toLowerCase();
-
-                    return ${filterBySearch(query.series)};
-                };
-            `;
-            filter += `
-                if (!checkSeries(book.series))
-                    return false;
-            `;
-        }
-
-        //названия
-        if (exclude !== 'title' && query.title && query.title !== '*') {
-            closures += `
-                const checkTitle = (bookValue) => {
-                    if (!bookValue)
-                        bookValue = ${db.esc(emptyFieldValue)};
-
-                    bookValue = bookValue.toLowerCase();
-
-                    return ${filterBySearch(query.title)};
-                };
-            `;
-            filter += `
-                if (!checkTitle(book.title))
-                    return false;
-            `;
-        }
-
-        //языки
-        if (exclude !== 'lang' && query.lang) {
-            const queryLangs = query.lang.split(',');
-
-            closures += `
-                const queryLangs = new Set(${db.esc(queryLangs)});
-
-                const checkLang = (bookValue) => {
-                    if (!bookValue)
-                        bookValue = ${db.esc(emptyFieldValue)};
-
-                    return queryLangs.has(bookValue);
-                };
-            `;
-            filter += `
-                if (!checkLang(book.lang))
-                    return false;
-            `;
-        }
-
-        //жанры
-        if (exclude !== 'genre' && query.genre) {
-            const queryGenres = query.genre.split(',');
-
-            closures += `
-                const queryGenres = new Set(${db.esc(queryGenres)});
-
-                const checkGenre = (bookValue) => {
-                    if (!bookValue)
-                        bookValue = ${db.esc(emptyFieldValue)};
-
-                    return queryGenres.has(bookValue);
-                };
-            `;
-            filter += `
-                const genres = book.genre.split(',');
-                found = false;
-                for (const g of genres) {
-                    if (checkGenre(g)) {
-                        found = true;
-                        break;
-                    }
-                }
-
-                if (!found)
-                    return false;
-            `;
-        }
-
-        //авторы
-        if (exclude !== 'author' && query.author && query.author !== '*') {
-            closures += `
-                const splitAuthor = (author) => {
-                    if (!author)
-                        author = ${db.esc(emptyFieldValue)};
-
-                    const result = author.split(',');
-                    if (result.length > 1)
-                        result.push(author);
-
-                    return result;
-                };
-
-                const checkAuthor = (bookValue) => {
-                    if (!bookValue)
-                        bookValue = ${db.esc(emptyFieldValue)};
-
-                    bookValue = bookValue.toLowerCase();
-
-                    return ${filterBySearch(query.author)};
-                };
-            `;
-
-            filter += `
-                const author = splitAuthor(book.author);
-                found = false;
-                for (const a of author) {
-                    if (checkAuthor(a)) {
-                        found = true;
-                        break;
-                    }
-                }
-
-                if (!found)
-                    return false;
-            `;
-        }
-
-        //формируем where
-        let where = '';
-        if (filter) {
-            where = `
-                const enru = new Set(${db.esc(enruArr)});
-
-                ${closures}
-
-                const filterBook = (book) => {
-                    let found = false;
-                    ${filter}
-                    return true;
-                };
-
-                let ids;
-                if (${!ids}) {
-                    ids = @all();
-                } else {
-                    ids = ${db.esc(ids)};
-                }
-
-                const result = new Set();
-                for (const id of ids) {
-                    const row = @unsafeRow(id);
-
-                    if (row) {
-                        for (const book of row.books) {
-                            if (filterBook(book)) {
-                                result.add(id);
-                                break;
-                            }
-                        }
-                    }
-                }
-
-                return Array.from(result);
-            `;
-        }
-
-        return where;
+        return this.bookIdMap[from];
     }
 
-    async selectSeriesIds(query) {
-        const db = this.db;
+    async filterTableIds(tableIds, from, query) {
+        let result = tableIds;
 
-        let seriesIds = false;
-        let isAll = !(query.series && query.series !== '*');
+        //т.к. авторы идут списком, то дополнительно фильтруем
+        if (query.author && query.author !== '*') {
+            const key = `filter-ids-author-${query.author}`;
+            let authorIds = await this.getCached(key);
 
-        //серии
-        const seriesKеy = `series-ids-series-${query.series}`;
-        seriesIds = await this.getCached(seriesKеy);
-
-        if (seriesIds === null) {
-            if (query.series && query.series !== '*') {
-                const where = this.getWhere(query.series);
-
-                const seriesRows = await db.select({
-                    table: 'series',
+            if (authorIds === null) {
+                const rows = await this.db.select({
+                    table: 'author',
                     rawResult: true,
-                    where: `return Array.from(${where})`,
+                    where: `return Array.from(${this.getWhere(query.author)})`
                 });
 
-                seriesIds = seriesRows[0].rawResult;
-            } else {
-                const seriesRows = await db.select({
-                    table: 'series',
-                    rawResult: true,
-                    where: `return Array.from(@all())`,
-                });
+                authorIds = rows[0].rawResult;
 
-                seriesIds = seriesRows[0].rawResult;
+                await this.putCached(key, authorIds);
             }
 
-            seriesIds.sort((a, b) => a - b);
-
-            await this.putCached(seriesKеy, seriesIds);
+            //пересечение tableIds и authorIds
+            result = [];
+            const authorIdsSet = new Set(authorIds);
+            for (const id of tableIds)
+                if (authorIdsSet.has(id))
+                    result.push(id);
         }
 
-        const where = this.getWhere2(query, (isAll ? false : seriesIds), 'series');
-
-        if (where) {
-            //тяжелый запрос перебором в series_book
-            const rows = await db.select({
-                table: 'series_book',
-                rawResult: true,
-                where,
-            });
-
-            seriesIds = rows[0].rawResult;
-        }
-
-        return seriesIds;
+        return result;
     }
 
-    async selectTitleIds(query) {
+    async selectTableIds(from, query) {
         const db = this.db;
+        const queryKey = this.queryKey(query);
+        const tableKey = `${from}-table-ids-${queryKey}`;
+        let tableIds = await this.getCached(tableKey);
 
-        let titleIds = false;
-        let isAll = !(query.title && query.title !== '*');
+        if (tableIds === null) {
+            const bookKey = `book-ids-${queryKey}`;
+            let bookIds = await this.getCached(bookKey);
 
-        //серии
-        const titleKеy = `title-ids-title-${query.title}`;
-        titleIds = await this.getCached(titleKеy);
-
-        if (titleIds === null) {
-            if (query.title && query.title !== '*') {
-                const where = this.getWhere(query.title);
-
-                const titleRows = await db.select({
-                    table: 'title',
-                    rawResult: true,
-                    where: `return Array.from(${where})`,
-                });
-
-                titleIds = titleRows[0].rawResult;
-            } else {
-                const titleRows = await db.select({
-                    table: 'title',
-                    rawResult: true,
-                    where: `return Array.from(@all())`,
-                });
-
-                titleIds = titleRows[0].rawResult;
+            if (bookIds === null) {
+                bookIds = await this.selectBookIds(query);
+                await this.putCached(bookKey, bookIds);
             }
 
-            titleIds.sort((a, b) => a - b);
+            if (bookIds) {
+                const tableIdsSet = new Set();
+                const bookIdMap = await this.fillBookIdMap(from);
+                for (const bookId of bookIds) {
+                    const tableIdValue = bookIdMap.get(bookId);
+                    if (!tableIdValue)
+                        continue;
 
-            await this.putCached(titleKеy, titleIds);
+                    if (Array.isArray(tableIdValue)) {
+                        for (const tableId of tableIdValue)
+                            tableIdsSet.add(tableId);
+                    } else
+                        tableIdsSet.add(tableIdValue);
+                }
+
+                tableIds = Array.from(tableIdsSet);
+            } else {
+                const rows = await db.select({
+                    table: from,
+                    rawResult: true,
+                    where: `return Array.from(@all())`
+                });
+
+                tableIds = rows[0].rawResult;
+            }
+
+            tableIds = await this.filterTableIds(tableIds, from, query);
+
+            tableIds.sort((a, b) => a - b);
+
+            await this.putCached(tableKey, tableIds);
         }
 
-        const where = this.getWhere2(query, (isAll ? false : titleIds), 'title');
-
-        if (where) {
-            //тяжелый запрос перебором в title_book
-            const rows = await db.select({
-                table: 'title_book',
-                rawResult: true,
-                where,
-            });
-
-            titleIds = rows[0].rawResult;
-        }
-
-        return titleIds;
+        return tableIds;
     }
 
     async getCached(key) {
@@ -771,112 +572,33 @@ class DbSearcher {
         });
     }
 
-    async authorSearch(query) {
+    async search(from, query) {
         if (this.closed)
             throw new Error('DbSearcher closed');
+
+        if (!['author', 'series', 'title'].includes(from))
+            throw new Error(`Unknown value for param 'from'`);
 
         this.searchFlag++;
 
         try {
             const db = this.db;
 
-            const key = `author-ids-${this.queryKey(query)}`;
+            const ids = await this.selectTableIds(from, query);
 
-            //сначала попробуем найти в кеше
-            let authorIds = await this.getCached(key);
-            if (authorIds === null) {//не нашли в кеше, ищем в поисковых таблицах
-                authorIds = await this.selectAuthorIds(query);
-
-                await this.putCached(key, authorIds);
-            }
-
-            const totalFound = authorIds.length;
+            const totalFound = ids.length;            
             let limit = (query.limit ? query.limit : 100);
             limit = (limit > maxLimit ? maxLimit : limit);
             const offset = (query.offset ? query.offset : 0);
 
             //выборка найденных авторов
-            const result = await db.select({
-                table: 'author',
-                map: `(r) => ({id: r.id, author: r.author, bookCount: r.bookCount, bookDelCount: r.bookDelCount})`,
-                where: `@@id(${db.esc(authorIds.slice(offset, offset + limit))})`
+            const found = await db.select({
+                table: `${from}_book`,
+                map: `(r) => ({id: r.id, ${from}: r.${from}, bookCount: r.bookCount, bookDelCount: r.bookDelCount})`,
+                where: `@@id(${db.esc(ids.slice(offset, offset + limit))})`
             });
 
-            return {result, totalFound};
-        } finally {
-            this.searchFlag--;
-        }
-    }
-
-    async seriesSearch(query) {
-        if (this.closed)
-            throw new Error('DbSearcher closed');
-
-        this.searchFlag++;
-
-        try {
-            const db = this.db;
-
-            const key = `series-ids-${this.queryKey(query)}`;
-
-            //сначала попробуем найти в кеше
-            let seriesIds = await this.getCached(key);
-            if (seriesIds === null) {//не нашли в кеше, ищем в поисковых таблицах
-                seriesIds = await this.selectSeriesIds(query);
-
-                await this.putCached(key, seriesIds);
-            }
-
-            const totalFound = seriesIds.length;
-            let limit = (query.limit ? query.limit : 100);
-            limit = (limit > maxLimit ? maxLimit : limit);
-            const offset = (query.offset ? query.offset : 0);
-
-            //выборка найденных авторов
-            const result = await db.select({
-                table: 'series_book',
-                map: `(r) => ({id: r.id, series: r.series, bookCount: r.bookCount, bookDelCount: r.bookDelCount})`,
-                where: `@@id(${db.esc(seriesIds.slice(offset, offset + limit))})`
-            });
-
-            return {result, totalFound};
-        } finally {
-            this.searchFlag--;
-        }
-    }
-
-    async titleSearch(query) {
-        if (this.closed)
-            throw new Error('DbSearcher closed');
-
-        this.searchFlag++;
-
-        try {
-            const db = this.db;
-
-            const key = `title-ids-${this.queryKey(query)}`;
-
-            //сначала попробуем найти в кеше
-            let titleIds = await this.getCached(key);
-            if (titleIds === null) {//не нашли в кеше, ищем в поисковых таблицах
-                titleIds = await this.selectTitleIds(query);
-
-                await this.putCached(key, titleIds);
-            }
-
-            const totalFound = titleIds.length;
-            let limit = (query.limit ? query.limit : 100);
-            limit = (limit > maxLimit ? maxLimit : limit);
-            const offset = (query.offset ? query.offset : 0);
-
-            //выборка найденных авторов
-            const result = await db.select({
-                table: 'title_book',
-                map: `(r) => ({id: r.id, title: r.title, books: r.books, bookCount: r.bookCount, bookDelCount: r.bookDelCount})`,
-                where: `@@id(${db.esc(titleIds.slice(offset, offset + limit))})`
-            });
-
-            return {result, totalFound};
+            return {found, totalFound};
         } finally {
             this.searchFlag--;
         }
@@ -908,7 +630,7 @@ class DbSearcher {
                 books = rows[0].books;
             }
 
-            return {author, books};
+            return {author, books: (books && books.length ? JSON.stringify(books) : '')};
         } finally {
             this.searchFlag--;
         }
