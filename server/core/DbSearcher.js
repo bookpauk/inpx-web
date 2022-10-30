@@ -122,83 +122,13 @@ class DbSearcher {
 
             idsArr.push(ids);
         }
-/*
-        //серии
-        if (query.series && query.series !== '*') {
-            const seriesKеy = `author-ids-series-${query.series}`;
-            let seriesIds = await this.getCached(seriesKеy);
-
-            if (seriesIds === null) {
-                const where = this.getWhere(query.series);
-
-                const seriesRows = await db.select({
-                    table: 'series',
-                    rawResult: true,
-                    where: `
-                        const ids = ${where};
-
-                        const result = new Set();
-                        for (const id of ids) {
-                            const row = @unsafeRow(id);
-                            for (const authorId of row.authorId)
-                                result.add(authorId);
-                        }
-
-                        return Array.from(result);
-                    `
-                });
-
-                seriesIds = seriesRows[0].rawResult;
-                await this.putCached(seriesKеy, seriesIds);
-            }
-
-            idsArr.push(seriesIds);
-        }
-
-        //названия
-        if (query.title && query.title !== '*') {
-            const titleKey = `author-ids-title-${query.title}`;
-            let titleIds = await this.getCached(titleKey);
-
-            if (titleIds === null) {
-                const where = this.getWhere(query.title);
-
-                let titleRows = await db.select({
-                    table: 'title',
-                    rawResult: true,
-                    where: `
-                        const ids = ${where};
-
-                        const result = new Set();
-                        for (const id of ids) {
-                            const row = @unsafeRow(id);
-                            for (const authorId of row.authorId)
-                                result.add(authorId);
-                        }
-
-                        return Array.from(result);
-                    `
-                });
-
-                titleIds = titleRows[0].rawResult;
-                await this.putCached(titleKey, titleIds);
-            }
-
-            idsArr.push(titleIds);
-
-            //чистки памяти при тяжелых запросах
-            if (this.config.lowMemoryMode && query.title[0] == '*') {
-                utils.freeMemory();
-                await db.freeMemory();
-            }
-        }
 
         //жанры
         if (query.genre) {
-            const genreKey = `author-ids-genre-${query.genre}`;
-            let genreIds = await this.getCached(genreKey);
+            const key = `book-ids-genre-${query.genre}`;
+            let ids = await this.getCached(key);
 
-            if (genreIds === null) {
+            if (ids === null) {
                 const genreRows = await db.select({
                     table: 'genre',
                     rawResult: true,
@@ -214,27 +144,27 @@ class DbSearcher {
                         const result = new Set();
                         for (const id of ids) {
                             const row = @unsafeRow(id);
-                            for (const authorId of row.authorId)
-                                result.add(authorId);
+                            for (const bookId of row.bookIds)
+                                result.add(bookId);
                         }
 
                         return Array.from(result);
                     `
                 });
 
-                genreIds = genreRows[0].rawResult;
-                await this.putCached(genreKey, genreIds);
+                ids = genreRows[0].rawResult;
+                await this.putCached(key, ids);
             }
 
-            idsArr.push(genreIds);
+            idsArr.push(ids);
         }
 
         //языки
         if (query.lang) {
-            const langKey = `author-ids-lang-${query.lang}`;
-            let langIds = await this.getCached(langKey);
+            const key = `book-ids-lang-${query.lang}`;
+            let ids = await this.getCached(key);
 
-            if (langIds === null) {
+            if (ids === null) {
                 const langRows = await db.select({
                     table: 'lang',
                     rawResult: true,
@@ -250,89 +180,56 @@ class DbSearcher {
                         const result = new Set();
                         for (const id of ids) {
                             const row = @unsafeRow(id);
-                            for (const authorId of row.authorId)
-                                result.add(authorId);
+                            for (const bookId of row.bookIds)
+                                result.add(bookId);
                         }
 
                         return Array.from(result);
                     `
                 });
 
-                langIds = langRows[0].rawResult;
-                await this.putCached(langKey, langIds);
+                ids = langRows[0].rawResult;
+                await this.putCached(key, ids);
             }
 
-            idsArr.push(langIds);
+            idsArr.push(ids);
         }
 
         //удаленные
         if (query.del !== undefined) {
-            const delKey = `author-ids-del-${query.del}`;
-            let delIds = await this.getCached(delKey);
+            const key = `book-ids-del-${query.del}`;
+            let ids = await this.getCached(key);
 
-            if (delIds === null) {
-                const delRows = await db.select({
-                    table: 'del',
-                    rawResult: true,
-                    where: `
-                        const ids = @indexLR('value', ${db.esc(query.del)}, ${db.esc(query.del)});
-                        
-                        const result = new Set();
-                        for (const id of ids) {
-                            const row = @unsafeRow(id);
-                            for (const authorId of row.authorId)
-                                result.add(authorId);
-                        }
+            if (ids === null) {
+                ids = await tableBookIds('del', `@indexLR('value', ${db.esc(query.del)}, ${db.esc(query.del)})`);
 
-                        return Array.from(result);
-                    `
-                });
-
-                delIds = delRows[0].rawResult;
-                await this.putCached(delKey, delIds);
+                await this.putCached(key, ids);
             }
 
-            idsArr.push(delIds);
+            idsArr.push(ids);
         }
 
         //дата поступления
         if (query.date) {
-            const dateKey = `author-ids-date-${query.date}`;
-            let dateIds = await this.getCached(dateKey);
+            const key = `book-ids-date-${query.date}`;
+            let ids = await this.getCached(key);
 
-            if (dateIds === null) {
+            if (ids === null) {
                 let [from = '', to = ''] = query.date.split(',');
+                ids = await tableBookIds('date', `@indexLR('value', ${db.esc(from)} || undefined, ${db.esc(to)} || undefined)`);
 
-                const dateRows = await db.select({
-                    table: 'date',
-                    rawResult: true,
-                    where: `
-                        const ids = @indexLR('value', ${db.esc(from)} || undefined, ${db.esc(to)} || undefined);
-                        
-                        const result = new Set();
-                        for (const id of ids) {
-                            const row = @unsafeRow(id);
-                            for (const authorId of row.authorId)
-                                result.add(authorId);
-                        }
-
-                        return Array.from(result);
-                    `
-                });
-
-                dateIds = dateRows[0].rawResult;
-                await this.putCached(dateKey, dateIds);
+                await this.putCached(key, ids);
             }
 
-            idsArr.push(dateIds);
+            idsArr.push(ids);
         }
 
         //оценка
         if (query.librate) {
-            const librateKey = `author-ids-librate-${query.librate}`;
-            let librateIds = await this.getCached(librateKey);
+            const key = `book-ids-librate-${query.librate}`;
+            let ids = await this.getCached(key);
 
-            if (librateIds === null) {
+            if (ids === null) {
                 const dateRows = await db.select({
                     table: 'librate',
                     rawResult: true,
@@ -348,21 +245,21 @@ class DbSearcher {
                         const result = new Set();
                         for (const id of ids) {
                             const row = @unsafeRow(id);
-                            for (const authorId of row.authorId)
-                                result.add(authorId);
+                            for (const bookId of row.bookIds)
+                                result.add(bookId);
                         }
 
                         return Array.from(result);
                     `
                 });
 
-                librateIds = dateRows[0].rawResult;
-                await this.putCached(librateKey, librateIds);
+                ids = dateRows[0].rawResult;
+                await this.putCached(key, ids);
             }
 
-            idsArr.push(librateIds);
+            idsArr.push(ids);
         }
-*/        
+
         if (idsArr.length > 1) {
             //ищем пересечение множеств
             let proc = 0;
@@ -624,10 +521,10 @@ class DbSearcher {
             let books;
             if (rows.length && rows[0].rawResult.length) {
                 //выборка книг серии
-                const rows = await this.restoreBooks('series', [rows[0].rawResult[0]])
+                const bookRows = await this.restoreBooks('series', [rows[0].rawResult[0]])
 
-                if (rows.length)
-                    books = rows[0].books;
+                if (bookRows.length)
+                    books = bookRows[0].books;
             }
 
             return {books: (books && books.length ? JSON.stringify(books) : '')};
