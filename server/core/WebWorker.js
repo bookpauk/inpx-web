@@ -488,7 +488,7 @@ class WebWorker {
     async periodicLogServerStats() {
         while (1) {// eslint-disable-line
             this.logServerStats();
-            await utils.sleep(1000)//(60*1000);
+            await utils.sleep(60*1000);
         }
     }
 
