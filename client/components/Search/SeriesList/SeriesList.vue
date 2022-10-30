@@ -181,7 +181,7 @@ class SeriesList extends BaseList {
         let result = [];
 
         const expandedSet = new Set(this.expandedSeries);
-        const series = this.searchResult.series;
+        const series = this.searchResult.found;
         if (!series)
             return;
 
@@ -256,13 +256,13 @@ class SeriesList extends BaseList {
                 this.queryExecute = null;
 
                 try {
-                    const result = await this.api.seriesSearch(query);
+                    const response = await this.api.search('series', query);
 
-                    this.list.queryFound = result.series.length;
-                    this.list.totalFound = result.totalFound;
-                    this.list.inpxHash = result.inpxHash;
+                    this.list.queryFound = response.found.length;
+                    this.list.totalFound = response.totalFound;
+                    this.list.inpxHash = response.inpxHash;
 
-                    this.searchResult = result;
+                    this.searchResult = response;
 
                     await utils.sleep(1);
                     if (!this.queryExecute) {

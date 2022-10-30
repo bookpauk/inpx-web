@@ -138,6 +138,84 @@ class DbCreator {
                 callback({progress: (readState.current || 0)/totalFiles});
         };
 
+        const parseField = (fieldValue, fieldMap, fieldArr, bookId, rec, fillBookIds = true) => {
+            let value = fieldValue;
+
+            if (typeof(fieldValue) == 'string') {
+                if (!fieldValue)
+                    fieldValue = emptyFieldValue;
+
+                value = fieldValue.toLowerCase();
+            }
+
+            let fieldRec;
+            if (fieldMap.has(value)) {
+                const fieldId = fieldMap.get(value);
+                fieldRec = fieldArr[fieldId];
+            } else {
+                fieldRec = {id: fieldArr.length, value, bookIds: new Set()};                
+                if (rec !== undefined) {
+                    fieldRec.name = fieldValue;
+                    fieldRec.bookCount = 0;
+                    fieldRec.bookDelCount = 0;
+                }
+                fieldArr.push(fieldRec);
+                fieldMap.set(value, fieldRec.id);
+            }
+
+            if (fieldValue !== emptyFieldValue || fillBookIds)
+                fieldRec.bookIds.add(bookId);
+
+            if (rec !== undefined) {
+                if (!rec.del)
+                    fieldRec.bookCount++;
+                else
+                    fieldRec.bookDelCount++;
+            }
+        };        
+
+        const parseBookRec = (rec) => {
+            //авторы
+            const author = splitAuthor(rec.author);
+
+            for (let i = 0; i < author.length; i++) {
+                const a = author[i];
+
+                //статистика
+                if (!authorMap.has(a.toLowerCase()) && (author.length == 1 || i < author.length - 1)) //без соавторов
+                    authorCount++;
+                
+                parseField(a, authorMap, authorArr, rec.id, rec);                
+            }
+
+            //серии
+            parseField(rec.series, seriesMap, seriesArr, rec.id, rec, false);
+
+            //названия
+            parseField(rec.title, titleMap, titleArr, rec.id, rec);
+
+            //жанры
+            let genre = rec.genre || emptyFieldValue;
+            genre = rec.genre.split(',');
+
+            for (let g of genre) {
+                parseField(g, genreMap, genreArr, rec.id);
+            }
+
+            //языки
+            parseField(rec.lang, langMap, langArr, rec.id);
+            
+            //удаленные
+            parseField(rec.del, delMap, delArr, rec.id);
+
+            //дата поступления
+            parseField(rec.date, dateMap, dateArr, rec.id);
+
+            //оценка
+            parseField(rec.librate, librateMap, librateArr, rec.id);
+        };
+
+        //основная процедура парсинга
         let id = 0;
         const parsedCallback = async(chunk) => {
             let filtered = false;
@@ -159,40 +237,7 @@ class DbCreator {
                     bookDelCount++;
                 }
 
-                //авторы
-                const author = splitAuthor(rec.author);
-
-                for (let i = 0; i < author.length; i++) {
-                    const a = author[i];
-                    const value = a.toLowerCase();
-
-                    let authorRec;                    
-                    if (authorMap.has(value)) {
-                        const authorTmpId = authorMap.get(value);
-                        authorRec = authorArr[authorTmpId];
-                    } else {
-                        authorRec = {tmpId: authorArr.length, author: a, value, bookCount: 0, bookDelCount: 0, bookId: []};
-                        authorArr.push(authorRec);
-                        authorMap.set(value, authorRec.tmpId);
-
-                        if (author.length == 1 || i < author.length - 1) //без соавторов
-                            authorCount++;
-                    }
-
-                    //это нужно для того, чтобы имя автора начиналось с заглавной
-                    if (a[0].toUpperCase() === a[0])
-                        authorRec.author = a;
-
-                    //счетчики
-                    if (!rec.del) {
-                        authorRec.bookCount++;
-                    } else {
-                        authorRec.bookDelCount++;
-                    }
-
-                    //ссылки на книги
-                    authorRec.bookId.push(id);
-                }
+                parseBookRec(rec);
             }
 
             let saveChunk = [];
@@ -211,245 +256,9 @@ class DbCreator {
                 utils.freeMemory();
         };
 
-        //парсинг 1
+        //парсинг
         const parser = new InpxParser();
         await parser.parse(config.inpxFile, readFileCallback, parsedCallback);
-
-        utils.freeMemory();
-
-        //отсортируем авторов и выдадим им правильные id
-        //порядок id соответствует ASC-сортировке по author.toLowerCase
-        callback({job: 'author sort', jobMessage: 'Сортировка авторов', jobStep: 2, progress: 0});
-        await utils.sleep(100);
-        authorArr.sort((a, b) => a.value.localeCompare(b.value));
-
-        id = 0;
-        authorMap = new Map();
-        for (const authorRec of authorArr) {
-            authorRec.id = ++id;
-            authorMap.set(authorRec.author, id);
-            delete authorRec.tmpId;
-        }
-
-        utils.freeMemory();
-
-        //подготовка к сохранению author_book
-        const saveBookChunk = async(authorChunk, callback) => {
-            callback(0);
-
-            const ids = [];
-            for (const a of authorChunk) {
-                for (const id of a.bookId) {
-                    ids.push(id);
-                }
-            }
-
-            ids.sort((a, b) => a - b);// обязательно, иначе будет тормозить - особенности JembaDb
-
-            callback(0.1);
-            const rows = await db.select({table: 'book', where: `@@id(${db.esc(ids)})`});
-            callback(0.6);
-            await utils.sleep(100);
-
-            const bookArr = new Map();
-            for (const row of rows)
-                bookArr.set(row.id, row);
-
-            const abRows = [];
-            for (const a of authorChunk) {
-                const aBooks = [];
-                for (const id of a.bookId) {
-                    const rec = bookArr.get(id);
-                    aBooks.push(rec);
-                }
-
-                abRows.push({id: a.id, author: a.author, books: JSON.stringify(aBooks)});
-
-                delete a.bookId;//в дальнейшем не понадобится, authorArr сохраняем без него
-            }
-
-            callback(0.7);
-            await db.insert({
-                table: 'author_book',
-                rows: abRows,
-            });
-            callback(1);
-        };
-
-        callback({job: 'book sort', jobMessage: 'Сортировка книг', jobStep: 3, progress: 0});
-
-        //сохранение author_book
-        await db.create({
-            table: 'author_book',
-        });
-
-        let idsLen = 0;
-        let aChunk = [];
-        let prevI = 0;
-        for (let i = 0; i < authorArr.length; i++) {// eslint-disable-line
-            const author = authorArr[i];
-
-            aChunk.push(author);
-            idsLen += author.bookId.length;
-
-            if (idsLen > 50000) {//константа выяснена эмпирическим путем "память/скорость"
-                await saveBookChunk(aChunk, (p) => {
-                    callback({progress: (prevI + (i - prevI)*p)/authorArr.length});
-                });
-
-                prevI = i;
-                idsLen = 0;
-                aChunk = [];
-                await utils.sleep(100);
-                utils.freeMemory();
-                await db.freeMemory();
-            }
-        }
-        if (aChunk.length) {
-            await saveBookChunk(aChunk, () => {});
-            aChunk = null;
-        }
-
-        callback({progress: 1});
-
-        //чистка памяти, ибо жрет как не в себя
-        await db.close({table: 'book'});
-        await db.freeMemory();
-        utils.freeMemory();
-
-        //парсинг 2, подготовка
-        const parseField = (fieldValue, fieldMap, fieldArr, authorIds, bookId) => {
-            let addBookId = bookId;
-            let value = fieldValue;
-
-            if (typeof(fieldValue) == 'string') {
-                if (!fieldValue) {
-                    fieldValue = emptyFieldValue;
-                    addBookId = 0;//!!!
-                }
-
-                value = fieldValue.toLowerCase();
-            }
-
-            let fieldRec;
-            if (fieldMap.has(value)) {
-                const fieldId = fieldMap.get(value);
-                fieldRec = fieldArr[fieldId];
-            } else {
-                fieldRec = {id: fieldArr.length, value, authorId: new Set()};
-                if (bookId)
-                    fieldRec.bookId = new Set();
-                fieldArr.push(fieldRec);
-                fieldMap.set(value, fieldRec.id);
-            }
-
-            for (const id of authorIds) {
-                fieldRec.authorId.add(id);
-            }
-
-            if (addBookId)
-                fieldRec.bookId.add(addBookId);
-        };
-
-        const parseBookRec = (rec) => {
-            //авторы
-            const author = splitAuthor(rec.author);
-
-            const authorIds = [];
-            for (const a of author) {
-                const authorId = authorMap.get(a);
-                if (!authorId) //подстраховка
-                    continue;
-                authorIds.push(authorId);
-            }
-
-            //серии
-            parseField(rec.series, seriesMap, seriesArr, authorIds, rec.id);
-
-            //названия
-            parseField(rec.title, titleMap, titleArr, authorIds, rec.id);
-
-            //жанры
-            let genre = rec.genre || emptyFieldValue;
-            genre = rec.genre.split(',');
-
-            for (let g of genre) {
-                if (!g)
-                    g = emptyFieldValue;
-
-                let genreRec;
-                if (genreMap.has(g)) {
-                    const genreId = genreMap.get(g);
-                    genreRec = genreArr[genreId];
-                } else {
-                    genreRec = {id: genreArr.length, value: g, authorId: new Set()};
-                    genreArr.push(genreRec);
-                    genreMap.set(g, genreRec.id);
-                }
-
-                for (const id of authorIds) {
-                    genreRec.authorId.add(id);
-                }
-            }
-
-            //языки
-            parseField(rec.lang, langMap, langArr, authorIds);
-            
-            //удаленные
-            parseField(rec.del, delMap, delArr, authorIds);
-
-            //дата поступления
-            parseField(rec.date, dateMap, dateArr, authorIds);
-
-            //оценка
-            parseField(rec.librate, librateMap, librateArr, authorIds);
-        };
-
-        callback({job: 'search tables create', jobMessage: 'Создание поисковых таблиц', jobStep: 4, progress: 0});
-
-        //парсинг 2, теперь можно создавать остальные поисковые таблицы
-        let proc = 0;
-        while (1) {// eslint-disable-line
-            const rows = await db.select({
-                table: 'author_book',
-                where: `
-                    let iter = @getItem('parse_book');
-                    if (!iter) {
-                        iter = @all();
-                        @setItem('parse_book', iter);
-                    }
-
-                    const ids = new Set();
-                    let id = iter.next();
-                    while (!id.done) {
-                        ids.add(id.value);
-                        if (ids.size >= 10000)
-                            break;
-                        id = iter.next();
-                    }
-
-                    return ids;
-                `
-            });
-
-            if (rows.length) {
-                for (const row of rows) {
-                    const books = JSON.parse(row.books);
-                    for (const rec of books)
-                        parseBookRec(rec);
-                }
-
-                proc += rows.length;
-                callback({progress: proc/authorArr.length});
-            } else
-                break;
-
-            if (config.lowMemoryMode) {
-                await utils.sleep(100);
-                utils.freeMemory();
-                await db.freeMemory();
-            }
-        }
 
         //чистка памяти, ибо жрет как не в себя
         authorMap = null;
@@ -461,25 +270,42 @@ class DbCreator {
         dateMap = null;
         librateMap = null;
 
+        await db.close({table: 'book'});
+        await db.freeMemory();
         utils.freeMemory();
 
-        //сортировка серий
-        callback({job: 'sort', jobMessage: 'Сортировка', jobStep: 5, progress: 0});
+        //отсортируем таблицы выдадим им правильные id
+        //порядок id соответствует ASC-сортировке по value
+        callback({job: 'sort', jobMessage: 'Сортировка', jobStep: 2, progress: 0});
         await utils.sleep(100);
-        seriesArr.sort((a, b) => a.value.localeCompare(b.value));
+        //сортировка авторов
+        authorArr.sort((a, b) => a.value.localeCompare(b.value));
+        callback({progress: 0.2});
         await utils.sleep(100);
+
+        id = 0;
+        for (const authorRec of authorArr) {
+            authorRec.id = ++id;
+        }
         callback({progress: 0.3});
+        await utils.sleep(100);
+
+        //сортировка серий
+        seriesArr.sort((a, b) => a.value.localeCompare(b.value));
+        callback({progress: 0.5});
+        await utils.sleep(100);
+
         id = 0;
         for (const seriesRec of seriesArr) {
             seriesRec.id = ++id;
         }
+        callback({progress: 0.6});
+        await utils.sleep(100);
 
-        await utils.sleep(100);
-        callback({progress: 0.5});
-        //заодно и названия
+        //сортировка названий
         titleArr.sort((a, b) => a.value.localeCompare(b.value));
-        await utils.sleep(100);
-        callback({progress: 0.7});
+        callback({progress: 0.8});
+        await utils.sleep(100);        
         id = 0;
         for (const titleRec of titleArr) {
             titleRec.id = ++id;
@@ -507,7 +333,7 @@ class DbCreator {
         //сохраним поисковые таблицы
         const chunkSize = 10000;
 
-        const saveTable = async(table, arr, nullArr, authorIdToArray = false, bookIdToArray = false, indexType = 'string') => {
+        const saveTable = async(table, arr, nullArr, indexType = 'string') => {
             
             if (indexType == 'string')
                 arr.sort((a, b) => a.value.localeCompare(b.value));
@@ -523,21 +349,14 @@ class DbCreator {
             for (let i = 0; i < arr.length; i += chunkSize) {
                 const chunk = arr.slice(i, i + chunkSize);
                 
-                if (authorIdToArray) {
-                    for (const rec of chunk)
-                        rec.authorId = Array.from(rec.authorId);
-                }
-
-                if (bookIdToArray) {
-                    for (const rec of chunk)
-                        rec.bookId = Array.from(rec.bookId);
-                }
+                for (const rec of chunk)
+                    rec.bookIds = Array.from(rec.bookIds);
 
                 await db.insert({table, rows: chunk});
 
                 if (i % 5 == 0) {
                     await db.freeMemory();
-                    await utils.sleep(100);
+                    await utils.sleep(10);
                 }
 
                 callback({progress: i/arr.length});                
@@ -550,33 +369,33 @@ class DbCreator {
         };
 
         //author
-        callback({job: 'author save', jobMessage: 'Сохранение индекса авторов', jobStep: 6, progress: 0});
+        callback({job: 'author save', jobMessage: 'Сохранение индекса авторов', jobStep: 3, progress: 0});
         await saveTable('author', authorArr, () => {authorArr = null});
 
         //series
-        callback({job: 'series save', jobMessage: 'Сохранение индекса серий', jobStep: 7, progress: 0});
-        await saveTable('series', seriesArr, () => {seriesArr = null}, true, true);
+        callback({job: 'series save', jobMessage: 'Сохранение индекса серий', jobStep: 4, progress: 0});
+        await saveTable('series', seriesArr, () => {seriesArr = null});
 
         //title
-        callback({job: 'title save', jobMessage: 'Сохранение индекса названий', jobStep: 8, progress: 0});
-        await saveTable('title', titleArr, () => {titleArr = null}, true, true);
+        callback({job: 'title save', jobMessage: 'Сохранение индекса названий', jobStep: 5, progress: 0});
+        await saveTable('title', titleArr, () => {titleArr = null});
 
         //genre
-        callback({job: 'genre save', jobMessage: 'Сохранение индекса жанров', jobStep: 9, progress: 0});
-        await saveTable('genre', genreArr, () => {genreArr = null}, true);
+        callback({job: 'genre save', jobMessage: 'Сохранение индекса жанров', jobStep: 6, progress: 0});
+        await saveTable('genre', genreArr, () => {genreArr = null});
 
-        callback({job: 'others save', jobMessage: 'Сохранение остальных индексов', jobStep: 10, progress: 0});
+        callback({job: 'others save', jobMessage: 'Сохранение остальных индексов', jobStep: 7, progress: 0});
         //lang
-        await saveTable('lang', langArr, () => {langArr = null}, true);
+        await saveTable('lang', langArr, () => {langArr = null});
 
         //del
-        await saveTable('del', delArr, () => {delArr = null}, true, false, 'number');
+        await saveTable('del', delArr, () => {delArr = null}, 'number');
 
         //date
-        await saveTable('date', dateArr, () => {dateArr = null}, true);
+        await saveTable('date', dateArr, () => {dateArr = null});
 
         //librate
-        await saveTable('librate', librateArr, () => {librateArr = null}, true, false, 'number');
+        await saveTable('librate', librateArr, () => {librateArr = null}, 'number');
 
         //кэш-таблицы запросов
         await db.create({table: 'query_cache'});
@@ -591,23 +410,28 @@ class DbCreator {
             cacheSize: (config.lowMemoryMode ? 5 : 500),
         });
 
-        callback({job: 'optimization', jobMessage: 'Оптимизация', jobStep: 11, progress: 0});
-        await this.optimizeTable('series', 'series_book', 'series', db, (p) => {
+        callback({job: 'optimization', jobMessage: 'Оптимизация', jobStep: 8, progress: 0});
+        await this.optimizeTable('author', db, (p) => {
             if (p.progress)
-                p.progress = 0.2*p.progress;
+                p.progress = 0.3*p.progress;
             callback(p);
         });
-        await this.optimizeTable('title', 'title_book', 'title', db, (p) => {
+        await this.optimizeTable('series', db, (p) => {
             if (p.progress)
-                p.progress = 0.2 + 0.8*p.progress;
+                p.progress = 0.3 + 0.2*p.progress;
+            callback(p);
+        });
+        await this.optimizeTable('title', db, (p) => {
+            if (p.progress)
+                p.progress = 0.5 + 0.5*p.progress;
             callback(p);
         });
 
-        callback({job: 'stats count', jobMessage: 'Подсчет статистики', jobStep: 12, progress: 0});
+        callback({job: 'stats count', jobMessage: 'Подсчет статистики', jobStep: 9, progress: 0});
         await this.countStats(db, callback, stats);
 
         //чистка памяти, ибо жрет как не в себя
-        await db.drop({table: 'book'});//больше не понадобится
+        await db.close({table: 'book'});
         await db.freeMemory();
         utils.freeMemory();
 
@@ -627,61 +451,61 @@ class DbCreator {
         callback({job: 'done', jobMessage: ''});
     }
 
-    async optimizeTable(from, to, restoreProp, db, callback) {
-        //оптимизация таблицы from, превращаем массив bookId в books, кладем все в таблицу to
-        await db.open({table: from});
+    async optimizeTable(from, db, callback) {
+        const config = this.config;
 
-        await db.create({
-            table: to,
-            flag: {name: 'toDel', check: 'r => r.toDel'},
-        });
+        const to = `${from}_book`;
+        const toId = `${from}_id`;
+
+        await db.open({table: from});
+        await db.create({table: to});
+
+        const bookId2RecId = new Map();
 
         const saveChunk = async(chunk) => {
             const ids = [];
-            for (const s of chunk) {
-                for (const id of s.bookId) {
+            for (const rec of chunk) {
+                for (const id of rec.bookIds) {
+                    let b2r = bookId2RecId.get(id);
+                    if (!b2r) {
+                        b2r = [];
+                        bookId2RecId.set(id, b2r);
+                    }
+                    b2r.push(rec.id);
+
                     ids.push(id);
                 }
             }
 
-            ids.sort((a, b) => a - b);// обязательно, иначе будет тормозить - особенности JembaDb
+            if (config.fullOptimization) {
+                ids.sort((a, b) => a - b);// обязательно, иначе будет тормозить - особенности JembaDb
 
-            const rows = await db.select({table: 'book', where: `@@id(${db.esc(ids)})`});
+                const rows = await db.select({table: 'book', where: `@@id(${db.esc(ids)})`});
 
-            const bookArr = new Map();
-            for (const row of rows)
-                bookArr.set(row.id, row);
+                const bookArr = new Map();
+                for (const row of rows)
+                    bookArr.set(row.id, row);
 
-            for (const s of chunk) {
-                s.books = [];
-                s.bookCount = 0;
-                s.bookDelCount = 0;
-                for (const id of s.bookId) {
-                    const rec = bookArr.get(id);
-                    if (rec) {//на всякий случай
-                        s.books.push(rec);
-                        if (!rec.del)
-                            s.bookCount++;
-                        else
-                            s.bookDelCount++;
+                for (const rec of chunk) {
+                    rec.books = [];
+
+                    for (const id of rec.bookIds) {
+                        const book = bookArr.get(id);
+                        if (book) {//на всякий случай
+                            rec.books.push(book);
+                        }
                     }
+
+                    delete rec.name;
+                    delete rec.value;
+                    delete rec.bookIds;
                 }
 
-                if (s.books.length) {
-                    s[restoreProp] = s.books[0][restoreProp];
-                } else {
-                    s.toDel = 1;
-                }
-
-                delete s.value;
-                delete s.authorId;
-                delete s.bookId;
+                await db.insert({
+                    table: to,
+                    rows: chunk,
+                });
             }
-
-            await db.insert({
-                table: to,
-                rows: chunk,
-            });
         };
 
         const rows = await db.select({table: from, count: true});
@@ -699,11 +523,16 @@ class DbCreator {
                     }
 
                     const ids = new Set();
+                    let bookIdsLen = 0;
                     let id = iter.next();
                     while (!id.done) {
                         ids.add(id.value);
-                        if (ids.size >= 20000)
+
+                        const row = @row(id.value);
+                        bookIdsLen += row.bookIds.length;
+                        if (bookIdsLen >= 50000)
                             break;
+
                         id = iter.next();
                     }
 
@@ -726,9 +555,16 @@ class DbCreator {
             }
         }
 
-        await db.delete({table: to, where: `@@flag('toDel')`});
         await db.close({table: to});
         await db.close({table: from});
+
+        await db.create({table: toId});
+        const idRows = [];
+        for (const [id, value] of bookId2RecId) {
+            idRows.push({id, value});
+        }
+        await db.insert({table: toId, rows: idRows});
+        await db.close({table: toId});
     }
 
     async countStats(db, callback, stats) {

@@ -49,7 +49,7 @@ class TitleList extends BaseList {
     async updateTableData() {
         let result = [];
 
-        const title = this.searchResult.title;
+        const title = this.searchResult.found;
         if (!title)
             return;
 
@@ -116,13 +116,13 @@ class TitleList extends BaseList {
                 this.queryExecute = null;
 
                 try {
-                    const result = await this.api.titleSearch(query);
+                    const response = await this.api.search('title', query);
 
-                    this.list.queryFound = result.title.length;
-                    this.list.totalFound = result.totalFound;
-                    this.list.inpxHash = result.inpxHash;
+                    this.list.queryFound = response.found.length;
+                    this.list.totalFound = response.totalFound;
+                    this.list.inpxHash = response.inpxHash;
 
-                    this.searchResult = result;
+                    this.searchResult = response;
 
                     await utils.sleep(1);
                     if (!this.queryExecute) {

@@ -15,6 +15,7 @@ const propsToSave = [
     'cacheCleanInterval',
     'inpxCheckInterval',
     'lowMemoryMode',
+    'fullOptimization',
     'allowRemoteLib',
     'remoteLib',
     'server',

@@ -17,7 +17,7 @@ module.exports = {
 
     //поправить в случае, если были критические изменения в DbCreator
     //иначе будет рассинхронизация между сервером и клиентом на уровне БД
-    dbVersion: '4',
+    dbVersion: '5',
     dbCacheSize: 5,
 
     maxPayloadSize: 500,//in MB
@@ -26,6 +26,7 @@ module.exports = {
     cacheCleanInterval: 60,//minutes
     inpxCheckInterval: 60,//minutes
     lowMemoryMode: false,
+    fullOptimization: false,
 
     webConfigParams: ['name', 'version', 'branch', 'bookReadLink', 'dbVersion', 'extendedSearch'],
 
