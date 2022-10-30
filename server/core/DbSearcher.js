@@ -500,6 +500,142 @@ class DbSearcher {
         return tableIds;
     }
 
+    async restoreBooks(from, ids) {
+        const db = this.db;
+        const bookTable = `${from}_book`;
+
+        const rows = await db.select({
+            table: bookTable,
+            where: `@@id(${db.esc(ids)})`
+        });
+
+        if (rows.length == ids.length)
+            return rows;
+
+        const idsSet = new Set(rows.map(r => r.id));
+
+        for (const id of ids) {
+            if (!idsSet.has(id)) {
+                const bookIds = await db.select({
+                    table: from,
+                    where: `@@id(${db.esc(id)})`
+                });
+
+                if (!bookIds.length)
+                    continue;
+
+                let books = await db.select({
+                    table: 'book',
+                    where: `@@id(${db.esc(bookIds[0].bookIds)})`
+                });
+
+                if (!books.length)
+                    continue;
+
+                rows.push({id, name: bookIds[0].name, books});
+
+                await db.insert({table: bookTable, ignore: true, rows});
+            }
+        }
+
+        return rows;
+    }
+
+    async search(from, query) {
+        if (this.closed)
+            throw new Error('DbSearcher closed');
+
+        if (!['author', 'series', 'title'].includes(from))
+            throw new Error(`Unknown value for param 'from'`);
+
+        this.searchFlag++;
+
+        try {
+            const db = this.db;
+
+            const ids = await this.selectTableIds(from, query);
+
+            const totalFound = ids.length;            
+            let limit = (query.limit ? query.limit : 100);
+            limit = (limit > maxLimit ? maxLimit : limit);
+            const offset = (query.offset ? query.offset : 0);
+
+            //выборка найденных значений
+            const found = await db.select({
+                table: from,
+                map: `(r) => ({id: r.id, ${from}: r.name, bookCount: r.bookCount, bookDelCount: r.bookDelCount})`,
+                where: `@@id(${db.esc(ids.slice(offset, offset + limit))})`
+            });
+
+            return {found, totalFound};
+        } finally {
+            this.searchFlag--;
+        }
+    }
+
+    async getAuthorBookList(authorId) {
+        if (this.closed)
+            throw new Error('DbSearcher closed');
+
+        if (!authorId)
+            return {author: '', books: ''};
+
+        this.searchFlag++;
+
+        try {
+            //выборка книг автора по authorId
+            const rows = await this.restoreBooks('author', [authorId])
+
+            let author = '';
+            let books = '';
+
+            if (rows.length) {
+                author = rows[0].name;
+                books = rows[0].books;
+            }
+
+            return {author, books: (books && books.length ? JSON.stringify(books) : '')};
+        } finally {
+            this.searchFlag--;
+        }
+    }
+
+    async getSeriesBookList(series) {
+        if (this.closed)
+            throw new Error('DbSearcher closed');
+
+        if (!series)
+            return {books: ''};
+
+        this.searchFlag++;
+
+        try {
+            const db = this.db;
+
+            series = series.toLowerCase();
+
+            //выборка серии по названию серии
+            let rows = await db.select({
+                table: 'series',
+                rawResult: true,
+                where: `return Array.from(@dirtyIndexLR('value', ${db.esc(series)}, ${db.esc(series)}))`
+            });
+
+            let books;
+            if (rows.length && rows[0].rawResult.length) {
+                //выборка книг серии
+                const rows = await this.restoreBooks('series', [rows[0].rawResult[0]])
+
+                if (rows.length)
+                    books = rows[0].books;
+            }
+
+            return {books: (books && books.length ? JSON.stringify(books) : '')};
+        } finally {
+            this.searchFlag--;
+        }
+    }
+
     async getCached(key) {
         if (!this.config.queryCacheEnabled)
             return null;
@@ -570,109 +706,6 @@ class DbSearcher {
             replace: true,
             rows: [{id: key, time: Date.now()}],
         });
-    }
-
-    async search(from, query) {
-        if (this.closed)
-            throw new Error('DbSearcher closed');
-
-        if (!['author', 'series', 'title'].includes(from))
-            throw new Error(`Unknown value for param 'from'`);
-
-        this.searchFlag++;
-
-        try {
-            const db = this.db;
-
-            const ids = await this.selectTableIds(from, query);
-
-            const totalFound = ids.length;            
-            let limit = (query.limit ? query.limit : 100);
-            limit = (limit > maxLimit ? maxLimit : limit);
-            const offset = (query.offset ? query.offset : 0);
-
-            //выборка найденных авторов
-            const found = await db.select({
-                table: `${from}_book`,
-                map: `(r) => ({id: r.id, ${from}: r.${from}, bookCount: r.bookCount, bookDelCount: r.bookDelCount})`,
-                where: `@@id(${db.esc(ids.slice(offset, offset + limit))})`
-            });
-
-            return {found, totalFound};
-        } finally {
-            this.searchFlag--;
-        }
-    }
-
-    async getAuthorBookList(authorId) {
-        if (this.closed)
-            throw new Error('DbSearcher closed');
-
-        if (!authorId)
-            return {author: '', books: ''};
-
-        this.searchFlag++;
-
-        try {
-            const db = this.db;
-
-            //выборка книг автора по authorId
-            const rows = await db.select({
-                table: 'author_book',
-                where: `@@id(${db.esc(authorId)})`
-            });
-
-            let author = '';
-            let books = '';
-
-            if (rows.length) {
-                author = rows[0].author;
-                books = rows[0].books;
-            }
-
-            return {author, books: (books && books.length ? JSON.stringify(books) : '')};
-        } finally {
-            this.searchFlag--;
-        }
-    }
-
-    async getSeriesBookList(series) {
-        if (this.closed)
-            throw new Error('DbSearcher closed');
-
-        if (!series)
-            return {books: ''};
-
-        this.searchFlag++;
-
-        try {
-            const db = this.db;
-
-            series = series.toLowerCase();
-
-            //выборка серии по названию серии
-            let rows = await db.select({
-                table: 'series',
-                rawResult: true,
-                where: `return Array.from(@dirtyIndexLR('value', ${db.esc(series)}, ${db.esc(series)}))`
-            });
-
-            let books;
-            if (rows.length && rows[0].rawResult.length) {
-                //выборка книг серии
-                rows = await db.select({
-                    table: 'series_book',
-                    where: `@@id(${rows[0].rawResult[0]})`
-                });
-
-                if (rows.length)
-                    books = rows[0].books;
-            }
-
-            return {books: (books && books.length ? JSON.stringify(books) : '')};
-        } finally {
-            this.searchFlag--;
-        }
     }
 
     async periodicCleanCache() {

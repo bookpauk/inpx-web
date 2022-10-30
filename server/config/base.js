@@ -26,6 +26,7 @@ module.exports = {
     cacheCleanInterval: 60,//minutes
     inpxCheckInterval: 60,//minutes
     lowMemoryMode: false,
+    fullOptimization: false,
 
     webConfigParams: ['name', 'version', 'branch', 'bookReadLink', 'dbVersion', 'extendedSearch'],
 

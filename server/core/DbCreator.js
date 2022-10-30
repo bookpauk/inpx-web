@@ -138,7 +138,7 @@ class DbCreator {
                 callback({progress: (readState.current || 0)/totalFiles});
         };
 
-        const parseField = (fieldValue, fieldMap, fieldArr, bookId, fillBookIds = true) => {
+        const parseField = (fieldValue, fieldMap, fieldArr, bookId, rec, fillBookIds = true) => {
             let value = fieldValue;
 
             if (typeof(fieldValue) == 'string') {
@@ -154,12 +154,24 @@ class DbCreator {
                 fieldRec = fieldArr[fieldId];
             } else {
                 fieldRec = {id: fieldArr.length, value, bookIds: new Set()};                
+                if (rec !== undefined) {
+                    fieldRec.name = fieldValue;
+                    fieldRec.bookCount = 0;
+                    fieldRec.bookDelCount = 0;
+                }
                 fieldArr.push(fieldRec);
                 fieldMap.set(value, fieldRec.id);
             }
 
             if (fieldValue !== emptyFieldValue || fillBookIds)
                 fieldRec.bookIds.add(bookId);
+
+            if (rec !== undefined) {
+                if (!rec.del)
+                    fieldRec.bookCount++;
+                else
+                    fieldRec.bookDelCount++;
+            }
         };        
 
         const parseBookRec = (rec) => {
@@ -173,14 +185,14 @@ class DbCreator {
                 if (!authorMap.has(a.toLowerCase()) && (author.length == 1 || i < author.length - 1)) //без соавторов
                     authorCount++;
                 
-                parseField(a, authorMap, authorArr, rec.id);                
+                parseField(a, authorMap, authorArr, rec.id, rec);                
             }
 
             //серии
-            parseField(rec.series, seriesMap, seriesArr, rec.id, false);
+            parseField(rec.series, seriesMap, seriesArr, rec.id, rec, false);
 
             //названия
-            parseField(rec.title, titleMap, titleArr, rec.id);
+            parseField(rec.title, titleMap, titleArr, rec.id, rec);
 
             //жанры
             let genre = rec.genre || emptyFieldValue;
@@ -393,10 +405,12 @@ class DbCreator {
         await db.create({table: 'file_hash'});
 
         //-- завершающие шаги --------------------------------
-        await db.open({
-            table: 'book',
-            cacheSize: (config.lowMemoryMode ? 5 : 500),
-        });
+        if (config.fullOptimization) {
+            await db.open({
+                table: 'book',
+                cacheSize: (config.lowMemoryMode ? 5 : 500),
+            });
+        }
 
         callback({job: 'optimization', jobMessage: 'Оптимизация', jobStep: 11, progress: 0});
         await this.optimizeTable('author', db, (p) => {
@@ -419,7 +433,8 @@ class DbCreator {
         await this.countStats(db, callback, stats);
 
         //чистка памяти, ибо жрет как не в себя
-        await db.drop({table: 'book'});//больше не понадобится
+        if (config.fullOptimization)
+            await db.close({table: 'book'});
         await db.freeMemory();
         utils.freeMemory();
 
@@ -440,17 +455,13 @@ class DbCreator {
     }
 
     async optimizeTable(from, db, callback) {
+        const config = this.config;
+
         const to = `${from}_book`;
         const toId = `${from}_id`;
-        const restoreProp = from;
 
-        //оптимизация таблицы from, превращаем массив bookId в books, кладем все в таблицу to
         await db.open({table: from});
-
-        await db.create({
-            table: to,
-            flag: {name: 'toDel', check: 'r => r.toDel'},
-        });
+        await db.create({table: to});
 
         const bookId2RecId = new Map();
 
@@ -469,46 +480,35 @@ class DbCreator {
                 }
             }
 
-            ids.sort((a, b) => a - b);// обязательно, иначе будет тормозить - особенности JembaDb
+            if (config.fullOptimization) {
+                ids.sort((a, b) => a - b);// обязательно, иначе будет тормозить - особенности JembaDb
 
-            const rows = await db.select({table: 'book', where: `@@id(${db.esc(ids)})`});
+                const rows = await db.select({table: 'book', where: `@@id(${db.esc(ids)})`});
 
-            const bookArr = new Map();
-            for (const row of rows)
-                bookArr.set(row.id, row);
+                const bookArr = new Map();
+                for (const row of rows)
+                    bookArr.set(row.id, row);
 
-            for (const rec of chunk) {
-                rec.books = [];
-                rec.bookCount = 0;
-                rec.bookDelCount = 0;
+                for (const rec of chunk) {
+                    rec.books = [];
 
-                for (const id of rec.bookIds) {
-                    const book = bookArr.get(id);
-                    if (rec) {//на всякий случай
-                        rec.books.push(book);
-                        if (!book.del)
-                            rec.bookCount++;
-                        else
-                            rec.bookDelCount++;
+                    for (const id of rec.bookIds) {
+                        const book = bookArr.get(id);
+                        if (book) {//на всякий случай
+                            rec.books.push(book);
+                        }
                     }
+
+                    delete rec.name;
+                    delete rec.value;
+                    delete rec.bookIds;
                 }
 
-                if (rec.books.length) {
-                    rec[restoreProp] = rec.value;//rec.books[0][restoreProp];
-                    if (!rec[restoreProp])
-                        rec[restoreProp] = emptyFieldValue;
-                } else {
-                    rec.toDel = 1;
-                }
-
-                delete rec.value;
-                delete rec.bookIds;
+                await db.insert({
+                    table: to,
+                    rows: chunk,
+                });
             }
-
-            await db.insert({
-                table: to,
-                rows: chunk,
-            });
         };
 
         const rows = await db.select({table: from, count: true});
@@ -558,7 +558,6 @@ class DbCreator {
             }
         }
 
-        await db.delete({table: to, where: `@@flag('toDel')`});
         await db.close({table: to});
         await db.close({table: from});
 
