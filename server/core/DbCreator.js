@@ -369,22 +369,22 @@ class DbCreator {
         };
 
         //author
-        callback({job: 'author save', jobMessage: 'Сохранение индекса авторов', jobStep: 6, progress: 0});
+        callback({job: 'author save', jobMessage: 'Сохранение индекса авторов', jobStep: 3, progress: 0});
         await saveTable('author', authorArr, () => {authorArr = null});
 
         //series
-        callback({job: 'series save', jobMessage: 'Сохранение индекса серий', jobStep: 7, progress: 0});
+        callback({job: 'series save', jobMessage: 'Сохранение индекса серий', jobStep: 4, progress: 0});
         await saveTable('series', seriesArr, () => {seriesArr = null});
 
         //title
-        callback({job: 'title save', jobMessage: 'Сохранение индекса названий', jobStep: 8, progress: 0});
+        callback({job: 'title save', jobMessage: 'Сохранение индекса названий', jobStep: 5, progress: 0});
         await saveTable('title', titleArr, () => {titleArr = null});
 
         //genre
-        callback({job: 'genre save', jobMessage: 'Сохранение индекса жанров', jobStep: 9, progress: 0});
+        callback({job: 'genre save', jobMessage: 'Сохранение индекса жанров', jobStep: 6, progress: 0});
         await saveTable('genre', genreArr, () => {genreArr = null});
 
-        callback({job: 'others save', jobMessage: 'Сохранение остальных индексов', jobStep: 10, progress: 0});
+        callback({job: 'others save', jobMessage: 'Сохранение остальных индексов', jobStep: 7, progress: 0});
         //lang
         await saveTable('lang', langArr, () => {langArr = null});
 
@@ -405,14 +405,12 @@ class DbCreator {
         await db.create({table: 'file_hash'});
 
         //-- завершающие шаги --------------------------------
-        if (config.fullOptimization) {
-            await db.open({
-                table: 'book',
-                cacheSize: (config.lowMemoryMode ? 5 : 500),
-            });
-        }
+        await db.open({
+            table: 'book',
+            cacheSize: (config.lowMemoryMode ? 5 : 500),
+        });
 
-        callback({job: 'optimization', jobMessage: 'Оптимизация', jobStep: 11, progress: 0});
+        callback({job: 'optimization', jobMessage: 'Оптимизация', jobStep: 8, progress: 0});
         await this.optimizeTable('author', db, (p) => {
             if (p.progress)
                 p.progress = 0.3*p.progress;
@@ -429,12 +427,11 @@ class DbCreator {
             callback(p);
         });
 
-        callback({job: 'stats count', jobMessage: 'Подсчет статистики', jobStep: 12, progress: 0});
+        callback({job: 'stats count', jobMessage: 'Подсчет статистики', jobStep: 9, progress: 0});
         await this.countStats(db, callback, stats);
 
         //чистка памяти, ибо жрет как не в себя
-        if (config.fullOptimization)
-            await db.close({table: 'book'});
+        await db.close({table: 'book'});
         await db.freeMemory();
         utils.freeMemory();
 

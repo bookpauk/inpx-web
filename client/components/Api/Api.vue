@@ -42,18 +42,15 @@ const rotor = '|/-\\';
 const stepBound = [
     0,
     0,// jobStep = 1
-    18,// jobStep = 2
-    20,// jobStep = 3
-    50,// jobStep = 4
-    62,// jobStep = 5
-    62,// jobStep = 6
-    64,// jobStep = 7
-    65,// jobStep = 8
-    69,// jobStep = 9
-    69,// jobStep = 10
-    70,// jobStep = 11
-    95,// jobStep = 12
-    100,// jobStep = 13
+    40,// jobStep = 2
+    50,// jobStep = 3
+    54,// jobStep = 4
+    58,// jobStep = 5
+    69,// jobStep = 6
+    69,// jobStep = 7
+    70,// jobStep = 8
+    95,// jobStep = 9
+    100,// jobStep = 10
 ];
 
 const componentOptions = {
