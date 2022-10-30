@@ -188,10 +188,18 @@ class WebWorker {
             });
 
             //открываем таблицы
-            await db.openAll({exclude: ['author_id', 'series_id', 'title_id']});
+            await db.openAll({exclude: ['author_id', 'series_id', 'title_id', 'book']});
 
+            const bookCacheSize = 500;
+            await db.open({
+                table: 'book',
+                cacheSize: (config.lowMemoryMode || config.dbCacheSize > bookCacheSize ? config.dbCacheSize : bookCacheSize)
+            });
+
+            //поисковый движок
             this.dbSearcher = new DbSearcher(config, db);
 
+            //stuff
             db.wwCache = {};            
             this.db = db;
 

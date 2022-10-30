@@ -409,31 +409,51 @@ class DbSearcher {
         if (rows.length == ids.length)
             return rows;
 
+        //далее восстановим книги из book в <from>_book
         const idsSet = new Set(rows.map(r => r.id));
 
+        //недостающие
+        const tableIds = [];
         for (const id of ids) {
-            if (!idsSet.has(id)) {
-                const bookIds = await db.select({
-                    table: from,
-                    where: `@@id(${db.esc(id)})`
-                });
-
-                if (!bookIds.length)
-                    continue;
-
-                let books = await db.select({
-                    table: 'book',
-                    where: `@@id(${db.esc(bookIds[0].bookIds)})`
-                });
-
-                if (!books.length)
-                    continue;
-
-                rows.push({id, name: bookIds[0].name, books});
-
-                await db.insert({table: bookTable, ignore: true, rows});
-            }
+            if (!idsSet.has(id))
+                tableIds.push(id);
         }
+
+        const tableRows = await db.select({
+            table: from,
+            where: `@@id(${db.esc(tableIds)})`
+        });
+
+        //список недостающих bookId
+        const bookIds = [];
+        for (const row of tableRows) {
+            for (const bookId of row.bookIds)
+                bookIds.push(bookId);
+        }
+
+        //выбираем книги
+        const books = await db.select({
+            table: 'book',
+            where: `@@id(${db.esc(bookIds)})`
+        });
+
+        const booksMap = new Map();
+        for (const book of books)
+            booksMap.set(book.id, book);
+
+        //распределяем
+        for (const row of tableRows) {
+            const books = [];
+            for (const bookId of row.bookIds) {
+                const book = booksMap.get(bookId);
+                if (book)
+                    books.push(book);
+            }
+
+            rows.push({id: row.id, name: row.name, books});
+        }
+
+        await db.insert({table: bookTable, ignore: true, rows});
 
         return rows;
     }
