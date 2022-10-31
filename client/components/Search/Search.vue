@@ -771,9 +771,12 @@ class Search {
         this.lastScrollTop = curScrollTop;
     }
 
-    async ignoreScroll(ms = 50) {
+    async ignoreScroll(ms = 300) {
         this.ignoreScrolling = true;
         await utils.sleep(ms);
+        await this.$nextTick();
+        await this.$nextTick();
+        await this.$nextTick();
         this.ignoreScrolling = false;
     }
 
