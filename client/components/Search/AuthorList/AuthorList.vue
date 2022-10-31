@@ -382,7 +382,7 @@ class AuthorList extends BaseList {
                 if (data) {
                     this.list.queryFound = 1;
                     this.list.totalFound = 1;
-                    this.searchResult = {author: [author]};
+                    this.searchResult = {found: [author]};
                     await this.updateTableData();
                     return;
                 }
