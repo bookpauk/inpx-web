@@ -132,7 +132,7 @@ class WebWorker {
         }
     }
 
-    async loadOrCreateDb(recreate = false) {
+    async loadOrCreateDb(recreate = false, iteration = 0) {
         this.setMyState(ssDbLoading);
 
         try {
@@ -187,14 +187,24 @@ class WebWorker {
                 },
             });
 
-            //открываем таблицы
-            await db.openAll({exclude: ['author_id', 'series_id', 'title_id', 'book']});
+            try {
+                //открываем таблицы
+                await db.openAll({exclude: ['author_id', 'series_id', 'title_id', 'book']});
 
-            const bookCacheSize = 500;
-            await db.open({
-                table: 'book',
-                cacheSize: (config.lowMemoryMode || config.dbCacheSize > bookCacheSize ? config.dbCacheSize : bookCacheSize)
-            });
+                const bookCacheSize = 500;
+                await db.open({
+                    table: 'book',
+                    cacheSize: (config.lowMemoryMode || config.dbCacheSize > bookCacheSize ? config.dbCacheSize : bookCacheSize)
+                });
+            } catch(e) {
+                log(LM_ERR, `Database error: ${e.message}`);
+                if (iteration < 1) {
+                    log('Recreating DB');
+                    await this.loadOrCreateDb(true, iteration + 1);
+                } else
+                    throw e;
+                return;
+            }
 
             //поисковый движок
             this.dbSearcher = new DbSearcher(config, db);
