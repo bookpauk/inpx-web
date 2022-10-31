@@ -3,7 +3,7 @@
         <template #header>
             <div class="row items-center">
                 <div style="font-size: 130%">
-                    Выбрать язык
+                    Выбрать языки
                 </div>
             </div>
         </template>

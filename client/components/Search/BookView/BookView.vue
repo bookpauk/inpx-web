@@ -204,8 +204,7 @@ class BookView {
         if (!this.book.date)
             return '';
 
-        const date = utils.parseDate(this.book.date);
-        return utils.formatDate(date, 'noDate');
+        return utils.sqlDateFormat(this.book.date);
     }
 
     selectAuthor() {

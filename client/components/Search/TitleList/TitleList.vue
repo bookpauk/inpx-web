@@ -85,13 +85,7 @@ class TitleList extends BaseList {
 
     async refresh() {
         //параметры запроса
-        let newQuery = _.cloneDeep(this.search);
-        newQuery = newQuery.setDefaults(newQuery);
-        delete newQuery.setDefaults;
-        newQuery.offset = (newQuery.page - 1)*newQuery.limit;
-        if (!this.showDeleted)
-            newQuery.del = 0;
-
+        const newQuery = this.getQuery();
         if (_.isEqual(newQuery, this.prevQuery))
             return;
         this.prevQuery = newQuery;

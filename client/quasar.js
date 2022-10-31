@@ -21,14 +21,15 @@ import {QIcon} from 'quasar/src/components/icon';
 //import {QTabPanels, QTabPanel} from 'quasar/src/components/tab-panels';
 //import {QSeparator} from 'quasar/src/components/separator';
 //import {QList} from 'quasar/src/components/item';
-//import {QItem, QItemSection, QItemLabel} from 'quasar/src/components/item';
+import {QItem, QItemSection, QItemLabel} from 'quasar/src/components/item';
 import {QTooltip} from 'quasar/src/components/tooltip';
 //import {QSpinner} from 'quasar/src/components/spinner';
 //import {QTable, QTh, QTr, QTd} from 'quasar/src/components/table';
 import {QCheckbox} from 'quasar/src/components/checkbox';
 import {QSelect} from 'quasar/src/components/select';
 //import {QColor} from 'quasar/src/components/color';
-//import {QPopupProxy} from 'quasar/src/components/popup-proxy';
+import {QPopupProxy} from 'quasar/src/components/popup-proxy';
+import {QDate} from 'quasar/src/components/date';
 import {QDialog} from 'quasar/src/components/dialog';
 //import {QChip} from 'quasar/src/components/chip';
 import {QTree} from 'quasar/src/components/tree';
@@ -55,14 +56,15 @@ const components = {
     //QTabPanels, QTabPanel,
     //QSeparator,
     //QList,
-    //QItem, QItemSection, QItemLabel,
+    QItem, QItemSection, QItemLabel,
     QTooltip,
     //QSpinner,
     //QTable, QTh, QTr, QTd,
     QCheckbox,
     QSelect,
     //QColor,
-    //QPopupProxy,
+    QPopupProxy,
+    QDate,
     QDialog,
     //QChip,
     QTree,
@@ -91,12 +93,13 @@ const plugins = {
 //import '@quasar/extras/fontawesome-v5/fontawesome-v5.css';
 //import fontawesomeV5 from 'quasar/icon-set/fontawesome-v5.js'
 
+import lang from 'quasar/lang/ru';
 import '@quasar/extras/line-awesome/line-awesome.css';
 import lineAwesome from 'quasar/icon-set/line-awesome.js'
 
 export default {
     quasar: Quasar,
-    options: { config, components, directives, plugins }, 
+    options: { config, components, directives, plugins, lang }, 
     init: () => {
         Quasar.iconSet.set(lineAwesome);
 }

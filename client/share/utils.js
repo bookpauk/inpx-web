@@ -1,3 +1,4 @@
+import moment from 'moment';
 import {Buffer} from 'safe-buffer';
 //import _ from 'lodash';
 
@@ -98,7 +99,7 @@ export function makeValidFilename(filename, repl = '_') {
     else
         throw new Error('Invalid filename');
 }
-
+/*
 export function formatDate(d, format = 'normal') {
     switch (format) {
         case 'normal':
@@ -124,4 +125,17 @@ export function parseDate(sqlDate) {
     result.setYear(parseInt(d[0], 10));
         
     return result;
+}
+*/
+
+export function isDigit(c) {
+    return !isNaN(parseInt(c, 10));
+}
+
+export function dateFormat(date, format = 'DD.MM.YYYY') {
+    return moment(date).format(format);
+}
+
+export function sqlDateFormat(date, format = 'DD.MM.YYYY') {
+    return moment(date, 'YYYY-MM-DD').format(format);
 }

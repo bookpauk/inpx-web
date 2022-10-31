@@ -1,3 +1,4 @@
+import moment from 'moment';
 import _ from 'lodash';
 
 import authorBooksStorage from './authorBooksStorage';
@@ -230,7 +231,7 @@ export default class BaseList {
 
     async expandSeries(seriesItem) {
         this.$emit('listEvent', {action: 'ignoreScroll'});
-        
+
         const expandedSeries = _.cloneDeep(this.expandedSeries);
         const key = seriesItem.key;
 
@@ -406,7 +407,8 @@ export default class BaseList {
             //date
             let dateFound = !s.date;
             if (!dateFound) {
-                let [from = '0000-00-00', to = '9999-99-99'] = s.date.split(',');
+                const date = this.queryDate(s.date.split(','));
+                let [from = '0000-00-00', to = '9999-99-99'] = date;
                 dateFound = (book.date >= from && book.date <= to);
             }
 
@@ -466,5 +468,52 @@ export default class BaseList {
             const dext = a.ext.localeCompare(b.ext);
             return (dserno ? dserno : (dtitle ? dtitle : dext));
         });
+    }
+
+    queryDate(date) {
+        if (!(utils.isDigit(date[0]) && utils.isDigit(date[1]))) {//!manual
+            /*
+            {label: 'сегодня', value: 'today'},
+            {label: 'за 3 дня', value: '3days'},
+            {label: 'за неделю', value: 'week'},
+            {label: 'за 2 недели', value: '2weeks'},
+            {label: 'за месяц', value: 'month'},
+            {label: 'за 3 месяца', value: '3months'},
+            {label: 'указать даты', value: 'manual'},
+            */
+            const sqlFormat = 'YYYY-MM-DD';
+            switch (date) {
+                case 'today': date = utils.dateFormat(moment(), sqlFormat); break;
+                case '3days': date = utils.dateFormat(moment().subtract(3, 'days'), sqlFormat); break;
+                case 'week': date = utils.dateFormat(moment().subtract(1, 'weeks'), sqlFormat); break;
+                case '2weeks': date = utils.dateFormat(moment().subtract(2, 'weeks'), sqlFormat); break;
+                case 'month': date = utils.dateFormat(moment().subtract(1, 'months'), sqlFormat); break;
+                case '3months': date = utils.dateFormat(moment().subtract(3, 'months'), sqlFormat); break;
+                default:
+                    date = '';
+            }
+        }
+
+        return date;
+    }
+
+    getQuery() {
+        let newQuery = _.cloneDeep(this.search);
+        newQuery = newQuery.setDefaults(newQuery);
+        delete newQuery.setDefaults;
+
+        //дата
+        if (newQuery.date) {
+            newQuery.date = this.queryDate(newQuery.date);
+        }
+
+        //offset
+        newQuery.offset = (newQuery.page - 1)*newQuery.limit;
+
+        //del
+        if (!this.showDeleted)
+            newQuery.del = 0;
+
+        return newQuery;
     }
 }

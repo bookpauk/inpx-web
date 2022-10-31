@@ -120,14 +120,35 @@
                     </q-input>
 
                     <div class="q-mx-xs" />
-                    <q-input
-                        v-model="search.date" :maxlength="inputMaxLength" :debounce="inputDebounce"
-                        class="q-mt-xs" :bg-color="inputBgColor()" input-style="cursor: pointer" style="width: 200px;" label="Дата поступления" stack-label outlined dense clearable
+                    <q-select 
+                        v-model="searchDate"
+                        class="q-mt-xs"
+                        :options="searchDateOptions"
+                        dropdown-icon="la la-angle-down la-sm"
+                        :bg-color="inputBgColor()"
+                        style="width: 200px;"
+                        label="Дата поступления" stack-label
+                        outlined dense emit-value map-options clearable
                     >
-                        <q-tooltip v-if="search.date && showTooltips" :delay="500" anchor="bottom middle" content-style="font-size: 80%" max-width="400px">
-                            {{ search.date }}
-                        </q-tooltip>
-                    </q-input>
+                        <template #selected-item="scope">
+                            <div v-if="scope.opt.value == 'manual'">
+                                <div v-html="formatSearchDate" />
+                            </div>
+                            <div v-else>
+                                {{ scope.opt.label }}
+                            </div>
+                        </template>
+
+                        <template #option="scope">
+                            <q-item v-bind="scope.itemProps" @click="dateSelectItemClick(scope.opt.value)">
+                                <q-item-section>
+                                    <q-item-label>
+                                        {{ scope.opt.label }}
+                                    </q-item-label>
+                                </q-item-section>
+                            </q-item>
+                        </template>
+                    </q-select>
 
                     <div class="q-mx-xs" />
                     <q-input
@@ -210,6 +231,7 @@
         <SelectGenreDialog v-model="selectGenreDialogVisible" v-model:genre="search.genre" :genre-tree="genreTree" />
         <SelectLangDialog v-model="selectLangDialogVisible" v-model:lang="search.lang" :lang-list="langList" :lang-default="langDefault" />        
         <SelectLibRateDialog v-model="selectLibRateDialogVisible" v-model:librate="search.librate" />
+        <SelectDateDialog v-model="selectDateDialogVisible" v-model:date="search.date" />
     </div>
 </template>
 
@@ -225,6 +247,7 @@ import PageScroller from './PageScroller/PageScroller.vue';
 import SelectGenreDialog from './SelectGenreDialog/SelectGenreDialog.vue';
 import SelectLangDialog from './SelectLangDialog/SelectLangDialog.vue';
 import SelectLibRateDialog from './SelectLibRateDialog/SelectLibRateDialog.vue';
+import SelectDateDialog from './SelectDateDialog/SelectDateDialog.vue';
 
 import authorBooksStorage from './authorBooksStorage';
 import DivBtn from '../share/DivBtn.vue';
@@ -250,6 +273,7 @@ const componentOptions = {
         SelectGenreDialog,
         SelectLangDialog,
         SelectLibRateDialog,
+        SelectDateDialog,
         Dialog,
         DivBtn
     },
@@ -271,6 +295,7 @@ const componentOptions = {
 
                 this.makeTitle();
                 this.updateRouteQueryFromSearch();
+                this.updateSearchDate(true);
             },
             deep: true,
         },
@@ -334,7 +359,10 @@ const componentOptions = {
             if (this.getListRoute() != newValue) {
                 this.updateRouteQueryFromSearch();
             }
-        }
+        },
+        searchDate() {
+            this.updateSearchDate(false);
+        },
     },
 };
 class Search {
@@ -354,6 +382,7 @@ class Search {
     selectGenreDialogVisible = false;
     selectLangDialogVisible = false;
     selectLibRateDialogVisible = false;
+    selectDateDialogVisible = false;
 
     pageCount = 1;    
 
@@ -377,6 +406,8 @@ class Search {
             });
         },
     };
+
+    searchDate = '';
 
     //settings
     showCounts = true;
@@ -412,6 +443,16 @@ class Search {
         {label: '200', value: 200},
         {label: '500', value: 500},
         {label: '1000', value: 1000},
+    ];
+
+    searchDateOptions = [
+        {label: 'сегодня', value: 'today'},
+        {label: 'за 3 дня', value: '3days'},
+        {label: 'за неделю', value: 'week'},
+        {label: 'за 2 недели', value: '2weeks'},
+        {label: 'за месяц', value: 'month'},
+        {label: 'за 3 месяца', value: '3months'},
+        {label: 'выбрать даты', value: 'manual'},
     ];
 
     created() {
@@ -926,6 +967,47 @@ class Search {
             this.$root.stdDialog.alert(e.message, 'Ошибка');
         } finally {
             this.genreTreeUpdating = false;
+        }
+    }
+
+    isManualDate(date) {
+        return date && utils.isDigit(date[0]) && utils.isDigit(date[1]);
+    }
+
+    updateSearchDate(toLocal) {
+        if (toLocal) {
+            let local = this.search.date || '';
+            if (this.isManualDate(local))
+                local = 'manual';
+
+            this.searchDate = local;
+        } else {
+            if (this.searchDate != 'manual')
+                this.search.date = this.searchDate || '';
+        }
+    }
+
+    get formatSearchDate() {
+        const result = [];
+        const date = this.search.date;
+        if (this.isManualDate(date)) {
+            const [from, to] = date.split(',')
+            if (from)
+                result.push(`<div style="display: inline-block; width: 15px; text-align: right;">от</div> ${utils.sqlDateFormat(from)}`);
+            if (to)
+                result.push(`<div style="display: inline-block; width: 15px; text-align: right;">до</div> ${utils.sqlDateFormat(to)}`);
+        }
+
+        return result.join('<br>');
+    }
+
+    dateSelectItemClick(itemValue) {
+        if (itemValue == 'manual') {
+            if (!this.isManualDate(this.search.date)) {
+                this.search.date = '';
+                this.searchDate = '';
+            }
+            this.selectDateDialogVisible = true
         }
     }
 }
