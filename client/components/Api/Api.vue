@@ -35,7 +35,7 @@ import vueComponent from '../vueComponent.js';
 import wsc from './webSocketConnection';
 import * as utils from '../../share/utils';
 import * as cryptoUtils from '../../share/cryptoUtils';
-import LockQueue from '../../share/LockQueue';
+import LockQueue from '../../../server/core/LockQueue';
 import packageJson from '../../../package.json';
 
 const rotor = '|/-\\';
