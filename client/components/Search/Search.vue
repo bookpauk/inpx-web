@@ -744,10 +744,12 @@ class Search {
     }
     
     onScroll() {
-        if (this.ignoreScrolling)
-            return;
-
         const curScrollTop = this.$refs.scroller.scrollTop;
+
+        if (this.ignoreScrolling) {
+            this.lastScrollTop = curScrollTop;
+            return;
+        }
 
         if (!this.lastScrollTop)
             this.lastScrollTop = 0;
@@ -756,6 +758,9 @@ class Search {
 
         if (curScrollTop - this.lastScrollTop > 0) {
             this.$refs.toolPanel.style.position = 'relative';
+            if (this.lastScrollTop2 <= curScrollTop - this.$refs.toolPanel.clientHeight)
+                this.lastScrollTop2 = 0;
+
             this.$refs.toolPanel.style.top = `${this.lastScrollTop2}px`;
         } else {
             this.$refs.toolPanel.style.position = 'sticky';

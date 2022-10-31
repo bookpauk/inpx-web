@@ -185,6 +185,8 @@ class AuthorList extends BaseList {
     }
 
     async expandAuthor(item) {
+        this.$emit('listEvent', {action: 'ignoreScroll'});
+
         const expanded = _.cloneDeep(this.expandedAuthor);
         const key = item.author;
 
@@ -197,7 +199,6 @@ class AuthorList extends BaseList {
                 expanded.shift();
             }
 
-            //this.$emit('listEvent', {action: 'ignoreScroll'});
             this.setSetting('expandedAuthor', expanded);
         } else {
             const i = expanded.indexOf(key);

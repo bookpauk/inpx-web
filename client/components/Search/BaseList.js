@@ -229,6 +229,8 @@ export default class BaseList {
     }
 
     async expandSeries(seriesItem) {
+        this.$emit('listEvent', {action: 'ignoreScroll'});
+        
         const expandedSeries = _.cloneDeep(this.expandedSeries);
         const key = seriesItem.key;
 
@@ -241,7 +243,6 @@ export default class BaseList {
 
             this.getSeriesBooks(seriesItem); //no await
 
-            //this.$emit('listEvent', {action: 'ignoreScroll'});
             this.setSetting('expandedSeries', expandedSeries);
         } else {
             const i = expandedSeries.indexOf(key);
