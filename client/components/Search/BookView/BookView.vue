@@ -30,34 +30,10 @@
                     </q-icon>
                 </div>
             </div>
-
-            <!--div v-if="!titleList" class="q-ml-sm row items-center">
-                {{ book.serno ? `${book.serno}. ` : '' }}
-                <div v-if="showAuthor && book.author">
-                    <span class="clickable2 text-green-10" @click="selectAuthor">{{ bookAuthor }}</span>
-                    &nbsp;-&nbsp;
-                    <span class="clickable2" :class="titleColor" @click="selectTitle">{{ book.title }}</span>
-                </div>
-                <span v-else class="clickable2" :class="titleColor" @click="selectTitle">{{ book.title }}</span>
-            </div>
-            <div v-else class="q-ml-sm row items-center">
-                <span class="clickable2" :class="titleColor" @click="selectTitle">{{ book.title }}</span>
-
-                <div v-if="book.author || bookSeries" class="row">
-                    &nbsp;-&nbsp;
-                    <div v-if="book.author">
-                        <span class="clickable2 text-green-10" @click="selectAuthor">{{ bookAuthor }}</span>
-                        &nbsp;
-                    </div>
-                    <div v-if="bookSeries">
-                        <span class="clickable2" @click="selectSeries">{{ bookSeries }}</span>
-                    </div>
-                </div>
-            </div-->
         </div>
 
         <div class="q-ml-sm column">
-            <div v-if="(mode == 'series' || mode == 'title') && bookAuthor" class="row items-center clickable2 text-green-10">
+            <div v-if="(mode == 'series' || mode == 'title') && bookAuthor" class="row items-center clickable2 text-green-10" @click="selectAuthor">
                 {{ bookAuthor }}
             </div>
 
