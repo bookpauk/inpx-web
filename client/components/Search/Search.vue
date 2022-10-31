@@ -637,7 +637,7 @@ class Search {
 
             const a = correctValue(author);
             let s = correctValue(search.series);
-            s = (s ? `(${s})` : '');
+            s = (s ? `(Серия: ${s})` : '');
             let t = correctValue(search.title);
             t = (t ? `"${t}"` : '');
 
