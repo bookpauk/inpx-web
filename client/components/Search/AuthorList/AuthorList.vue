@@ -60,9 +60,9 @@
                             <div v-if="book.showAllBooks" class="book-row column">
                                 <BookView
                                     v-for="seriesBook in book.allBooks" :key="seriesBook.id"
-                                    :book="seriesBook" :genre-map="genreMap"
-                                    show-author
-                                    :show-read-link="showReadLink"
+                                    :book="seriesBook"
+                                    mode="series"
+                                    :genre-map="genreMap" :show-read-link="showReadLink"
                                     :title-color="isFoundSeriesBook(book, seriesBook) ? 'text-blue-10' : 'text-red'"
                                     @book-event="bookEvent"
                                 />
@@ -70,7 +70,7 @@
                             <div v-else class="book-row column">
                                 <BookView 
                                     v-for="seriesBook in book.seriesBooks" :key="seriesBook.key"
-                                    :book="seriesBook" :genre-map="genreMap" :show-read-link="showReadLink" @book-event="bookEvent"
+                                    :book="seriesBook" mode="author" :genre-map="genreMap" :show-read-link="showReadLink" @book-event="bookEvent"
                                 />
                             </div>
 
@@ -101,7 +101,7 @@
                         </div>
                     </div>
                     <!-- книга без серии -->
-                    <BookView v-else :book="book" :genre-map="genreMap" :show-read-link="showReadLink" @book-event="bookEvent" />
+                    <BookView v-else :book="book" mode="author" :genre-map="genreMap" :show-read-link="showReadLink" @book-event="bookEvent" />
                 </div>
 
                 <!--div v-if="isExpandedAuthor(item) && item.books && !item.books.length" class="book-row row items-center">

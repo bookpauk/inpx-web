@@ -1,6 +1,6 @@
 <template>
-    <div class="row items-center q-my-sm">
-        <div class="row items-center no-wrap">
+    <div class="row items-center q-my-sm no-wrap">
+        <div class="row items-center">
             <div v-if="showRates || showDeleted">
                 <div v-if="showRates && !book.del">
                     <div v-if="book.librate">
@@ -31,7 +31,7 @@
                 </div>
             </div>
 
-            <div v-if="!titleList" class="q-ml-sm row items-center">
+            <!--div v-if="!titleList" class="q-ml-sm row items-center">
                 {{ book.serno ? `${book.serno}. ` : '' }}
                 <div v-if="showAuthor && book.author">
                     <span class="clickable2 text-green-10" @click="selectAuthor">{{ bookAuthor }}</span>
@@ -53,31 +53,50 @@
                         <span class="clickable2" @click="selectSeries">{{ bookSeries }}</span>
                     </div>
                 </div>
+            </div-->
+        </div>
+
+        <div class="q-ml-sm column">
+            <div v-if="(mode == 'series' || mode == 'title') && bookAuthor" class="row items-center clickable2 text-green-10">
+                {{ bookAuthor }}
             </div>
-        </div>
 
-        <div class="q-ml-sm">
-            {{ bookSize }}, {{ book.ext }}
-        </div>
+            <div class="row items-center">
+                <div v-if="book.serno" class="q-mr-xs">
+                    {{ book.serno }}.
+                </div>
+                <div class="clickable2" :class="titleColor" @click="selectTitle">
+                    {{ book.title }}
+                </div>
+                <div v-if="mode == 'title' && bookSeries" class="q-ml-xs clickable2" @click="selectSeries">
+                    {{ bookSeries }}
+                </div>
 
-        <div class="q-ml-sm clickable" @click="download">
-            (скачать)
-        </div>
 
-        <div class="q-ml-sm clickable" @click="copyLink">
-            <q-icon name="la la-copy" size="20px" />
-        </div>
+                <div class="q-ml-sm">
+                    {{ bookSize }}, {{ book.ext }}
+                </div>
 
-        <div v-if="showReadLink" class="q-ml-sm clickable" @click="readBook">
-            (читать)
-        </div>
+                <div class="q-ml-sm clickable" @click="download">
+                    (скачать)
+                </div>
 
-        <div v-if="showGenres && book.genre" class="q-ml-sm">
-            {{ bookGenre }}
-        </div>
+                <div class="q-ml-sm clickable" @click="copyLink">
+                    <q-icon name="la la-copy" size="20px" />
+                </div>
 
-        <div v-if="showDates && book.date" class="q-ml-sm">
-            {{ bookDate }}
+                <div v-if="showReadLink" class="q-ml-sm clickable" @click="readBook">
+                    (читать)
+                </div>
+
+                <div v-if="showGenres && book.genre" class="q-ml-sm">
+                    {{ bookGenre }}
+                </div>
+
+                <div v-if="showDates && book.date" class="q-ml-sm">
+                    {{ bookDate }}
+                </div>
+            </div>
         </div>
 
         <div v-show="false">
@@ -105,10 +124,9 @@ class BookView {
     _options = componentOptions;
     _props = {
         book: Object,
+        mode: String,
         genreMap: Object,
-        showAuthor: Boolean,
         showReadLink: Boolean,
-        titleList: Boolean,
         titleColor: { type: String, default: 'text-blue-10'},
     };
 
@@ -135,9 +153,9 @@ class BookView {
     }
 
     get bookAuthor() {
-        if ((this.showAuthor || this.titleList) && this.book.author) {
+        if (this.book.author) {
             let a = this.book.author.split(',');
-            return a.slice(0, 2).join(', ') + (a.length > 2 ? ' и др.' : '');
+            return a.slice(0, 3).join(', ') + (a.length > 3 ? ' и др.' : '');
         }
 
         return '';
@@ -145,7 +163,7 @@ class BookView {
 
     get bookSeries() {
         if (this.book.series) {
-            return `(${this.book.series})`;
+            return `(Серия: ${this.book.series})`;
         }
 
         return '';

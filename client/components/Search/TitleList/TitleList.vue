@@ -9,15 +9,14 @@
         <div v-for="item in tableData" :key="item.key" class="column" :class="{'odd-item': item.num % 2}" style="font-size: 120%">
             <BookView
                 class="q-ml-md"
-                title-list
-                :book="item.book" :genre-map="genreMap" :show-read-link="showReadLink" @book-event="bookEvent"
+                :book="item.book" mode="title" :genre-map="genreMap" :show-read-link="showReadLink" @book-event="bookEvent"
             />
             <BookView
                 v-for="book in item.books" :key="book.id"
-                :book="book" :genre-map="genreMap"
                 class="q-ml-md"
-                title-list
-                :show-read-link="showReadLink"
+                :book="book"
+                mode="title"
+                :genre-map="genreMap" :show-read-link="showReadLink"
                 @book-event="bookEvent"
             />
         </div>
