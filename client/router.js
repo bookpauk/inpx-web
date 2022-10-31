@@ -5,6 +5,9 @@ const Search = () => import('./components/Search/Search.vue');
 
 const myRoutes = [
     ['/', Search],
+    ['/author', Search],
+    ['/series', Search],
+    ['/title', Search],
     ['/:pathMatch(.*)*', null, null, '/'],
 ];
 

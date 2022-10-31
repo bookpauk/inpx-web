@@ -5,7 +5,7 @@ const _ = require('lodash');
 
 const ZipReader = require('./ZipReader');
 const WorkerState = require('./WorkerState');//singleton
-const { JembaDbThread } = require('jembadb');
+const { JembaDb, JembaDbThread } = require('jembadb');
 const DbCreator = require('./DbCreator');
 const DbSearcher = require('./DbSearcher');
 const InpxHashCreator = require('./InpxHashCreator');
@@ -58,8 +58,8 @@ class WebWorker {
 
             const dirConfig = [
                 {
-                    dir: `${this.config.publicDir}/files`,
-                    maxSize: this.config.maxFilesDirSize,
+                    dir: config.filesDir,
+                    maxSize: config.maxFilesDirSize,
                 },
             ];
 
@@ -108,7 +108,7 @@ class WebWorker {
             softLock: true,
 
             tableDefaults: {
-                cacheSize: 5,
+                cacheSize: config.dbCacheSize,
             },
         });
 
@@ -132,7 +132,7 @@ class WebWorker {
         }
     }
 
-    async loadOrCreateDb(recreate = false) {
+    async loadOrCreateDb(recreate = false, iteration = 0) {
         this.setMyState(ssDbLoading);
 
         try {
@@ -141,18 +141,35 @@ class WebWorker {
 
             this.inpxFileHash = await this.inpxHashCreator.getInpxFileHash();
 
-            //пересоздаем БД из INPX если нужно
+            //проверим полный InxpHash (включая фильтр и версию БД)
+            //для этого заглянем в конфиг внутри БД, если он есть
+            if (!(config.recreateDb || recreate) && await fs.pathExists(dbPath)) {
+                const newInpxHash = await this.inpxHashCreator.getHash();
+
+                const tmpDb = new JembaDb();
+                await tmpDb.lock({dbPath, softLock: true});
+
+                try {
+                    await tmpDb.open({table: 'config'});
+                    const rows = await tmpDb.select({table: 'config', where: `@@id('inpxHash')`});
+
+                    if (!rows.length || newInpxHash !== rows[0].value)
+                        throw new Error('inpx file: changes found on start, recreating DB');
+                } catch (e) {
+                    log(LM_WARN, e.message);
+                    recreate = true;
+                } finally {
+                    await tmpDb.unlock();
+                }
+            }
+
+            //удалим БД если нужно
             if (config.recreateDb || recreate)
                 await fs.remove(dbPath);
 
+            //пересоздаем БД из INPX если нужно
             if (!await fs.pathExists(dbPath)) {
-                try {
-                    await this.createDb(dbPath);
-                } catch (e) {
-                    //при ошибке создания БД удалим ее, чтобы не работать с поломанной базой при следующем запуске
-                    await fs.remove(dbPath);
-                    throw e;
-                }
+                await this.createDb(dbPath);
                 utils.freeMemory();
             }
 
@@ -160,35 +177,49 @@ class WebWorker {
             this.setMyState(ssDbLoading);
             log('Searcher DB loading');
 
-            const db = new JembaDbThread();
+            const db = new JembaDbThread();//в отдельном потоке
             await db.lock({
                 dbPath,
                 softLock: true,
 
                 tableDefaults: {
-                    cacheSize: 5,
+                    cacheSize: config.dbCacheSize,
                 },
             });
 
-            //открываем все таблицы
-            await db.openAll();
-            //переоткроем таблицу 'author' с бОльшим размером кеша блоков, для ускорения выборки
-            await db.close({table: 'author'});
-            await db.open({table: 'author', cacheSize: 100});
+            try {
+                //открываем таблицы
+                await db.openAll({exclude: ['author_id', 'series_id', 'title_id', 'book']});
 
+                const bookCacheSize = 500;
+                await db.open({
+                    table: 'book',
+                    cacheSize: (config.lowMemoryMode || config.dbCacheSize > bookCacheSize ? config.dbCacheSize : bookCacheSize)
+                });
+            } catch(e) {
+                log(LM_ERR, `Database error: ${e.message}`);
+                if (iteration < 1) {
+                    log('Recreating DB');
+                    await this.loadOrCreateDb(true, iteration + 1);
+                } else
+                    throw e;
+                return;
+            }
+
+            //поисковый движок
             this.dbSearcher = new DbSearcher(config, db);
 
+            //stuff
             db.wwCache = {};            
             this.db = db;
 
-            log('Searcher DB ready');
+            this.setMyState(ssNormal);
 
+            log('Searcher DB ready');
             this.logServerStats();
         } catch (e) {
             log(LM_FATAL, e.message);            
             ayncExit.exit(1);
-        } finally {
-            this.setMyState(ssNormal);
         }
     }
 
@@ -223,29 +254,27 @@ class WebWorker {
         return db.wwCache.config;
     }
 
-    async search(query) {
+    async search(from, query) {
         this.checkMyState();
+
+        const result = await this.dbSearcher.search(from, query);
 
         const config = await this.dbConfig();
-        const result = await this.dbSearcher.search(query);
+        result.inpxHash = (config.inpxHash ? config.inpxHash : '');
 
-        return {
-            author: result.result,
-            totalFound: result.totalFound,
-            inpxHash: (config.inpxHash ? config.inpxHash : ''),
-        };
+        return result;
     }
 
-    async getBookList(authorId) {
+    async getAuthorBookList(authorId) {
         this.checkMyState();
 
-        return await this.dbSearcher.getBookList(authorId);
+        return await this.dbSearcher.getAuthorBookList(authorId);
     }
 
-    async getSeriesBookList(seriesId) {
+    async getSeriesBookList(series) {
         this.checkMyState();
 
-        return await this.dbSearcher.getSeriesBookList(seriesId);
+        return await this.dbSearcher.getSeriesBookList(series);
     }
 
     async getGenreTree() {
@@ -336,20 +365,25 @@ class WebWorker {
             hash = await this.remoteLib.downloadBook(bookPath, downFileName);
         }
 
-        const link = `/files/${hash}`;
-        const publicPath = `${this.config.publicDir}${link}`;
+        const link = `${this.config.filesPathStatic}/${hash}`;
+        const bookFile = `${this.config.filesDir}/${hash}`;
+        const bookFileDesc = `${bookFile}.json`;
 
-        if (!await fs.pathExists(publicPath)) {
-            await fs.ensureDir(path.dirname(publicPath));
+        if (!await fs.pathExists(bookFile) || !await fs.pathExists(bookFileDesc)) {
+            await fs.ensureDir(path.dirname(bookFile));
 
             const tmpFile = `${this.config.tempDir}/${utils.randomHexString(30)}`;
             await utils.gzipFile(extractedFile, tmpFile, 4);
             await fs.remove(extractedFile);
-            await fs.move(tmpFile, publicPath, {overwrite: true});
+            await fs.move(tmpFile, bookFile, {overwrite: true});
+
+            await fs.writeFile(bookFileDesc, JSON.stringify({bookPath, downFileName}));
         } else {
             if (extractedFile)
                 await fs.remove(extractedFile);
-            await utils.touchFile(publicPath);
+
+            await utils.touchFile(bookFile);
+            await utils.touchFile(bookFileDesc);
         }
 
         await db.insert({
@@ -377,11 +411,10 @@ class WebWorker {
             const rows = await db.select({table: 'file_hash', where: `@@id(${db.esc(bookPath)})`});
             if (rows.length) {//хеш найден по bookPath
                 const hash = rows[0].hash;
-                link = `/files/${hash}`;
-                const publicPath = `${this.config.publicDir}${link}`;
+                const bookFileDesc = `${this.config.filesDir}/${hash}.json`;
 
-                if (!await fs.pathExists(publicPath)) {
-                    link = '';
+                if (await fs.pathExists(bookFileDesc)) {
+                    link = `${this.config.filesPathStatic}/${hash}`;
                 }
             }
 
@@ -401,6 +434,7 @@ class WebWorker {
         }
     }
 
+    /*
     async restoreBookFile(publicPath) {
         this.checkMyState();
 
@@ -440,6 +474,7 @@ class WebWorker {
             throw new Error('404 Файл не найден');
         }
     }
+    */
 
     async getInpxFile(params) {
         let data = null;

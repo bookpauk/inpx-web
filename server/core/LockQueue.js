@@ -50,4 +50,4 @@ class LockQueue {
 
 }
 
-export default LockQueue;
+module.exports = LockQueue;

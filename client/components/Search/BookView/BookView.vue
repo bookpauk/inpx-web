@@ -1,8 +1,8 @@
 <template>
-    <div class="row items-center q-my-sm">
-        <div class="row items-center no-wrap">
-            <div v-if="showRate || showDeleted">
-                <div v-if="showRate && !book.del">
+    <div class="row items-center q-my-sm no-wrap">
+        <div class="row items-center">
+            <div v-if="showRates || showDeleted">
+                <div v-if="showRates && !book.del">
                     <div v-if="book.librate">
                         <q-knob
                             :model-value="book.librate"
@@ -31,30 +31,72 @@
                 </div>
             </div>
 
-            <div class="q-ml-sm clickable2" @click="selectTitle">
+            <!--div v-if="!titleList" class="q-ml-sm row items-center">
                 {{ book.serno ? `${book.serno}. ` : '' }}
-                <span :class="titleColor">{{ bookTitle }}</span>
+                <div v-if="showAuthor && book.author">
+                    <span class="clickable2 text-green-10" @click="selectAuthor">{{ bookAuthor }}</span>
+                    &nbsp;-&nbsp;
+                    <span class="clickable2" :class="titleColor" @click="selectTitle">{{ book.title }}</span>
+                </div>
+                <span v-else class="clickable2" :class="titleColor" @click="selectTitle">{{ book.title }}</span>
             </div>
+            <div v-else class="q-ml-sm row items-center">
+                <span class="clickable2" :class="titleColor" @click="selectTitle">{{ book.title }}</span>
+
+                <div v-if="book.author || bookSeries" class="row">
+                    &nbsp;-&nbsp;
+                    <div v-if="book.author">
+                        <span class="clickable2 text-green-10" @click="selectAuthor">{{ bookAuthor }}</span>
+                        &nbsp;
+                    </div>
+                    <div v-if="bookSeries">
+                        <span class="clickable2" @click="selectSeries">{{ bookSeries }}</span>
+                    </div>
+                </div>
+            </div-->
         </div>
 
-        <div class="q-ml-sm">
-            {{ bookSize }}, {{ book.ext }}
-        </div>
+        <div class="q-ml-sm column">
+            <div v-if="(mode == 'series' || mode == 'title') && bookAuthor" class="row items-center clickable2 text-green-10">
+                {{ bookAuthor }}
+            </div>
 
-        <div class="q-ml-sm clickable" @click="download">
-            (скачать)
-        </div>
+            <div class="row items-center">
+                <div v-if="book.serno" class="q-mr-xs">
+                    {{ book.serno }}.
+                </div>
+                <div class="clickable2" :class="titleColor" @click="selectTitle">
+                    {{ book.title }}
+                </div>
+                <div v-if="mode == 'title' && bookSeries" class="q-ml-xs clickable2" @click="selectSeries">
+                    {{ bookSeries }}
+                </div>
 
-        <div class="q-ml-sm clickable" @click="copyLink">
-            <q-icon name="la la-copy" size="20px" />
-        </div>
 
-        <div v-if="showReadLink" class="q-ml-sm clickable" @click="readBook">
-            (читать)
-        </div>
+                <div class="q-ml-sm">
+                    {{ bookSize }}, {{ book.ext }}
+                </div>
 
-        <div v-if="showGenres && book.genre" class="q-ml-sm">
-            {{ bookGenre }}
+                <div class="q-ml-sm clickable" @click="download">
+                    (скачать)
+                </div>
+
+                <div class="q-ml-sm clickable" @click="copyLink">
+                    <q-icon name="la la-copy" size="20px" />
+                </div>
+
+                <div v-if="showReadLink" class="q-ml-sm clickable" @click="readBook">
+                    (читать)
+                </div>
+
+                <div v-if="showGenres && book.genre" class="q-ml-sm">
+                    {{ bookGenre }}
+                </div>
+
+                <div v-if="showDates && book.date" class="q-ml-sm">
+                    {{ bookDate }}
+                </div>
+            </div>
         </div>
 
         <div v-show="false">
@@ -66,6 +108,8 @@
 <script>
 //-----------------------------------------------------------------------------
 import vueComponent from '../../vueComponent.js';
+
+import * as utils from '../../../share/utils';
 
 const componentOptions = {
     components: {
@@ -80,15 +124,16 @@ class BookView {
     _options = componentOptions;
     _props = {
         book: Object,
-        genreTree: Array,
-        showAuthor: Boolean,
+        mode: String,
+        genreMap: Object,
         showReadLink: Boolean,
         titleColor: { type: String, default: 'text-blue-10'},
     };
 
-    showRate = true;
+    showRates = true;
     showGenres = true;
     showDeleted = false;
+    showDates = false;
 
     created() {
         this.loadSettings();
@@ -97,8 +142,9 @@ class BookView {
     loadSettings() {
         const settings = this.settings;
 
-        this.showRate = settings.showRate;
+        this.showRates = settings.showRates;
         this.showGenres = settings.showGenres;
+        this.showDates = settings.showDates;
         this.showDeleted = settings.showDeleted;
     }
 
@@ -106,15 +152,21 @@ class BookView {
         return this.$store.state.settings;
     }
 
-    get bookTitle() {
-        if (this.showAuthor && this.book.author) {
+    get bookAuthor() {
+        if (this.book.author) {
             let a = this.book.author.split(',');
-            const author = a.slice(0, 2).join(', ') + (a.length > 2 ? ' и др.' : '');
-
-            return `${author} - ${this.book.title}`;
-        } else {
-            return this.book.title;
+            return a.slice(0, 3).join(', ') + (a.length > 3 ? ' и др.' : '');
         }
+
+        return '';
+    }
+
+    get bookSeries() {
+        if (this.book.series) {
+            return `(Серия: ${this.book.series})`;
+        }
+
+        return '';
     }
 
     get bookSize() {
@@ -137,15 +189,30 @@ class BookView {
 
     get bookGenre() {
         let result = [];
-        const genre = new Set(this.book.genre.split(','));
+        const genre = this.book.genre.split(',');
 
-        for (const section of this.genreTree) {
-            for (const g of section.value)
-                if (genre.has(g.value))
-                    result.push(g.name);
+        for (const g of genre) {
+            const name = this.genreMap.get(g);
+            if (name)
+                result.push(name);
         }
 
         return `(${result.join(' / ')})`;
+    }
+
+    get bookDate() {
+        if (!this.book.date)
+            return '';
+
+        return utils.sqlDateFormat(this.book.date);
+    }
+
+    selectAuthor() {
+        this.$emit('bookEvent', {action: 'authorClick', book: this.book});
+    }
+
+    selectSeries() {
+        this.$emit('bookEvent', {action: 'seriesClick', book: this.book});
     }
 
     selectTitle() {

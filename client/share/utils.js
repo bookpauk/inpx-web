@@ -1,3 +1,4 @@
+import moment from 'moment';
 import {Buffer} from 'safe-buffer';
 //import _ from 'lodash';
 
@@ -38,7 +39,11 @@ export function wordEnding(num, type = 0) {
         ['ов', '', 'а', 'а', 'а', 'ов', 'ов', 'ов', 'ов', 'ов'],
         ['й', 'я', 'и', 'и', 'и', 'й', 'й', 'й', 'й', 'й'],
         ['о', '', 'о', 'о', 'о', 'о', 'о', 'о', 'о', 'о'],
-        ['ий', 'ие', 'ия', 'ия', 'ия', 'ий', 'ий', 'ий', 'ий', 'ий']
+        ['ий', 'ие', 'ия', 'ия', 'ия', 'ий', 'ий', 'ий', 'ий', 'ий'],
+        ['о', 'а', 'о', 'о', 'о', 'о', 'о', 'о', 'о', 'о'],
+        ['ок', 'ка', 'ки', 'ки', 'ки', 'ок', 'ок', 'ок', 'ок', 'ок'],
+        ['ых', 'ое', 'ых', 'ых', 'ых', 'ых', 'ых', 'ых', 'ых', 'ых'],
+        ['о', 'о', 'о', 'о', 'о', 'о', 'о', 'о', 'о', 'о'],
     ];
     const deci = num % 100;
     if (deci > 10 && deci < 20) {
@@ -94,3 +99,48 @@ export function makeValidFilename(filename, repl = '_') {
     else
         throw new Error('Invalid filename');
 }
+/*
+export function formatDate(d, format = 'normal') {
+    switch (format) {
+        case 'normal':
+            return `${d.getDate().toString().padStart(2, '0')}.${(d.getMonth() + 1).toString().padStart(2, '0')}.${d.getFullYear()} ` + 
+                `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
+        case 'coDate':
+            return `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, '0')}-${d.getDate().toString().padStart(2, '0')}`;
+        case 'coMonth':
+            return `${(d.getMonth() + 1).toString().padStart(2, '0')}`;
+        case 'noDate':
+            return `${d.getDate().toString().padStart(2, '0')}.${(d.getMonth() + 1).toString().padStart(2, '0')}.${d.getFullYear()}`;
+
+        default:
+            throw new Error('formatDate: unknown date format');
+    }
+}
+
+export function parseDate(sqlDate) {
+    const d = sqlDate.split('-');
+    const result = new Date();
+    result.setDate(parseInt(d[2], 10));
+    result.setMonth(parseInt(d[1], 10) - 1);
+    result.setYear(parseInt(d[0], 10));
+        
+    return result;
+}
+*/
+
+export function isDigit(c) {
+    return !isNaN(parseInt(c, 10));
+}
+
+export function dateFormat(date, format = 'DD.MM.YYYY') {
+    return moment(date).format(format);
+}
+
+export function sqlDateFormat(date, format = 'DD.MM.YYYY') {
+    return moment(date, 'YYYY-MM-DD').format(format);
+}
+
+export function isManualDate(date) {
+    return date && (date[0] == ',' || (isDigit(date[0]) && isDigit(date[1])));
+}
+

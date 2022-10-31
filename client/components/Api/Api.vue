@@ -35,24 +35,22 @@ import vueComponent from '../vueComponent.js';
 import wsc from './webSocketConnection';
 import * as utils from '../../share/utils';
 import * as cryptoUtils from '../../share/cryptoUtils';
-import LockQueue from '../../share/LockQueue';
+import LockQueue from '../../../server/core/LockQueue';
 import packageJson from '../../../package.json';
 
 const rotor = '|/-\\';
 const stepBound = [
     0,
     0,// jobStep = 1
-    18,// jobStep = 2
-    20,// jobStep = 3
-    60,// jobStep = 4
-    72,// jobStep = 5
-    72,// jobStep = 6
-    74,// jobStep = 7
-    75,// jobStep = 8
-    79,// jobStep = 9
-    79,// jobStep = 10
-    80,// jobStep = 11
-    100,// jobStep = 12
+    40,// jobStep = 2
+    50,// jobStep = 3
+    54,// jobStep = 4
+    58,// jobStep = 5
+    69,// jobStep = 6
+    69,// jobStep = 7
+    70,// jobStep = 8
+    95,// jobStep = 9
+    100,// jobStep = 10
 ];
 
 const componentOptions = {
@@ -185,80 +183,60 @@ class Api {
     }
 
     async request(params, timeoutSecs = 10) {
+        let errCount = 0;
         while (1) {// eslint-disable-line
-            if (this.accessToken)
-                params.accessToken = this.accessToken;
+            try {
+                if (this.accessToken)
+                    params.accessToken = this.accessToken;
 
-            const response = await wsc.message(await wsc.send(params), timeoutSecs);
+                const response = await wsc.message(await wsc.send(params), timeoutSecs);
 
-            if (response && response.error == 'need_access_token') {
-                await this.showPasswordDialog();
-            } else if (response && response.error == 'server_busy') {
-                await this.showBusyDialog();
-            } else {
-                return response;
+                if (response && response.error == 'need_access_token') {
+                    await this.showPasswordDialog();
+                } else if (response && response.error == 'server_busy') {
+                    await this.showBusyDialog();
+                } else {
+                    if (response.error) {
+                        throw new Error(response.error);
+                    }
+
+                    return response;
+                }
+
+                errCount = 0;
+            } catch(e) {
+                errCount++;
+                if (e.message !== 'WebSocket не отвечает' || errCount > 10) {
+                    errCount = 0;
+                    throw e;
+                }
+                await utils.sleep(100);
             }
         }
     }
 
-    async search(query) {
-        const response = await this.request({action: 'search', query});
-
-        if (response.error) {
-            throw new Error(response.error);
-        }
-
-        return response;
+    async search(from, query) {
+        return await this.request({action: 'search', from, query}, 30);
     }
 
-    async getBookList(authorId) {
-        const response = await this.request({action: 'get-book-list', authorId});
-
-        if (response.error) {
-            throw new Error(response.error);
-        }
-
-        return response;
+    async getAuthorBookList(authorId) {
+        return await this.request({action: 'get-author-book-list', authorId});
     }
 
     async getSeriesBookList(series) {
-        const response = await this.request({action: 'get-series-book-list', series});
-
-        if (response.error) {
-            throw new Error(response.error);
-        }
-
-        return response;
+        return await this.request({action: 'get-series-book-list', series});
     }
 
     async getGenreTree() {
-        const response = await this.request({action: 'get-genre-tree'});
-
-        if (response.error) {
-            throw new Error(response.error);
-        }
-
-        return response;
+        return await this.request({action: 'get-genre-tree'});
     }    
 
     async getBookLink(params) {
-        const response = await this.request(Object.assign({action: 'get-book-link'}, params), 120);
-
-        if (response.error) {
-            throw new Error(response.error);
-        }
-
-        return response;
+        return await this.request(Object.assign({action: 'get-book-link'}, params), 120);
     }
 
     async getConfig() {
-        const response = await this.request({action: 'get-config'});
-
-        if (response.error) {
-            throw new Error(response.error);
-        }
-
-        return response;
+        return await this.request({action: 'get-config'});
     }
 }
 
