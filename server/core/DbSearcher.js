@@ -1,4 +1,5 @@
 //const _ = require('lodash');
+const LockQueue = require('./LockQueue');
 const utils = require('./utils');
 
 const maxMemCacheSize = 100;
@@ -15,6 +16,7 @@ class DbSearcher {
         this.config = config;
         this.db = db;
 
+        this.lock = new LockQueue();
         this.searchFlag = 0;
         this.timer = null;
         this.closed = false;
@@ -23,6 +25,7 @@ class DbSearcher {
         this.bookIdMap = {};
 
         this.periodicCleanCache();//no await
+        this.fillBookIdMapAll();//no await
     }
 
     queryKey(q) {
@@ -291,7 +294,11 @@ class DbSearcher {
     }
 
     async fillBookIdMap(from) {
-        if (!this.bookIdMap[from]) {
+        if (this.bookIdMap[from])
+            return this.bookIdMap[from];
+
+        await this.lock.get();
+        try {
             const db = this.db;
             const map = new Map();
             const table = `${from}_id`;
@@ -311,8 +318,17 @@ class DbSearcher {
             }
 
             this.bookIdMap[from] = map;
+
+            return this.bookIdMap[from];
+        } finally {
+            this.lock.ret();
         }
-        return this.bookIdMap[from];
+    }
+
+    async fillBookIdMapAll() {
+        await this.fillBookIdMap('author');
+        await this.fillBookIdMap('series');
+        await this.fillBookIdMap('title');
     }
 
     async filterTableIds(tableIds, from, query) {
