@@ -57,6 +57,7 @@
     "localforage": "^1.10.0",
     "lodash": "^4.17.21",
     "minimist": "^1.2.6",
+    "moment": "^2.29.4",
     "node-stream-zip": "^1.15.0",
     "quasar": "^2.7.5",
     "safe-buffer": "^5.2.1",
