@@ -452,6 +452,7 @@ class Search {
         {label: 'за неделю', value: 'week'},
         {label: 'за 2 недели', value: '2weeks'},
         {label: 'за месяц', value: 'month'},
+        {label: 'за 2 месяца', value: '2months'},
         {label: 'за 3 месяца', value: '3months'},
         {label: 'выбрать даты', value: 'manual'},
     ];

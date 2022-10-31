@@ -409,7 +409,7 @@ export default class BaseList {
             if (!dateFound) {
                 const date = this.queryDate(s.date).split(',');
                 let [from = '0000-00-00', to = '9999-99-99'] = date;
-                
+
                 dateFound = (book.date >= from && book.date <= to);
             }
 
@@ -479,6 +479,7 @@ export default class BaseList {
             {label: 'за неделю', value: 'week'},
             {label: 'за 2 недели', value: '2weeks'},
             {label: 'за месяц', value: 'month'},
+            {label: 'за 2 месяца', value: '2months'},
             {label: 'за 3 месяца', value: '3months'},
             {label: 'указать даты', value: 'manual'},
             */
@@ -489,6 +490,7 @@ export default class BaseList {
                 case 'week': date = utils.dateFormat(moment().subtract(1, 'weeks'), sqlFormat); break;
                 case '2weeks': date = utils.dateFormat(moment().subtract(2, 'weeks'), sqlFormat); break;
                 case 'month': date = utils.dateFormat(moment().subtract(1, 'months'), sqlFormat); break;
+                case '2months': date = utils.dateFormat(moment().subtract(2, 'months'), sqlFormat); break;
                 case '3months': date = utils.dateFormat(moment().subtract(3, 'months'), sqlFormat); break;
                 default:
                     date = '';
