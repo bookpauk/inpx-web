@@ -304,7 +304,7 @@ class DbSearcher {
             const table = `${from}_id`;
 
             await db.open({table});
-            const rows = await db.select({table});
+            let rows = await db.select({table});
             await db.close({table});
 
             for (const row of rows) {
@@ -318,6 +318,10 @@ class DbSearcher {
             }
 
             this.bookIdMap[from] = map;
+
+            rows = null;
+            await db.freeMemory();
+            utils.freeMemory();
 
             return this.bookIdMap[from];
         } finally {
@@ -380,16 +384,28 @@ class DbSearcher {
             if (bookIds) {
                 const tableIdsSet = new Set();
                 const bookIdMap = await this.fillBookIdMap(from);
+                let proc = 0;
+                let nextProc = 0;
                 for (const bookId of bookIds) {
                     const tableIdValue = bookIdMap.get(bookId);
                     if (!tableIdValue)
                         continue;
 
                     if (Array.isArray(tableIdValue)) {
-                        for (const tableId of tableIdValue)
+                        for (const tableId of tableIdValue) {
                             tableIdsSet.add(tableId);
-                    } else
+                            proc++;
+                        }
+                    } else {
                         tableIdsSet.add(tableIdValue);
+                        proc++;
+                    }
+
+                    //прерываемся иногда, чтобы не блокировать Event Loop
+                    if (proc >= nextProc) {
+                        nextProc += 10000;
+                        await utils.processLoop();
+                    }
                 }
 
                 tableIds = Array.from(tableIdsSet);
