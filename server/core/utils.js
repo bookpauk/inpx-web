@@ -105,7 +105,10 @@ function gzipFile(inputFile, outputFile, level = 1) {
         const input = fs.createReadStream(inputFile);
         const output = fs.createWriteStream(outputFile);
 
-        input.pipe(gzip).pipe(output).on('finish', (err) => {
+        input.on('error', reject)
+            .pipe(gzip).on('error', reject)
+            .pipe(output).on('error', reject)
+            .on('finish', (err) => {
             if (err) reject(err);
             else resolve();
         });
