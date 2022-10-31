@@ -325,9 +325,12 @@ const componentOptions = {
             deep: true,
         },
         selectedList(newValue) {
+            if (this.selectedListComponent) {
+                this.pageCount = 1;
+                this.list.totalFound = 0;
+            }
+
             this.selectedListComponent = (route2component[newValue] ? route2component[newValue].component : null);
-            this.pageCount = 1;
-            this.list.totalFound = 0;
 
             if (this.getListRoute() != newValue) {
                 this.updateRouteQueryFromSearch();
