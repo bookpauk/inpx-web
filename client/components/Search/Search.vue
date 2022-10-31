@@ -408,6 +408,7 @@ class Search {
     };
 
     searchDate = '';
+    prevManualDate = '';
 
     //settings
     showCounts = true;
@@ -977,6 +978,10 @@ class Search {
     updateSearchDate(toLocal) {
         if (toLocal) {
             let local = this.search.date || '';
+
+            if (this.isManualDate(local) || !local)
+                this.prevManualDate = local;
+
             if (this.isManualDate(local))
                 local = 'manual';
 
@@ -1004,8 +1009,9 @@ class Search {
     dateSelectItemClick(itemValue) {
         if (itemValue == 'manual') {
             if (!this.isManualDate(this.search.date)) {
-                this.search.date = '';
-                this.searchDate = '';
+                this.search.date = this.prevManualDate;
+                if (!this.search.date)
+                    this.searchDate = '';
             }
             this.selectDateDialogVisible = true
         }

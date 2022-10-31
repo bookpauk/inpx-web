@@ -96,7 +96,14 @@ class SelectDateDialog {
         this.to = this.splitDate.to;
     }
 
+    isManualDate(date) {
+        return date && utils.isDigit(date[0]) && utils.isDigit(date[1]);
+    }
+
     get splitDate() {
+        if (!this.isManualDate(this.date))
+            return {from: '', to: ''};
+
         const [from = '', to = ''] = (this.date || '').split(',');
         return {from, to};
     }
