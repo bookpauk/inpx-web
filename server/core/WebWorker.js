@@ -370,12 +370,14 @@ class WebWorker {
         const bookFileDesc = `${bookFile}.json`;
 
         if (!await fs.pathExists(bookFile) || !await fs.pathExists(bookFileDesc)) {
-            await fs.ensureDir(path.dirname(bookFile));
-
-            const tmpFile = `${this.config.tempDir}/${utils.randomHexString(30)}`;
-            await utils.gzipFile(extractedFile, tmpFile, 4);
-            await fs.remove(extractedFile);
-            await fs.move(tmpFile, bookFile, {overwrite: true});
+            if (!await fs.pathExists(bookFile) && extractedFile) {
+                const tmpFile = `${this.config.tempDir}/${utils.randomHexString(30)}`;
+                await utils.gzipFile(extractedFile, tmpFile, 4);
+                await fs.remove(extractedFile);
+                await fs.move(tmpFile, bookFile, {overwrite: true});
+            } else {
+                await utils.touchFile(bookFile);
+            }
 
             await fs.writeFile(bookFileDesc, JSON.stringify({bookPath, downFileName}));
         } else {
@@ -411,9 +413,10 @@ class WebWorker {
             const rows = await db.select({table: 'file_hash', where: `@@id(${db.esc(bookPath)})`});
             if (rows.length) {//хеш найден по bookPath
                 const hash = rows[0].hash;
-                const bookFileDesc = `${this.config.filesDir}/${hash}.json`;
+                const bookFile = `${this.config.filesDir}/${hash}`;
+                const bookFileDesc = `${bookFile}.json`;
 
-                if (await fs.pathExists(bookFileDesc)) {
+                if (await fs.pathExists(bookFile) && await fs.pathExists(bookFileDesc)) {
                     link = `${this.config.filesPathStatic}/${hash}`;
                 }
             }
