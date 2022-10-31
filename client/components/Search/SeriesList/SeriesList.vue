@@ -133,8 +133,8 @@ class SeriesList extends BaseList {
         if (!this.showCounts || item.count === undefined)
             return result;
 
-        if (item.books) {
-            result = `${item.books.length}/${item.count}`;
+        if (item.booksLoaded) {
+            result = `${item.booksLoaded.length}/${item.count}`;
         } else 
             result = `#/${item.count}`;
 
@@ -163,7 +163,6 @@ class SeriesList extends BaseList {
 
                 const filtered = this.filterBooks(seriesItem.allBooksLoaded);
 
-                //объединение по сериям
                 const books = [];
                 for (const book of filtered) {
                     books.push(prepareBook(book));
