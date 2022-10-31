@@ -995,9 +995,9 @@ class Search {
         if (utils.isManualDate(date)) {
             const [from, to] = date.split(',')
             if (from)
-                result.push(`<div style="display: inline-block; width: 15px; text-align: right;">от</div> ${utils.sqlDateFormat(from)}`);
+                result.push(`<div style="display: inline-block; width: 15px; text-align: right;">с</div> ${utils.sqlDateFormat(from)}`);
             if (to)
-                result.push(`<div style="display: inline-block; width: 15px; text-align: right;">до</div> ${utils.sqlDateFormat(to)}`);
+                result.push(`<div style="display: inline-block; width: 15px; text-align: right;">по</div> ${utils.sqlDateFormat(to)}`);
         }
 
         return result.join('<br>');

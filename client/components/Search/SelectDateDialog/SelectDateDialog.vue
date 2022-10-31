@@ -10,7 +10,9 @@
 
         <div ref="box" class="column q-mt-xs overflow-auto no-wrap" style="width: 240px; padding: 0px 10px 10px 10px;">
             <div class="row items-center">
-                <span class="q-mr-sm">От:</span>
+                <div class="row justify-end q-mr-sm" style="width: 15px">
+                    С:
+                </div>
                 <q-btn icon="la la-calendar" color="secondary" :label="labelFrom" dense no-caps style="width: 150px;">
                     <q-popup-proxy cover transition-show="scale" transition-hide="scale">
                         <q-date v-model="from" mask="YYYY-MM-DD">
@@ -26,7 +28,9 @@
 
             <div class="q-my-sm" />
             <div class="row items-center">
-                <span class="q-mr-sm">До:</span>
+                <div class="row justify-end q-mr-sm" style="width: 15px">
+                    По:
+                </div>
                 <q-btn icon="la la-calendar" color="secondary" :label="labelTo" dense no-caps style="width: 150px;">
                     <q-popup-proxy cover transition-show="scale" transition-hide="scale">
                         <q-date v-model="to" mask="YYYY-MM-DD">
