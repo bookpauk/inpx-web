@@ -851,6 +851,9 @@ class Search {
             case 'scrollToTop':
                 this.scrollToTop();
                 break;
+            case 'submitUrl':
+                this.sendMessage({type: 'submitUrl', data: event.data});
+                break;
         }
     }
 

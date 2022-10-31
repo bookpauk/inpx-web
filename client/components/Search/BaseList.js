@@ -180,7 +180,7 @@ export default class BaseList {
             } else if (action == 'readBook') {
                 //читать
                 if (this.list.liberamaReady) {
-                    this.sendMessage({type: 'submitUrl', data: href});
+                    this.$emit('listEvent', {action: 'submitUrl', data: href});
                 } else {
                     const url = this.config.bookReadLink.replace('${DOWNLOAD_LINK}', href);
                     window.open(url, '_blank');
