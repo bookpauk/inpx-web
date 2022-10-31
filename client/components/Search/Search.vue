@@ -971,18 +971,14 @@ class Search {
         }
     }
 
-    isManualDate(date) {
-        return date && utils.isDigit(date[0]) && utils.isDigit(date[1]);
-    }
-
     updateSearchDate(toLocal) {
         if (toLocal) {
             let local = this.search.date || '';
 
-            if (this.isManualDate(local) || !local)
+            if (utils.isManualDate(local) || !local)
                 this.prevManualDate = local;
 
-            if (this.isManualDate(local))
+            if (utils.isManualDate(local))
                 local = 'manual';
 
             this.searchDate = local;
@@ -995,7 +991,7 @@ class Search {
     get formatSearchDate() {
         const result = [];
         const date = this.search.date;
-        if (this.isManualDate(date)) {
+        if (utils.isManualDate(date)) {
             const [from, to] = date.split(',')
             if (from)
                 result.push(`<div style="display: inline-block; width: 15px; text-align: right;">от</div> ${utils.sqlDateFormat(from)}`);
@@ -1008,7 +1004,7 @@ class Search {
 
     dateSelectItemClick(itemValue) {
         if (itemValue == 'manual') {
-            if (!this.isManualDate(this.search.date)) {
+            if (!utils.isManualDate(this.search.date)) {
                 this.search.date = this.prevManualDate;
                 if (!this.search.date)
                     this.searchDate = '';

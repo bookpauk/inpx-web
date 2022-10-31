@@ -407,8 +407,9 @@ export default class BaseList {
             //date
             let dateFound = !s.date;
             if (!dateFound) {
-                const date = this.queryDate(s.date.split(','));
+                const date = this.queryDate(s.date).split(',');
                 let [from = '0000-00-00', to = '9999-99-99'] = date;
+                
                 dateFound = (book.date >= from && book.date <= to);
             }
 
@@ -471,7 +472,7 @@ export default class BaseList {
     }
 
     queryDate(date) {
-        if (!(utils.isDigit(date[0]) && utils.isDigit(date[1]))) {//!manual
+        if (!utils.isManualDate(date)) {//!manual
             /*
             {label: 'сегодня', value: 'today'},
             {label: 'за 3 дня', value: '3days'},

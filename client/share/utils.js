@@ -139,3 +139,8 @@ export function dateFormat(date, format = 'DD.MM.YYYY') {
 export function sqlDateFormat(date, format = 'DD.MM.YYYY') {
     return moment(date, 'YYYY-MM-DD').format(format);
 }
+
+export function isManualDate(date) {
+    return date && (date[0] == ',' || (isDigit(date[0]) && isDigit(date[1])));
+}
+
