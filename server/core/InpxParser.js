@@ -70,9 +70,8 @@ class InpxParser {
             this.chunk = [];
             for (const inpFile of inpFiles) {
                 await readFileCallback({fileName: inpFile, current: ++current});
-                const buf = await zipReader.extractToBuf(inpFile);
                 
-                await this.parseInp(buf, structure, inpFile, parsedCallback);
+                await this.parseInp(zipReader, inpFile, structure, parsedCallback);
             }
 
             if (this.chunk.length) {
@@ -84,10 +83,12 @@ class InpxParser {
         }
     }
 
-    async parseInp(inpBuf, structure, inpFile, parsedCallback) {
-        const structLen = structure.length;
+    async parseInp(zipReader, inpFile, structure, parsedCallback) {
+        const inpBuf = await zipReader.extractToBuf(inpFile);
         const rows = inpBuf.toString().split('\n');
+
         const defaultFolder = `${path.basename(inpFile, '.inp')}.zip`;
+        const structLen = structure.length;
 
         for (const row of rows) {
             let line = row;
