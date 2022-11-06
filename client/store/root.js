@@ -9,6 +9,7 @@ const state = {
         expandedSeries: [],
         showCounts: true,
         showRates: true,
+        showInfo: true,
         showGenres: true,
         showDates: false,
         showDeleted: false,

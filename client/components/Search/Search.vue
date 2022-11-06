@@ -9,7 +9,7 @@
                             Новый поиск
                         </q-tooltip>
                     </a>
-                    
+
                     <q-btn-toggle
                         v-model="selectedList"
                         class="q-ml-sm"
@@ -212,8 +212,8 @@
 
         <Dialog v-model="settingsDialogVisible">
             <template #header>
-                <div class="row items-center" style="font-size: 130%">
-                    <q-icon class="q-mr-sm" name="la la-cog" size="28px"></q-icon>
+                <div class="row items-center" style="font-size: 110%">
+                    <q-icon class="q-mr-sm text-green" name="la la-cog" size="28px"></q-icon>
                     Настройки
                 </div>
             </template>
@@ -232,6 +232,7 @@
 
                 <q-checkbox v-model="showCounts" size="36px" label="Показывать количество" />                
                 <q-checkbox v-model="showRates" size="36px" label="Показывать оценки" />
+                <q-checkbox v-model="showInfo" size="36px" label="Показывать кнопку 'инфо'" />
                 <q-checkbox v-model="showGenres" size="36px" label="Показывать жанры" />
                 <q-checkbox v-model="showDates" size="36px" label="Показывать даты поступления" />
                 <q-checkbox v-model="showDeleted" size="36px" label="Показывать удаленные" />
@@ -329,6 +330,9 @@ const componentOptions = {
         },
         showRates(newValue) {
             this.setSetting('showRates', newValue);
+        },
+        showInfo(newValue) {
+            this.setSetting('showInfo', newValue);
         },
         showGenres(newValue) {
             this.setSetting('showGenres', newValue);
@@ -430,6 +434,7 @@ class Search {
     //settings
     showCounts = true;
     showRates = true;
+    showInfo = true;
     showGenres = true;
     showDates = true;
     showDeleted = false;
@@ -521,6 +526,7 @@ class Search {
         this.expandedSeries = _.cloneDeep(settings.expandedSeries);
         this.showCounts = settings.showCounts;
         this.showRates = settings.showRates;
+        this.showInfo = settings.showInfo;
         this.showGenres = settings.showGenres;
         this.showDates = settings.showDates;
         this.showDeleted = settings.showDeleted;

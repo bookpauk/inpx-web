@@ -33,18 +33,20 @@
         </div>
 
         <div class="q-ml-sm column">
-            <div v-if="(mode == 'series' || mode == 'title') && bookAuthor" class="row items-center clickable2 text-green-10" @click="selectAuthor">
-                {{ bookAuthor }}
+            <div v-if="(mode == 'series' || mode == 'title') && bookAuthor" class="row">
+                <div class="clickable2 text-green-10" @click="emit('authorClick')">
+                    {{ bookAuthor }}
+                </div>
             </div>
 
             <div class="row items-center">
                 <div v-if="book.serno" class="q-mr-xs">
                     {{ book.serno }}.
                 </div>
-                <div class="clickable2" :class="titleColor" @click="selectTitle">
+                <div class="clickable2" :class="titleColor" @click="emit('titleClick')">
                     {{ book.title }}
                 </div>
-                <div v-if="mode == 'title' && bookSeries" class="q-ml-xs clickable2" @click="selectSeries">
+                <div v-if="mode == 'title' && bookSeries" class="q-ml-xs clickable2" @click="emit('seriesClick')">
                     {{ bookSeries }}
                 </div>
 
@@ -53,15 +55,19 @@
                     {{ bookSize }}, {{ book.ext }}
                 </div>
 
-                <div class="q-ml-sm clickable" @click="download">
+                <div v-if="showInfo" class="row items-center q-ml-sm clickable" @click="emit('info')">
+                    [ . . . ]
+                </div>
+
+                <div class="q-ml-sm clickable" @click="emit('download')">
                     (скачать)
                 </div>
 
-                <div class="q-ml-sm clickable" @click="copyLink">
+                <div class="q-ml-sm clickable" @click="emit('copyLink')">
                     <q-icon name="la la-copy" size="20px" />
                 </div>
 
-                <div v-if="showReadLink" class="q-ml-sm clickable" @click="readBook">
+                <div v-if="showReadLink" class="q-ml-sm clickable" @click="emit('readBook')">
                     (читать)
                 </div>
 
@@ -107,6 +113,7 @@ class BookView {
     };
 
     showRates = true;
+    showInfo = true;
     showGenres = true;
     showDeleted = false;
     showDates = false;
@@ -119,6 +126,7 @@ class BookView {
         const settings = this.settings;
 
         this.showRates = settings.showRates;
+        this.showInfo = settings.showInfo;
         this.showGenres = settings.showGenres;
         this.showDates = settings.showDates;
         this.showDeleted = settings.showDeleted;
@@ -183,28 +191,8 @@ class BookView {
         return utils.sqlDateFormat(this.book.date);
     }
 
-    selectAuthor() {
-        this.$emit('bookEvent', {action: 'authorClick', book: this.book});
-    }
-
-    selectSeries() {
-        this.$emit('bookEvent', {action: 'seriesClick', book: this.book});
-    }
-
-    selectTitle() {
-        this.$emit('bookEvent', {action: 'titleClick', book: this.book});
-    }
-
-    download() {
-        this.$emit('bookEvent', {action: 'download', book: this.book});
-    }
-
-    copyLink() {
-        this.$emit('bookEvent', {action: 'copyLink', book: this.book});
-    }
-
-    readBook() {
-        this.$emit('bookEvent', {action: 'readBook', book: this.book});
+    emit(action) {
+        this.$emit('bookEvent', {action, book: this.book});
     }
 }
 

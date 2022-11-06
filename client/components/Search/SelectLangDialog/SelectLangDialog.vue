@@ -2,7 +2,7 @@
     <Dialog ref="dialog" v-model="dialogVisible">
         <template #header>
             <div class="row items-center">
-                <div style="font-size: 130%">
+                <div style="font-size: 110%">
                     Выбрать языки
                 </div>
             </div>
