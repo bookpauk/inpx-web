@@ -119,6 +119,27 @@ function toUnixPath(dir) {
     return dir.replace(/\\/g, '/');
 }
 
+function makeValidFileName(fileName, repl = '_') {
+    let f = fileName.replace(/[\x00\\/:*"<>|]/g, repl); // eslint-disable-line no-control-regex
+    f = f.trim();
+    while (f.length && (f[f.length - 1] == '.' || f[f.length - 1] == '_')) {
+        f = f.substring(0, f.length - 1);
+    }
+
+    if (f)
+        return f;
+    else
+        throw new Error('Invalid filename');
+}
+
+function makeValidFileNameOrEmpty(fileName) {
+    try {
+        return makeValidFileName(fileName);
+    } catch(e) {
+        return '';
+    }
+}
+
 module.exports = {
     sleep,
     processLoop,
@@ -133,4 +154,6 @@ module.exports = {
     randomHexString,
     gzipFile,
     toUnixPath,
+    makeValidFileName,
+    makeValidFileNameOrEmpty,
 };

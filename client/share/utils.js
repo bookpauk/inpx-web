@@ -87,18 +87,6 @@ export async function copyTextToClipboard(text) {
     return result;
 }
 
-export function makeValidFilename(filename, repl = '_') {
-    let f = filename.replace(/[\x00\\/:*"<>|]/g, repl); // eslint-disable-line no-control-regex
-    f = f.trim();
-    while (f.length && (f[f.length - 1] == '.' || f[f.length - 1] == '_')) {
-        f = f.substring(0, f.length - 1);
-    }
-
-    if (f)
-        return f;
-    else
-        throw new Error('Invalid filename');
-}
 /*
 export function formatDate(d, format = 'normal') {
     switch (format) {

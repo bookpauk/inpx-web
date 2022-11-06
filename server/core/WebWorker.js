@@ -400,17 +400,36 @@ class WebWorker {
         return link;
     }
 
-    async getBookLink(params) {
+    async getBookLink(bookId) {
         this.checkMyState();
-
-        const {bookPath, downFileName} = params;
 
         try {
             const db = this.db;
             let link = '';
 
+            //найдем bookPath и downFileName
+            let rows = await db.select({table: 'book', where: `@@id(${db.esc(bookId)})`});
+            if (!rows.length)
+                throw new Error('404 Файл не найден');
+
+            const book = rows[0];            
+            let downFileName = book.file;
+            const author = book.author.split(',');
+            const at = [author[0], book.title];
+            downFileName = utils.makeValidFileNameOrEmpty(at.filter(r => r).join(' - '))
+                || utils.makeValidFileNameOrEmpty(at[0])
+                || utils.makeValidFileNameOrEmpty(at[1])
+                || downFileName;
+            downFileName = downFileName.substring(0, 100);
+
+            const ext = `.${book.ext}`;
+            if (downFileName.substring(downFileName.length - ext.length) != ext)
+                downFileName += ext;
+
+            const bookPath = `${book.folder}/${book.file}${ext}`;
+
             //найдем хеш
-            const rows = await db.select({table: 'file_hash', where: `@@id(${db.esc(bookPath)})`});
+            rows = await db.select({table: 'file_hash', where: `@@id(${db.esc(bookPath)})`});
             if (rows.length) {//хеш найден по bookPath
                 const hash = rows[0].hash;
                 const bookFile = `${this.config.filesDir}/${hash}`;
@@ -428,7 +447,7 @@ class WebWorker {
             if (!link)
                 throw new Error('404 Файл не найден');
 
-            return {link};
+            return {link, bookPath, downFileName};
         } catch(e) {
             log(LM_ERR, `getBookLink error: ${e.message}`);
             if (e.message.indexOf('ENOENT') >= 0)
@@ -437,18 +456,20 @@ class WebWorker {
         }
     }
 
-    async getBookInfo(params) {
+    async getBookInfo(bookId) {
         this.checkMyState();
 
         try {
-            //const db = this.db;
-            let link = await this.getBookLink(params);
-            const hash = path.basename(link.link);
+            const db = this.db;
 
-            /*const bookFile = `${this.config.filesDir}/${hash}`;
-            const bookInfo = await fb2parser*/
+            const bookInfo = await this.getBookLink(bookId);
 
-            return {hash};
+            const rows = await db.select({table: 'book', where: `@@id(${db.esc(bookId)})`});
+            bookInfo.book = rows[0];
+            bookInfo.fb2 = {};
+            bookInfo.cover = '';
+
+            return {bookInfo};
         } catch(e) {
             log(LM_ERR, `getBookInfo error: ${e.message}`);
             if (e.message.indexOf('ENOENT') >= 0)
@@ -456,48 +477,6 @@ class WebWorker {
             throw e;
         }
     }
-
-    /*
-    async restoreBookFile(publicPath) {
-        this.checkMyState();
-
-        try {
-            const db = this.db;
-            const hash = path.basename(publicPath);
-
-            //найдем bookPath и downFileName
-            const rows = await db.select({table: 'file_hash', where: `@@id(${db.esc(hash)})`});        
-            if (rows.length) {//нашли по хешу
-                const rec = rows[0];
-                await this.restoreBook(rec.bookPath, rec.downFileName);
-
-                return rec.downFileName;
-            } else {//bookPath не найден
-                throw new Error('404 Файл не найден');
-            }
-        } catch(e) {
-            log(LM_ERR, `restoreBookFile error: ${e.message}`);
-            if (e.message.indexOf('ENOENT') >= 0)
-                throw new Error('404 Файл не найден');
-            throw e;
-        }
-    }
-
-    async getDownFileName(publicPath) {
-        this.checkMyState();
-
-        const db = this.db;
-        const hash = path.basename(publicPath);
-
-        //найдем downFileName
-        const rows = await db.select({table: 'file_hash', where: `@@id(${db.esc(hash)})`});        
-        if (rows.length) {//downFileName найден по хешу
-            return rows[0].downFileName;
-        } else {//bookPath не найден
-            throw new Error('404 Файл не найден');
-        }
-    }
-    */
 
     async getInpxFile(params) {
         let data = null;
