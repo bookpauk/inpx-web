@@ -786,6 +786,8 @@ class Search {
 
         if (this.ignoreScrolling) {
             this.lastScrollTop = curScrollTop;
+            if (this.$refs.toolPanel.offsetTop > curScrollTop)
+                this.$refs.toolPanel.style.top = `${curScrollTop}px`;
             return;
         }
 
