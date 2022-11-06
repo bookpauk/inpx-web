@@ -55,7 +55,7 @@
                     {{ bookSize }}, {{ book.ext }}
                 </div>
 
-                <div v-if="showInfo" class="row items-center q-ml-sm clickable" @click="emit('info')">
+                <div v-if="showInfo" class="row items-center q-ml-sm clickable" @click="emit('bookInfo')">
                     [ . . . ]
                 </div>
 

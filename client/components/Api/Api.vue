@@ -235,6 +235,10 @@ class Api {
         return await this.request(Object.assign({action: 'get-book-link'}, params), 120);
     }
 
+    async getBookInfo(params) {
+        return await this.request(Object.assign({action: 'get-book-info'}, params), 120);
+    }
+
     async getConfig() {
         return await this.request({action: 'get-config'});
     }

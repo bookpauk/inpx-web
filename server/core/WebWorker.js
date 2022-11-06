@@ -437,6 +437,26 @@ class WebWorker {
         }
     }
 
+    async getBookInfo(params) {
+        this.checkMyState();
+
+        try {
+            //const db = this.db;
+            let link = await this.getBookLink(params);
+            const hash = path.basename(link.link);
+
+            /*const bookFile = `${this.config.filesDir}/${hash}`;
+            const bookInfo = await fb2parser*/
+
+            return {hash};
+        } catch(e) {
+            log(LM_ERR, `getBookInfo error: ${e.message}`);
+            if (e.message.indexOf('ENOENT') >= 0)
+                throw new Error('404 Файл не найден');
+            throw e;
+        }
+    }
+
     /*
     async restoreBookFile(publicPath) {
         this.checkMyState();

@@ -84,6 +84,8 @@ class WebSocketController {
                     await this.getGenreTree(req, ws); break;
                 case 'get-book-link':
                     await this.getBookLink(req, ws); break;
+                case 'get-book-info':
+                    await this.getBookInfo(req, ws); break;
 
                 case 'get-inpx-file':
                     await this.getInpxFile(req, ws); break;
@@ -169,6 +171,17 @@ class WebSocketController {
             throw new Error(`downFileName is empty`);    
 
         const result = await this.webWorker.getBookLink({bookPath: req.bookPath, downFileName: req.downFileName});
+
+        this.send(result, req, ws);
+    }
+
+    async getBookInfo(req, ws) {
+        if (!utils.hasProp(req, 'bookPath'))
+            throw new Error(`bookPath is empty`);
+        if (!utils.hasProp(req, 'downFileName'))
+            throw new Error(`downFileName is empty`);    
+
+        const result = await this.webWorker.getBookInfo({bookPath: req.bookPath, downFileName: req.downFileName});
 
         this.send(result, req, ws);
     }

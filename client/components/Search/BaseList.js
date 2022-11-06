@@ -185,6 +185,10 @@ export default class BaseList {
                     const url = this.config.bookReadLink.replace('${DOWNLOAD_LINK}', href);
                     window.open(url, '_blank');
                 }
+            } else if (action == 'bookInfo') {
+                //информация о книге
+                const response = await this.api.getBookInfo({bookPath, downFileName});
+                this.$emit('listEvent', {action: 'bookInfo', data: response.bookInfo});
             }
         } catch(e) {
             this.$root.stdDialog.alert(e.message, 'Ошибка');
@@ -208,6 +212,7 @@ export default class BaseList {
             case 'download':
             case 'copyLink':
             case 'readBook':
+            case 'bookInfo':
                 this.download(event.book, event.action);//no await
                 break;
         }

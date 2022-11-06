@@ -250,6 +250,7 @@
         <SelectLangDialog v-model="selectLangDialogVisible" v-model:lang="search.lang" :lang-list="langList" :lang-default="langDefault" />        
         <SelectLibRateDialog v-model="selectLibRateDialogVisible" v-model:librate="search.librate" />
         <SelectDateDialog v-model="selectDateDialogVisible" v-model:date="search.date" />
+        <BookInfoDialog v-model="bookInfoDialogVisible" book-info="bookInfo" />
     </div>
 </template>
 
@@ -266,6 +267,7 @@ import SelectGenreDialog from './SelectGenreDialog/SelectGenreDialog.vue';
 import SelectLangDialog from './SelectLangDialog/SelectLangDialog.vue';
 import SelectLibRateDialog from './SelectLibRateDialog/SelectLibRateDialog.vue';
 import SelectDateDialog from './SelectDateDialog/SelectDateDialog.vue';
+import BookInfoDialog from './BookInfoDialog/BookInfoDialog.vue';
 
 import authorBooksStorage from './authorBooksStorage';
 import DivBtn from '../share/DivBtn.vue';
@@ -292,6 +294,7 @@ const componentOptions = {
         SelectLangDialog,
         SelectLibRateDialog,
         SelectDateDialog,
+        BookInfoDialog,
         Dialog,
         DivBtn
     },
@@ -404,6 +407,7 @@ class Search {
     selectLangDialogVisible = false;
     selectLibRateDialogVisible = false;
     selectDateDialogVisible = false;
+    bookInfoDialogVisible = false;
 
     pageCount = 1;    
 
@@ -457,6 +461,8 @@ class Search {
     langList = [];
     genreTreeInpxHash = '';
     showTooltips = true;
+
+    bookInfo = {};
 
     limitOptions = [
         {label: '10', value: 10},
@@ -878,6 +884,10 @@ class Search {
                 break;
             case 'submitUrl':
                 this.sendMessage({type: 'submitUrl', data: event.data});
+                break;
+            case 'bookInfo':
+                this.bookInfo = event.data;
+                this.bookInfoDialogVisible = true;
                 break;
         }
     }
