@@ -131,6 +131,18 @@ class NodeObject extends NodeBase {
         return null;
     }
 
+    set value(v) {
+        switch (this.type) {
+            case NODE:
+                this.raw[3] = v;
+                break;
+            case TEXT:
+            case CDATA:
+            case COMMENT:
+                this.raw[1] = v;
+        }
+    }
+
     add(node, after = '*') {
         if (this.type !== NODE)
             return;
@@ -338,8 +350,12 @@ class XmlParser extends NodeBase {
         return new XmlParser(newRawNodes);
     }
 
-    s(selector, self) {
+    $$(selector, self) {
         return this.select(selector, self);
+    }
+
+    $$self(selector) {
+        return this.$$(selector, true);
     }
 
     selectFirst(selector, self) {
@@ -348,8 +364,12 @@ class XmlParser extends NodeBase {
         return this.toObject(node);
     }
 
-    sf(selector, self) {
+    $(selector, self) {
         return this.selectFirst(selector, self);
+    }
+
+    $self(selector) {
+        return this.$(selector, true);
     }
 
     toJson(options = {}) {
@@ -383,7 +403,6 @@ class XmlParser extends NodeBase {
 
             for (const n of nodes) {
                 const node = new NodeObject(n);
-                lastType = node.type;
 
                 let open = '';
                 let body = '';
@@ -412,8 +431,8 @@ class XmlParser extends NodeBase {
                     close = `</${node.name}>`;
 
                     if (format) {
-                        open = '\n' + ' '.repeat(depth) + open;
-                        close = (deepType === NODE ? ' '.repeat(depth) : '') + close + '\n';
+                        open = (lastType !== TEXT ? '\n' + ' '.repeat(depth) : '') + open;
+                        close = (deepType === NODE ? '\n' + ' '.repeat(depth) : '') + close;
                     }
                 } else if (node.type === TEXT) {
                     body = node.value || '';
@@ -424,6 +443,7 @@ class XmlParser extends NodeBase {
                 }
 
                 result += `${open}${body}${close}`;
+                lastType = node.type;
             }
 
             deepType = lastType;
@@ -437,7 +457,7 @@ class XmlParser extends NodeBase {
 
     fromString(xmlString, options = {}, pickNode = () => true) {
         const parsed = [];
-        const root = this.createNode(parsed);
+        const root = this.createNode('root', null, parsed);//fake node
         let node = root;
 
         let route = '';
@@ -460,7 +480,7 @@ class XmlParser extends NodeBase {
             if (ignoreNode)
                 return;
 
-            if (tail) {
+            if (tail && tail.trim() !== '') {
                 const parsedAttrs = sax.getAttrsSync(tail, lowerCase);
                 const attrs = new Map();
                 for (const attr of parsedAttrs.values()) {

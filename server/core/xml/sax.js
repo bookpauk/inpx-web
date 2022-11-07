@@ -288,9 +288,11 @@ function getAttrsSync(tail, lowerCase = true) {
     let inName = false;
     let inValue = false;
     let waitValue = false;
-    let waitEq = false;
+    let waitEq = true;
 
     const pushResult = () => {
+        if (waitEq)
+            value = true;
         if (lowerCase)
             name = name.toLowerCase();
         if (name != '') {
@@ -308,7 +310,7 @@ function getAttrsSync(tail, lowerCase = true) {
         inName = false;
         inValue = false;
         waitValue = false;
-        waitEq = false;
+        waitEq = true;
     };
 
     tail = tail.replace(/[\t\n\r]/g, ' ');
@@ -321,7 +323,6 @@ function getAttrsSync(tail, lowerCase = true) {
                 else
                     pushResult();
             } else if (inName) {
-                waitEq = true;
                 inName = false;
             }
         } else if (!inValue && c == '=') {
