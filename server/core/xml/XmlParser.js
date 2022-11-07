@@ -1,3 +1,5 @@
+const sax = require('./sax');
+
 //node types
 const NODE = 1;
 const TEXT = 2;
@@ -159,6 +161,24 @@ class NodeObject extends NodeBase {
             callback(new NodeObject(n));
         }
     }
+
+    eachDeep(callback) {
+        if (this.type !== NODE || !this.raw[3])
+            return;
+
+        const deep = (nodes, route = '') => {
+            for (const n of nodes) {
+                const node = new NodeObject(n);
+                callback(node, route);
+
+                if (node.type === NODE && node.value) {
+                    deep(node.value, route + `/${node.name}`);
+                }
+            }
+        }
+
+        deep(this.raw[3]);
+    }
 }
 
 class XmlParser extends NodeBase {
@@ -264,6 +284,21 @@ class XmlParser extends NodeBase {
         }
     }
 
+    eachDeep(callback) {
+        const deep = (nodes, route = '') => {
+            for (const n of nodes) {
+                const node = new NodeObject(n);
+                callback(node, route);
+
+                if (node.type === NODE && node.value) {
+                    deep(node.value, route + `/${node.name}`);
+                }
+            }
+        }
+
+        deep(this.rawNodes);
+    }
+
     rawSelect(nodes, selectorObj, callback) {
         for (const n of nodes)
             if (this.checkNode(n, selectorObj))
@@ -332,7 +367,66 @@ class XmlParser extends NodeBase {
         this.rawNodes = parsed;
     }
 
-    toString() {
+    toString(options = {}) {
+        const {encoding = 'utf-8', format = false} = options;
+
+        let deepType = 0;
+        let out = '';
+        if (this.count < 2)
+            out += `<?xml version="1.0" encoding="${encoding}"?>`;
+
+        const nodesToString = (nodes, depth = 0) => {
+            let result = '';
+            let lastType = 0;
+
+            for (const n of nodes) {
+                const node = new NodeObject(n);
+                lastType = node.type;
+
+                let open = '';
+                let body = '';
+                let close = '';
+
+                if (node.type === NODE) {
+                    if (!node.name)
+                        break;
+
+                    let attrs = '';
+
+                    if (node.attrs) {
+                        for (const [attrName, attrValue] of node.attrs) {
+                            attrs += ` ${attrName}="${attrValue}"`;
+                        }
+                    }
+
+                    open = `<${node.name}${attrs}>`;
+
+                    if (node.value)
+                        body = nodesToString(node.value, depth + 2);
+                    close = `</${node.name}>`;
+
+                    if (format) {
+                        open = '\n' + ' '.repeat(depth) + open;
+                        close = (deepType === NODE ? ' '.repeat(depth) : '') + close + '\n';
+                    }
+                } else if (node.type === TEXT) {
+                    body = node.value;
+                } else if (node.type === CDATA) {
+                    //
+                } else if (node.type === COMMENT) {
+                    //
+                }
+
+                result += `${open}${body}${close}`;
+            }
+
+            deepType = lastType;
+            return result;
+        }
+
+        out += nodesToString(this.rawNodes);
+
+        return out;
     }
 
     fromSrtring() {
