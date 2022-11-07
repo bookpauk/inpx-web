@@ -115,6 +115,40 @@ function gzipFile(inputFile, outputFile, level = 1) {
     });
 }
 
+function gunzipFile(inputFile, outputFile) {
+    return new Promise((resolve, reject) => {
+        const gzip = zlib.createGunzip();
+        const input = fs.createReadStream(inputFile);
+        const output = fs.createWriteStream(outputFile);
+
+        input.on('error', reject)
+            .pipe(gzip).on('error', reject)
+            .pipe(output).on('error', reject)
+            .on('finish', (err) => {
+            if (err) reject(err);
+            else resolve();
+        });
+    });
+}
+
+function gzipBuffer(buf) {
+    return new Promise((resolve, reject) => {
+        zlib.gzip(buf, {level: 1}, (err, result) => {
+            if (err) reject(err);
+            resolve(result);
+        });
+    });
+}
+
+function gunzipBuffer(buf) {
+    return new Promise((resolve, reject) => {
+        zlib.gunzip(buf, (err, result) => {
+            if (err) reject(err);
+            resolve(result);
+        });
+    });
+}
+
 function toUnixPath(dir) {
     return dir.replace(/\\/g, '/');
 }
@@ -153,6 +187,9 @@ module.exports = {
     intersectSet,
     randomHexString,
     gzipFile,
+    gunzipFile,
+    gzipBuffer,
+    gunzipBuffer,
     toUnixPath,
     makeValidFileName,
     makeValidFileNameOrEmpty,

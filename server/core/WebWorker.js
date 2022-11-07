@@ -15,6 +15,7 @@ const ayncExit = new (require('./AsyncExit'))();
 const log = new (require('./AppLogger'))().log;//singleton
 const utils = require('./utils');
 const genreTree = require('./genres');
+const Fb2Parser = require('./xml/Fb2Parser');
 
 //server states
 const ssNormal = 'normal';
@@ -44,6 +45,7 @@ class WebWorker {
             }
             
             this.inpxHashCreator = new InpxHashCreator(config);
+            this.fb2Parser = new Fb2Parser();
             this.inpxFileHash = '';
 
             this.wState = this.workerState.getControl('server_state');
@@ -462,12 +464,31 @@ class WebWorker {
         try {
             const db = this.db;
 
-            const bookInfo = await this.getBookLink(bookId);
+            let bookInfo = await this.getBookLink(bookId);
+            const hash = path.basename(bookInfo.link);
+            const bookFile = `${this.config.filesDir}/${hash}`;
+            const bookFileInfo = `${bookFile}.info`;
 
-            const rows = await db.select({table: 'book', where: `@@id(${db.esc(bookId)})`});
-            bookInfo.book = rows[0];
-            bookInfo.fb2 = {};
-            bookInfo.cover = '';
+            if (!await fs.pathExists(bookFileInfo)) {
+                const rows = await db.select({table: 'book', where: `@@id(${db.esc(bookId)})`});
+                const book = rows[0];
+
+                let fb2 = false;
+                if (book.ext == 'fb2') {
+                    const parsedFb2 = await this.fb2Parser.getDescAndCover(bookFile);
+                    fb2 = parsedFb2;
+                }
+
+                bookInfo.book = book;
+                bookInfo.fb2 = fb2;
+                bookInfo.cover = '';
+
+                await fs.writeFile(bookFileInfo, JSON.stringify(bookInfo, null, 2));
+            } else {
+                await utils.touchFile(bookFileInfo);
+                const info = fs.readFile(bookFileInfo, 'utf-8');
+                bookInfo = JSON.parse(info);
+            }
 
             return {bookInfo};
         } catch(e) {
