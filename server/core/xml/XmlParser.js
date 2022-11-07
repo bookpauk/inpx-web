@@ -352,7 +352,9 @@ class XmlParser extends NodeBase {
         return this.selectFirst(selector, self);
     }
 
-    toJson(format = false) {
+    toJson(options = {}) {
+        const {format = false} = options;
+
         if (format)
             return JSON.stringify(this.rawNodes, null, 2);
         else
@@ -395,7 +397,11 @@ class XmlParser extends NodeBase {
 
                     if (node.attrs) {
                         for (const [attrName, attrValue] of node.attrs) {
-                            attrs += ` ${attrName}="${attrValue}"`;
+                            if (typeof(attrValue) === 'string')
+                                attrs += ` ${attrName}="${attrValue}"`;
+                            else
+                                if (attrValue)
+                                    attrs += ` ${attrName}`;
                         }
                     }
 
@@ -410,11 +416,11 @@ class XmlParser extends NodeBase {
                         close = (deepType === NODE ? ' '.repeat(depth) : '') + close + '\n';
                     }
                 } else if (node.type === TEXT) {
-                    body = node.value;
+                    body = node.value || '';
                 } else if (node.type === CDATA) {
-                    //
+                    body = `<![CDATA[${node.value || ''}]]>`;
                 } else if (node.type === COMMENT) {
-                    //
+                    body = `<!--${node.value || ''}-->`;
                 }
 
                 result += `${open}${body}${close}`;
@@ -429,7 +435,89 @@ class XmlParser extends NodeBase {
         return out;
     }
 
-    fromSrtring() {
+    fromString(xmlString, options = {}, pickNode = () => true) {
+        const parsed = [];
+        const root = this.createNode(parsed);
+        let node = root;
+
+        let route = '';
+        let routeStack = [];
+        let ignoreNode = false;
+
+        const {lowerCase = false, whiteSpace = false} = options;
+
+        const onStartNode = (tag, tail, singleTag, cutCounter, cutTag) => {// eslint-disable-line no-unused-vars
+            if (tag == '?xml')
+                return;
+
+            route += `/${tag}`;
+            ignoreNode = !pickNode(route);
+
+            const newNode = this.createNode(tag);
+
+            routeStack.push({tag, route, ignoreNode, node: newNode});
+
+            if (ignoreNode)
+                return;
+
+            if (tail) {
+                const parsedAttrs = sax.getAttrsSync(tail, lowerCase);
+                const attrs = new Map();
+                for (const attr of parsedAttrs.values()) {
+                    attrs.set(attr.fn, attr.value);
+                }
+
+                if (attrs.size)
+                    newNode.attrs = attrs;
+            }
+
+            if (!node.value)
+                node.value = [];
+            node.value.push(newNode.raw);
+            node = newNode;
+        };
+
+        const onEndNode = (tag, tail, singleTag, cutCounter, cutTag) => {// eslint-disable-line no-unused-vars
+            if (routeStack.length && routeStack[routeStack.length - 1].tag === tag) {
+                routeStack.pop();
+
+                if (routeStack.length) {
+                    const last = routeStack[routeStack.length - 1];
+                    route = last.route;
+                    ignoreNode = last.ignoreNode;
+                    node = last.node;
+                } else {
+                    route = '';
+                    ignoreNode = false;
+                    node = root;
+                }
+            }
+        }
+
+        const onTextNode = (text, cutCounter, cutTag) => {// eslint-disable-line no-unused-vars
+            if (ignoreNode)
+                return;
+
+            if (!whiteSpace && text.trim() == '')
+                return;
+
+            if (!node.value)
+                node.value = [];
+
+            node.value.push(this.createText(text).raw);
+        };
+
+        const onCdata = (tagData, cutCounter, cutTag) => {// eslint-disable-line no-unused-vars
+        }
+
+        const onComment = (tagData, cutCounter, cutTag) => {// eslint-disable-line no-unused-vars
+        }
+
+        sax.parseSync(xmlString, {
+            onStartNode, onEndNode, onTextNode, onCdata, onComment, lowerCase
+        });
+
+        this.rawNodes = parsed;        
     }
 }
 

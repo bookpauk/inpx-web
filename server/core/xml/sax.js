@@ -281,7 +281,7 @@ async function parse(xstr, options) {
 }
 
 function getAttrsSync(tail, lowerCase = true) {
-    let result = {};
+    let result = new Map();
     let name = '';    
     let value = '';
     let vOpen = '';
@@ -300,7 +300,7 @@ function getAttrsSync(tail, lowerCase = true) {
                 [ns, name] = fn.split(':');
             }
 
-            result[name] = {value, ns, fn};
+            result.set(fn, {value, ns, name, fn});
         }
         name = '';
         value = '';
