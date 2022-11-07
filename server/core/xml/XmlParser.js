@@ -399,6 +399,8 @@ class XmlParser extends NodeBase {
 
         const nodesToString = (nodes, depth = 0) => {
             let result = '';
+
+            const indent = '\n' + ' '.repeat(depth);
             let lastType = 0;
 
             for (const n of nodes) {
@@ -424,22 +426,23 @@ class XmlParser extends NodeBase {
                         }
                     }
 
-                    open = `<${node.name}${attrs}>`;
+
+                    open = (format && lastType !== TEXT ? indent : '');
+                    open += `<${node.name}${attrs}>`;
 
                     if (node.value)
                         body = nodesToString(node.value, depth + 2);
-                    close = `</${node.name}>`;
 
-                    if (format) {
-                        open = (lastType !== TEXT ? '\n' + ' '.repeat(depth) : '') + open;
-                        close = (deepType === NODE ? '\n' + ' '.repeat(depth) : '') + close;
-                    }
+                    close = (format && deepType && deepType !== TEXT ? indent : '');
+                    close += `</${node.name}>`;
                 } else if (node.type === TEXT) {
                     body = node.value || '';
                 } else if (node.type === CDATA) {
-                    body = `<![CDATA[${node.value || ''}]]>`;
+                    body = (format && lastType !== TEXT ? indent : '');
+                    body += `<![CDATA[${node.value || ''}]]>`;
                 } else if (node.type === COMMENT) {
-                    body = `<!--${node.value || ''}-->`;
+                    body = (format && lastType !== TEXT ? indent : '');
+                    body += `<!--${node.value || ''}-->`;
                 }
 
                 result += `${open}${body}${close}`;
@@ -528,9 +531,23 @@ class XmlParser extends NodeBase {
         };
 
         const onCdata = (tagData, cutCounter, cutTag) => {// eslint-disable-line no-unused-vars
+            if (ignoreNode)
+                return;
+
+            if (!node.value)
+                node.value = [];
+
+            node.value.push(this.createCdata(tagData).raw);
         }
 
         const onComment = (tagData, cutCounter, cutTag) => {// eslint-disable-line no-unused-vars
+            if (ignoreNode)
+                return;
+
+            if (!node.value)
+                node.value = [];
+
+            node.value.push(this.createComment(tagData).raw);
         }
 
         sax.parseSync(xmlString, {
