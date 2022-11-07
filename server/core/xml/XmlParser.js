@@ -152,6 +152,8 @@ class NodeObject extends NodeBase {
         if (!Array.isArray(this.raw[3]))
             this.raw[3] = [];
         this.rawAdd(this.raw[3], node.raw, selectorObj);
+
+        return this;
     }
 
     remove(selector = '') {
@@ -163,6 +165,8 @@ class NodeObject extends NodeBase {
         this.rawRemove(this.raw[3], selectorObj);
         if (!this.raw[3].length)
             this.raw[3] = null;
+
+        return this;
     }
 
     each(callback) {
@@ -172,6 +176,8 @@ class NodeObject extends NodeBase {
         for (const n of this.raw[3]) {
             callback(new NodeObject(n));
         }
+
+        return this;
     }
 
     eachDeep(callback) {
@@ -190,6 +196,8 @@ class NodeObject extends NodeBase {
         }
 
         deep(this.raw[3]);
+
+        return this;
     }
 }
 
@@ -264,12 +272,16 @@ class XmlParser extends NodeBase {
                 this.rawAdd(n[3], node.raw, selectorObj);
             }
         }
+
+        return this;
     }
 
     addRoot(node, after = '*') {
         const selectorObj = this.makeSelectorObj(after);
 
         this.rawAdd(this.rawNodes, node.raw, selectorObj);
+
+        return this;
     }
 
     remove(selector = '') {
@@ -282,18 +294,24 @@ class XmlParser extends NodeBase {
                     n[3] = null;
             }
         }
+
+        return this;
     }
 
     removeRoot(selector = '') {
         const selectorObj = this.makeSelectorObj(selector);
 
         this.rawRemove(this.rawNodes, selectorObj);
+
+        return this;
     }
 
     each(callback) {
         for (const n of this.rawNodes) {
             callback(new NodeObject(n));
         }
+
+        return this;
     }
 
     eachDeep(callback) {
@@ -309,12 +327,16 @@ class XmlParser extends NodeBase {
         }
 
         deep(this.rawNodes);
+
+        return this;
     }
 
     rawSelect(nodes, selectorObj, callback) {
         for (const n of nodes)
             if (this.checkNode(n, selectorObj))
                 callback(n);
+
+        return this;
     }
 
     select(selector = '', self = false) {
@@ -355,7 +377,7 @@ class XmlParser extends NodeBase {
     }
 
     $$self(selector) {
-        return this.$$(selector, true);
+        return this.select(selector, true);
     }
 
     selectFirst(selector, self) {
@@ -369,7 +391,7 @@ class XmlParser extends NodeBase {
     }
 
     $self(selector) {
-        return this.$(selector, true);
+        return this.selectFirst(selector, true);
     }
 
     toJson(options = {}) {
@@ -458,7 +480,13 @@ class XmlParser extends NodeBase {
         return out;
     }
 
-    fromString(xmlString, options = {}, pickNode = () => true) {
+    fromString(xmlString, options = {}) {
+        const {
+            lowerCase = false,
+            whiteSpace = false,
+            pickNode = false,
+        } = options;
+
         const parsed = [];
         const root = this.createNode('root', null, parsed);//fake node
         let node = root;
@@ -467,16 +495,18 @@ class XmlParser extends NodeBase {
         let routeStack = [];
         let ignoreNode = false;
 
-        const {lowerCase = false, whiteSpace = false} = options;
-
         const onStartNode = (tag, tail, singleTag, cutCounter, cutTag) => {// eslint-disable-line no-unused-vars
             if (tag == '?xml')
                 return;
 
-            route += `/${tag}`;
-            ignoreNode = !pickNode(route);
+            if (!ignoreNode && pickNode) {
+                route += `/${tag}`;
+                ignoreNode = !pickNode(route);
+            }
 
-            const newNode = this.createNode(tag);
+            let newNode = node;
+            if (!ignoreNode)
+                newNode = this.createNode(tag);
 
             routeStack.push({tag, route, ignoreNode, node: newNode});
 
@@ -518,7 +548,7 @@ class XmlParser extends NodeBase {
         }
 
         const onTextNode = (text, cutCounter, cutTag) => {// eslint-disable-line no-unused-vars
-            if (ignoreNode)
+            if (ignoreNode || (pickNode && !pickNode(`${route}/*TEXT`)))
                 return;
 
             if (!whiteSpace && text.trim() == '')
@@ -531,7 +561,7 @@ class XmlParser extends NodeBase {
         };
 
         const onCdata = (tagData, cutCounter, cutTag) => {// eslint-disable-line no-unused-vars
-            if (ignoreNode)
+            if (ignoreNode || (pickNode && !pickNode(`${route}/*CDATA`)))
                 return;
 
             if (!node.value)
@@ -541,7 +571,7 @@ class XmlParser extends NodeBase {
         }
 
         const onComment = (tagData, cutCounter, cutTag) => {// eslint-disable-line no-unused-vars
-            if (ignoreNode)
+            if (ignoreNode || (pickNode && !pickNode(`${route}/*COMMENT`)))
                 return;
 
             if (!node.value)
