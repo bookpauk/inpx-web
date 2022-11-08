@@ -103,19 +103,24 @@ class NodeObject extends NodeBase {
             this.raw[1] = value;
     }
 
-    get attrs() {
-        if (this.type === NODE && Array.isArray(this.raw[2]))
-            return new Map(this.raw[2]);
+    attrs(key, value) {
+        if (this.type !== NODE)
+            return null;
 
-        return null;
-    }
+        let map = null;
 
-    set attrs(value) {
-        if (this.type === NODE)
-            if (value && value.size)
-                this.raw[2] = Array.from(value);
-            else
-                this.raw[2] = null;
+        if (key instanceof Map) {
+            map = key;
+            this.raw[2] = Array.from(map);
+        } else if (Array.isArray(this.raw[2])) {
+            map = new Map(this.raw[2]);
+            if (key) {
+                map.set(key, value);
+                this.raw[2] = Array.from(map);
+            }
+        }
+
+        return map;
     }
 
     get value() {
@@ -151,7 +156,13 @@ class NodeObject extends NodeBase {
 
         if (!Array.isArray(this.raw[3]))
             this.raw[3] = [];
-        this.rawAdd(this.raw[3], node.raw, selectorObj);
+
+        if (Array.isArray(node)) {
+            for (const node_ of node)
+                this.rawAdd(this.raw[3], node_.raw, selectorObj);
+        } else {
+            this.rawAdd(this.raw[3], node.raw, selectorObj);
+        }
 
         return this;
     }
@@ -269,7 +280,13 @@ class XmlParser extends NodeBase {
             if (n && n[0] === NODE) {
                 if (!Array.isArray(n[3]))
                     n[3] = [];
-                this.rawAdd(n[3], node.raw, selectorObj);
+                
+                if (Array.isArray(node)) {
+                    for (const node_ of node)
+                        this.rawAdd(n[3], node_.raw, selectorObj);
+                } else {
+                    this.rawAdd(n[3], node.raw, selectorObj);
+                }
             }
         }
 
@@ -279,7 +296,12 @@ class XmlParser extends NodeBase {
     addRoot(node, after = '*') {
         const selectorObj = this.makeSelectorObj(after);
 
-        this.rawAdd(this.rawNodes, node.raw, selectorObj);
+        if (Array.isArray(node)) {
+            for (const node_ of node)
+                this.rawAdd(this.rawNodes, node_.raw, selectorObj);
+        } else {
+            this.rawAdd(this.rawNodes, node.raw, selectorObj);
+        }
 
         return this;
     }
@@ -412,11 +434,11 @@ class XmlParser extends NodeBase {
     }
 
     toString(options = {}) {
-        const {encoding = 'utf-8', format = false} = options;
+        const {encoding = 'utf-8', format = false, noHeader = false} = options;
 
         let deepType = 0;
         let out = '';
-        if (this.count < 2)
+        if (!noHeader)
             out += `<?xml version="1.0" encoding="${encoding}"?>`;
 
         const nodesToString = (nodes, depth = 0) => {
@@ -438,8 +460,9 @@ class XmlParser extends NodeBase {
 
                     let attrs = '';
 
-                    if (node.attrs) {
-                        for (const [attrName, attrValue] of node.attrs) {
+                    const nodeAttrs = node.attrs();
+                    if (nodeAttrs) {
+                        for (const [attrName, attrValue] of nodeAttrs) {
                             if (typeof(attrValue) === 'string')
                                 attrs += ` ${attrName}="${attrValue}"`;
                             else
@@ -521,7 +544,7 @@ class XmlParser extends NodeBase {
                 }
 
                 if (attrs.size)
-                    newNode.attrs = attrs;
+                    newNode.attrs(attrs);
             }
 
             if (!node.value)
