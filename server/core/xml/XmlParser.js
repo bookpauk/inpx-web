@@ -228,7 +228,7 @@ class XmlParser extends NodeBase {
         return this.rawNodes.length;
     }
 
-    toObject(node) {
+    nodeObject(node) {
         return new NodeObject(node);
     }
 
@@ -335,12 +335,18 @@ class XmlParser extends NodeBase {
             }
         } else {
             for (const n of this.rawNodes) {
-                if (n[0] === NODE && n[3])
-                    callback(new NodeObject(n[3]));
+                if (n[0] === NODE && n[3]) {
+                    for (const nn of n[3])
+                        callback(new NodeObject(nn));
+                }
             }
         }
 
         return this;
+    }
+
+    eachSelf(callback) {
+        return this.each(callback, true);
     }
 
     eachDeep(callback, self = false) {
@@ -423,7 +429,7 @@ class XmlParser extends NodeBase {
     selectFirst(selector, self) {
         const result = this.select(selector, self);
         const node = (result.count ? result.rawNodes[0] : null);
-        return this.toObject(node);
+        return new NodeObject(node);
     }
 
     $(selector, self) {
@@ -452,7 +458,12 @@ class XmlParser extends NodeBase {
     }
 
     toString(options = {}) {
-        const {encoding = 'utf-8', format = false, noHeader = false, expandEmpty = false} = options;
+        const {
+            encoding = 'utf-8',
+            format = false,
+            noHeader = false,
+            expandEmpty = false
+        } = options;
 
         let deepType = 0;
         let out = '';
@@ -545,7 +556,7 @@ class XmlParser extends NodeBase {
                 return;
 
             if (!ignoreNode && pickNode) {
-                route += `/${tag}`;
+                route += `${route ? '/' : ''}${tag}`;
                 ignoreNode = !pickNode(route);
             }
 
