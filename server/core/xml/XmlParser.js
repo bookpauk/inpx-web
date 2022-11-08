@@ -452,7 +452,7 @@ class XmlParser extends NodeBase {
     }
 
     toString(options = {}) {
-        const {encoding = 'utf-8', format = false, noHeader = false} = options;
+        const {encoding = 'utf-8', format = false, noHeader = false, expandEmpty = false} = options;
 
         let deepType = 0;
         let out = '';
@@ -489,15 +489,19 @@ class XmlParser extends NodeBase {
                         }
                     }
 
-
-                    open = (format && lastType !== TEXT ? indent : '');
-                    open += `<${node.name}${attrs}>`;
-
                     if (node.value)
                         body = nodesToString(node.value, depth + 2);
 
-                    close = (format && deepType && deepType !== TEXT ? indent : '');
-                    close += `</${node.name}>`;
+                    if (!body && !expandEmpty) {
+                        open = (format && lastType !== TEXT ? indent : '');
+                        open += `<${node.name}${attrs}/>`;
+                    } else {
+                        open = (format && lastType !== TEXT ? indent : '');
+                        open += `<${node.name}${attrs}>`;
+
+                        close = (format && deepType && deepType !== TEXT ? indent : '');
+                        close += `</${node.name}>`;
+                    }
                 } else if (node.type === TEXT) {
                     body = node.value || '';
                 } else if (node.type === CDATA) {
@@ -516,7 +520,7 @@ class XmlParser extends NodeBase {
             return result;
         }
 
-        out += nodesToString(this.rawNodes);
+        out += nodesToString(this.rawNodes) + (format ? '\n' : '');
 
         return out;
     }
