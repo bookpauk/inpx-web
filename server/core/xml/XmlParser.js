@@ -201,7 +201,7 @@ class NodeObject extends NodeBase {
                 callback(node, route);
 
                 if (node.type === NODE && node.value) {
-                    deep(node.value, route + `/${node.name}`);
+                    deep(node.value, `${route}${route ? '/' : ''}${node.name}`);
                 }
             }
         }
@@ -328,29 +328,47 @@ class XmlParser extends NodeBase {
         return this;
     }
 
-    each(callback) {
-        for (const n of this.rawNodes) {
-            callback(new NodeObject(n));
+    each(callback, self = false) {
+        if (self) {
+            for (const n of this.rawNodes) {
+                callback(new NodeObject(n));
+            }
+        } else {
+            for (const n of this.rawNodes) {
+                if (n[0] === NODE && n[3])
+                    callback(new NodeObject(n[3]));
+            }
         }
 
         return this;
     }
 
-    eachDeep(callback) {
+    eachDeep(callback, self = false) {
         const deep = (nodes, route = '') => {
             for (const n of nodes) {
                 const node = new NodeObject(n);
                 callback(node, route);
 
                 if (node.type === NODE && node.value) {
-                    deep(node.value, route + `/${node.name}`);
+                    deep(node.value, `${route}${route ? '/' : ''}${node.name}`);
                 }
             }
         }
 
-        deep(this.rawNodes);
+        if (self) {
+            deep(this.rawNodes);
+        } else {
+            for (const n of this.rawNodes) {
+                if (n[0] === NODE && n[3])
+                    deep(n[3]);
+            }
+        }
 
         return this;
+    }
+
+    eachDeepSelf(callback) {
+        return this.eachDeep(callback, true);
     }
 
     rawSelect(nodes, selectorObj, callback) {
