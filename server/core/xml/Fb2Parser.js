@@ -2,7 +2,7 @@ const fs = require('fs-extra');
 const iconv = require('iconv-lite');
 const textUtils = require('./textUtils');
 
-const xmlParser = require('./xmlParser');
+const XmlParser = require('./XmlParser');
 const utils = require('../utils');
 
 class Fb2Parser {
@@ -55,12 +55,20 @@ class Fb2Parser {
         data = await utils.gunzipBuffer(data);
         //data = this.checkEncoding(data);
 
-        const result = xmlParser.parseXml(data.toString(), true, (route) => {
-            console.log(route);
-            return true;
+        const xml = new XmlParser();
+
+        xml.fromString(data.toString(), {
+            lowerCase: true,
+            pickNode: route => route.indexOf('fictionbook/body') !== 0,
         });
 
-        return xmlParser.simplifyXmlParsed(result);
+        let cover = null;
+        //console.log(xml.toString());
+        //xml.each(node => console.log(node.name));
+
+        const desc = xml.$$('description').toObject();
+
+        return {desc, cover};
     }
 }
 

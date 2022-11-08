@@ -473,15 +473,14 @@ class WebWorker {
                 const rows = await db.select({table: 'book', where: `@@id(${db.esc(bookId)})`});
                 const book = rows[0];
 
-                let fb2 = false;
-                if (book.ext == 'fb2') {
-                    const parsedFb2 = await this.fb2Parser.getDescAndCover(bookFile);
-                    fb2 = parsedFb2;
-                }
-
                 bookInfo.book = book;
-                bookInfo.fb2 = fb2;
                 bookInfo.cover = '';
+                bookInfo.fb2 = false;
+
+                if (book.ext == 'fb2') {
+                    const {desc, cover} = await this.fb2Parser.getDescAndCover(bookFile);
+                    bookInfo.fb2 = desc;
+                }
 
                 await fs.writeFile(bookFileInfo, JSON.stringify(bookInfo, null, 2));
             } else {
