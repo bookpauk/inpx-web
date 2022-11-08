@@ -485,7 +485,7 @@ class XmlParser extends NodeBase {
 
                 if (node.type === NODE) {
                     if (!node.name)
-                        break;
+                        continue;
 
                     let attrs = '';
 
@@ -640,7 +640,102 @@ class XmlParser extends NodeBase {
             onStartNode, onEndNode, onTextNode, onCdata, onComment, lowerCase
         });
 
-        this.rawNodes = parsed;        
+        this.rawNodes = parsed;
+    }
+
+    toObject() {
+        const nodesToObject = (nodes) => {
+            const result = {};
+
+            for (const n of nodes) {
+                const node = new NodeObject(n);
+
+                if (node.type === NODE) {
+                    if (!node.name)
+                        continue;
+
+                    let newNode = {};
+
+                    const nodeAttrs = node.attrs();
+                    if (nodeAttrs)
+                        newNode['*ATTRS'] = Object.fromEntries(nodeAttrs);
+
+                    if (node.value) {
+                        Object.assign(newNode, nodesToObject(node.value));
+
+                        //схлопывание узла до строки
+                        if (!Array.isArray(newNode)
+                            && Object.prototype.hasOwnProperty.call(newNode, '*TEXT')
+                            && Object.keys(newNode).length === 1) {
+                            newNode = newNode['*TEXT'];
+                        }
+                    }
+
+                    if (!Object.prototype.hasOwnProperty.call(result, node.name)) {
+                        result[node.name] = newNode;
+                    } else {
+                        if (!Array.isArray(result[node.name])) {
+                            result[node.name] = [result[node.name]];
+                        }
+
+                        result[node.name].push(newNode);
+                    }
+                } else if (node.type === TEXT) {
+                    if (!result['*TEXT'])
+                        result['*TEXT'] = '';
+                    result['*TEXT'] += node.value || '';
+                } else if (node.type === CDATA) {
+                    if (!result['*CDATA'])
+                        result['*CDATA'] = '';
+                    result['*CDATA'] += node.value || '';
+                } else if (node.type === COMMENT) {
+                    if (!result['*COMMENT'])
+                        result['*COMMENT'] = '';
+                    result['*COMMENT'] += node.value || '';
+                }
+            }
+
+            return result;
+        }
+
+        return nodesToObject(this.rawNodes);
+    }
+
+    fromObject(xmlObject) {
+        const objectToNodes = (obj) => {
+            const result = [];
+
+            for (const [tag, objNode] of Object.entries(obj)) {
+                if (tag === '*TEXT') {
+                    result.push(this.createText(objNode).raw);
+                } else if (tag === '*CDATA') {
+                    result.push(this.createCdata(objNode).raw);
+                } else if (tag === '*COMMENT') {
+                    result.push(this.createComment(objNode).raw);
+                } else if (tag === '*ATTRS') {
+                    //пропускаем
+                } else {
+                    if (typeof(objNode) === 'string') {
+                        result.push(this.createNode(tag, null, [this.createText(objNode).raw]).raw);
+                    } else if (Array.isArray(objNode)) {
+                        for (const n of objNode) {
+                            if (typeof(n) === 'string') {
+                                result.push(this.createNode(tag, null, [this.createText(n).raw]).raw);
+                            } else if (typeof(n) === 'object') {
+                                result.push(this.createNode(tag, (n['*ATTRS'] ? Object.entries(n['*ATTRS']) : null), objectToNodes(n)).raw);
+                            }
+                        }
+
+                    } else if (typeof(objNode) === 'object') {
+                        result.push(this.createNode(tag, (objNode['*ATTRS'] ? Object.entries(objNode['*ATTRS']) : null), objectToNodes(objNode)).raw);
+                    }
+                }
+            }
+
+            return result;
+        };
+
+        this.rawNodes = objectToNodes(xmlObject);
     }
 }
 
