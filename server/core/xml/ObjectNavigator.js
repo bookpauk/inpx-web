@@ -1,9 +1,6 @@
 class ObjectNavigator {
     constructor(raw = null) {
-        if (Array.isArray(raw))
-            this.raw = raw;
-        else
-            this.raw = [raw];
+        this.raw = raw;
     }
 
     makeSelector(selector) {
@@ -39,34 +36,30 @@ class ObjectNavigator {
         let raw = this.raw;
         for (const s of selector) {
             if (s.name) {
-                raw = raw[0];
                 if (typeof(raw) === 'object' && !Array.isArray(raw))
                     raw = raw[s.name];
                 else
                     raw = null;
+            }
 
-                if (raw !== null && !s.last) {
-                    if (Array.isArray(raw))
-                        raw = raw[s.index];
-                    else if (s.index > 0)
-                        raw = null;
-                }
-            } else {
-                raw = raw[s.index];
+            if (raw !== null && !s.last) {
+                if (Array.isArray(raw))
+                    raw = raw[s.index];
+                else if (s.index > 0)
+                    raw = null;
             }
 
             if (raw === undefined || raw === null) {
                 raw = null;
                 break;
             }
-
-            if (!Array.isArray(raw))
-                raw = [raw];
         }
 
         if (raw === null)
             return null;
 
+        raw = (Array.isArray(raw) ? raw : [raw]);
+        
         const result = [];
         for (const r of raw)
             result.push(new ObjectNavigator(r));
@@ -84,7 +77,7 @@ class ObjectNavigator {
     }
 
     get value() {
-        return (this.raw.length ? this.raw[0] : null);
+        return this.raw;
     }
 
     text(selector = '') {
