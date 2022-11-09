@@ -1,4 +1,5 @@
 const sax = require('./sax');
+const ObjectNavigator = require('./ObjectNavigator');
 
 //node types
 const NODE = 1;
@@ -78,11 +79,11 @@ class NodeBase {
 }
 
 class NodeObject extends NodeBase {
-    constructor(rawNode) {
+    constructor(raw = null) {
         super();
 
-        if (rawNode)
-            this.raw = rawNode;
+        if (raw)
+            this.raw = raw;
         else
             this.raw = [];
     }
@@ -747,6 +748,10 @@ class XmlParser extends NodeBase {
         this.rawNodes = objectToNodes(xmlObject);
 
         return this;
+    }
+
+    navigator() {
+        return new ObjectNavigator(this.toObject());
     }
 }
 
