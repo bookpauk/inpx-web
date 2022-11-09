@@ -2,7 +2,7 @@ const fs = require('fs-extra');
 const iconv = require('iconv-lite');
 const textUtils = require('./textUtils');
 
-const XmlParser = require('./XmlParser');
+const XmlParser = require('../xml/XmlParser');
 const utils = require('../utils');
 
 class Fb2Parser {

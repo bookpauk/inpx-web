@@ -15,7 +15,7 @@ const ayncExit = new (require('./AsyncExit'))();
 const log = new (require('./AppLogger'))().log;//singleton
 const utils = require('./utils');
 const genreTree = require('./genres');
-const Fb2Parser = require('./xml/Fb2Parser');
+const Fb2Parser = require('./fb2/Fb2Parser');
 
 //server states
 const ssNormal = 'normal';
