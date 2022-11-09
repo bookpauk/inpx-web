@@ -53,7 +53,8 @@ class Fb2Parser {
     async getDescAndCover(bookFile) {
         let data = await fs.readFile(bookFile);
         data = await utils.gunzipBuffer(data);
-        //data = this.checkEncoding(data);
+
+        data = this.checkEncoding(data);
 
         const xml = new XmlParser();
 
