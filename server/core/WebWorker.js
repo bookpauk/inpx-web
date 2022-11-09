@@ -469,24 +469,48 @@ class WebWorker {
             const bookFile = `${this.config.filesDir}/${hash}`;
             const bookFileInfo = `${bookFile}.info`;
 
-            if (!await fs.pathExists(bookFileInfo)) {
+            const restoreBookInfo = async() => {
+                const result = {};
+
                 const rows = await db.select({table: 'book', where: `@@id(${db.esc(bookId)})`});
                 const book = rows[0];
 
-                bookInfo.book = book;
-                bookInfo.cover = '';
-                bookInfo.fb2 = false;
+                result.book = book;
+                result.cover = '';
+                result.fb2 = false;
 
                 if (book.ext == 'fb2') {
-                    const {desc, cover} = await this.fb2Parser.getDescAndCover(bookFile);
-                    bookInfo.fb2 = desc;
+                    const {desc, cover, coverExt} = await this.fb2Parser.getDescAndCover(bookFile);
+                    result.fb2 = desc;
+
+                    if (cover) {
+                        result.cover = `${this.config.filesPathStatic}/${hash}${coverExt}`;
+                        await fs.writeFile(`${bookFile}${coverExt}`, cover);
+                    }
                 }
 
+                return result;
+            };
+
+            if (!await fs.pathExists(bookFileInfo)) {
+                Object.assign(bookInfo, await restoreBookInfo());
                 await fs.writeFile(bookFileInfo, JSON.stringify(bookInfo, null, 2));
             } else {
                 await utils.touchFile(bookFileInfo);
-                const info = fs.readFile(bookFileInfo, 'utf-8');
-                bookInfo = JSON.parse(info);
+                const info = await fs.readFile(bookFileInfo, 'utf-8');
+                const tmpInfo = JSON.parse(info);
+
+                //проверим существование файла обложки, восстановим если нету
+                let coverFile = '';
+                if (tmpInfo.cover)
+                    coverFile = `${this.config.publicFilesDir}${tmpInfo.cover}`;
+
+                if (coverFile && !await fs.pathExists(coverFile)) {
+                    Object.assign(bookInfo, await restoreBookInfo());
+                    await fs.writeFile(bookFileInfo, JSON.stringify(bookInfo, null, 2));
+                } else {
+                    bookInfo = tmpInfo;
+                }
             }
 
             return {bookInfo};

@@ -63,13 +63,39 @@ class Fb2Parser {
             pickNode: route => route.indexOf('fictionbook/body') !== 0,
         });
 
-        let cover = null;
-        //console.log(xml.toString());
-        //xml.each(node => console.log(node.name));
-
         const desc = xml.$$('description').toObject();
+        const coverImage = xml.navigator(desc).$('description/title-info/coverpage/image');
 
-        return {desc, cover};
+        let cover = null;
+        let coverExt = '';
+        if (coverImage) {
+            const coverAttrs = coverImage.attrs();
+            const href = coverAttrs['l:href'];
+            let coverType = coverAttrs['content-type'];
+            coverType = (coverType == 'image/jpg' || coverType == 'application/octet-stream' ? 'image/jpeg' : coverType);
+            coverExt = (coverType == 'image/png' ? '.png' : '.jpg');
+
+            if (href) {
+                const binaryId = (href[0] == '#' ? href.substring(1) : href);
+
+                //найдем нужный image
+                xml.$$('binary').eachSelf(node => {
+                    let attrs = node.attrs();
+                    if (!attrs)
+                        return;
+                    attrs = Object.fromEntries(attrs);
+
+                    if (attrs.id === binaryId) {
+                        const textNode = new XmlParser(node.value);
+                        const base64 = textNode.$self('*TEXT').value;
+
+                        cover = (base64 ? Buffer.from(base64, 'base64') : null);
+                    }
+                });
+            }
+        }
+
+        return {desc, cover, coverExt};
     }
 }
 
