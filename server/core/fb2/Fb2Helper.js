@@ -56,15 +56,15 @@ class Fb2Helper {
 
         data = this.checkEncoding(data);
 
-        const fb2 = new Fb2Parser();
+        const parser = new Fb2Parser();
 
-        fb2.fromString(data.toString(), {
+        parser.fromString(data.toString(), {
             lowerCase: true,
             pickNode: route => route.indexOf('fictionbook/body') !== 0,
         });
 
-        const desc = fb2.$$('description').toObject();
-        const coverImage = fb2.inspector(desc).$('description/title-info/coverpage/image');
+        const desc = parser.$$('description').toObject();
+        const coverImage = parser.inspector(desc).$('description/title-info/coverpage/image');
 
         let cover = null;
         let coverExt = '';
@@ -79,7 +79,7 @@ class Fb2Helper {
                 const binaryId = (href[0] == '#' ? href.substring(1) : href);
 
                 //найдем нужный image
-                fb2.$$('binary').eachSelf(node => {
+                parser.$$('binary').eachSelf(node => {
                     let attrs = node.attrs();
                     if (!attrs)
                         return;
@@ -95,7 +95,8 @@ class Fb2Helper {
             }
         }
 
-        return {desc, cover, coverExt};
+        parser.remove('binary');
+        return {fb2: parser.toObject(), cover, coverExt};
     }
 }
 

@@ -480,8 +480,8 @@ class WebWorker {
                 result.fb2 = false;
 
                 if (book.ext == 'fb2') {
-                    const {desc, cover, coverExt} = await this.fb2Helper.getDescAndCover(bookFile);
-                    result.fb2 = desc;
+                    const {fb2, cover, coverExt} = await this.fb2Helper.getDescAndCover(bookFile);
+                    result.fb2 = fb2;
 
                     if (cover) {
                         result.cover = `${this.config.filesPathStatic}/${hash}${coverExt}`;
