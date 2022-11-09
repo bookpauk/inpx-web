@@ -189,32 +189,31 @@ function initStatic(app, config) {
             return next();
         }
 
-        if (path.extname(req.path) == '.json')
-            return next();
+        if (path.extname(req.path) == '') {
+            const bookFile = `${config.publicFilesDir}${req.path}`;
+            const bookFileDesc = `${bookFile}.json`;
 
-        const bookFile = `${config.publicFilesDir}${req.path}`;
-        const bookFileDesc = `${bookFile}.json`;
+            let downFileName = '';
+            //восстановим из json-файла описания
+            try {
+                if (await fs.pathExists(bookFile) && await fs.pathExists(bookFileDesc)) {
+                    await utils.touchFile(bookFile);
+                    await utils.touchFile(bookFileDesc);
 
-        let downFileName = '';
-        //восстановим из json-файла описания
-        try {
-            if (await fs.pathExists(bookFile) && await fs.pathExists(bookFileDesc)) {
-                await utils.touchFile(bookFile);
-                await utils.touchFile(bookFileDesc);
-
-                let desc = await fs.readFile(bookFileDesc, 'utf8');
-                desc = JSON.parse(desc);
-                downFileName = desc.downFileName;
-            } else {
-                await fs.remove(bookFile);
-                await fs.remove(bookFileDesc);
+                    let desc = await fs.readFile(bookFileDesc, 'utf8');
+                    desc = JSON.parse(desc);
+                    downFileName = desc.downFileName;
+                } else {
+                    await fs.remove(bookFile);
+                    await fs.remove(bookFileDesc);
+                }
+            } catch(e) {
+                log(LM_ERR, e.message);
             }
-        } catch(e) {
-            log(LM_ERR, e.message);
-        }
 
-        if (downFileName)
-            res.downFileName = downFileName;
+            if (downFileName)
+                res.downFileName = downFileName;
+        }
 
         return next();
     });
