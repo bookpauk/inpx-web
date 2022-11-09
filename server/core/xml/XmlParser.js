@@ -186,7 +186,8 @@ class NodeObject extends NodeBase {
             return;
 
         for (const n of this.raw[3]) {
-            callback(new NodeObject(n));
+            if (callback(new NodeObject(n)) === false)
+                break;
         }
 
         return this;
@@ -199,10 +200,13 @@ class NodeObject extends NodeBase {
         const deep = (nodes, route = '') => {
             for (const n of nodes) {
                 const node = new NodeObject(n);
-                callback(node, route);
+
+                if (callback(node, route) === false)
+                    return false;
 
                 if (node.type === NODE && node.value) {
-                    deep(node.value, `${route}${route ? '/' : ''}${node.name}`);
+                    if (deep(node.value, `${route}${route ? '/' : ''}${node.name}`) === false)
+                        return false;
                 }
             }
         }
@@ -332,13 +336,15 @@ class XmlParser extends NodeBase {
     each(callback, self = false) {
         if (self) {
             for (const n of this.rawNodes) {
-                callback(new NodeObject(n));
+                if (callback(new NodeObject(n)) === false);
+                    return this;
             }
         } else {
             for (const n of this.rawNodes) {
                 if (n[0] === NODE && n[3]) {
                     for (const nn of n[3])
-                        callback(new NodeObject(nn));
+                        if (callback(new NodeObject(nn)) === false)
+                            return this;
                 }
             }
         }
@@ -354,10 +360,13 @@ class XmlParser extends NodeBase {
         const deep = (nodes, route = '') => {
             for (const n of nodes) {
                 const node = new NodeObject(n);
-                callback(node, route);
+
+                if (callback(node, route) === false)
+                    return false;
 
                 if (node.type === NODE && node.value) {
-                    deep(node.value, `${route}${route ? '/' : ''}${node.name}`);
+                    if (deep(node.value, `${route}${route ? '/' : ''}${node.name}`) === false)
+                        return false;
                 }
             }
         }
@@ -367,7 +376,8 @@ class XmlParser extends NodeBase {
         } else {
             for (const n of this.rawNodes) {
                 if (n[0] === NODE && n[3])
-                    deep(n[3]);
+                    if (deep(n[3]) === false)
+                        break;
             }
         }
 
@@ -750,8 +760,11 @@ class XmlParser extends NodeBase {
         return this;
     }
 
-    navigator() {
-        return new ObjectNavigator(this.toObject());
+    navigator(obj) {
+        if (!obj)
+            obj = this.toObject();
+
+        return new ObjectNavigator(obj);
     }
 }
 
