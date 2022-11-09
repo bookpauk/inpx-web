@@ -455,6 +455,8 @@ class XmlParser extends NodeBase {
             throw new Error('JSON parse error: root element must be array');
 
         this.rawNodes = parsed;
+
+        return this;
     }
 
     toString(options = {}) {
@@ -641,9 +643,15 @@ class XmlParser extends NodeBase {
         });
 
         this.rawNodes = parsed;
+
+        return this;
     }
 
-    toObject() {
+    toObject(options = {}) {
+        const {
+            compactText = false
+        } = options;
+
         const nodesToObject = (nodes) => {
             const result = {};
 
@@ -663,8 +671,9 @@ class XmlParser extends NodeBase {
                     if (node.value) {
                         Object.assign(newNode, nodesToObject(node.value));
 
-                        //схлопывание узла до строки
-                        if (!Array.isArray(newNode)
+                        //схлопывание текстового узла до string
+                        if (compactText
+                            && !Array.isArray(newNode)
                             && Object.prototype.hasOwnProperty.call(newNode, '*TEXT')
                             && Object.keys(newNode).length === 1) {
                             newNode = newNode['*TEXT'];
@@ -736,6 +745,8 @@ class XmlParser extends NodeBase {
         };
 
         this.rawNodes = objectToNodes(xmlObject);
+
+        return this;
     }
 }
 
