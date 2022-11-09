@@ -336,7 +336,7 @@ class XmlParser extends NodeBase {
     each(callback, self = false) {
         if (self) {
             for (const n of this.rawNodes) {
-                if (callback(new NodeObject(n)) === false);
+                if (callback(new NodeObject(n)) === false)
                     return this;
             }
         } else {
