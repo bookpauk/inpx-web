@@ -133,6 +133,10 @@ body, html, #app {
     animation: rotating 2s linear infinite;
 }
 
+.q-dialog__inner--minimized > div {
+    max-width: 800px;
+}
+
 @keyframes rotating { 
     from { 
         transform: rotate(0deg); 

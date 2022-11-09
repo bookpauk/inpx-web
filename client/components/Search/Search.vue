@@ -250,7 +250,7 @@
         <SelectLangDialog v-model="selectLangDialogVisible" v-model:lang="search.lang" :lang-list="langList" :lang-default="langDefault" />        
         <SelectLibRateDialog v-model="selectLibRateDialogVisible" v-model:librate="search.librate" />
         <SelectDateDialog v-model="selectDateDialogVisible" v-model:date="search.date" />
-        <BookInfoDialog v-model="bookInfoDialogVisible" book-info="bookInfo" />
+        <BookInfoDialog v-model="bookInfoDialogVisible" :book-info="bookInfo" />
     </div>
 </template>
 

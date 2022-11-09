@@ -59,7 +59,7 @@ class ObjectNavigator {
             return null;
 
         raw = (Array.isArray(raw) ? raw : [raw]);
-        
+
         const result = [];
         for (const r of raw)
             result.push(new ObjectNavigator(r));
@@ -78,6 +78,11 @@ class ObjectNavigator {
 
     get value() {
         return this.raw;
+    }
+
+    v(selector = '') {
+        const res = this.$(selector);
+        return (res ? res.value : null);
     }
 
     text(selector = '') {
