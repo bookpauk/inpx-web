@@ -15,7 +15,7 @@ const ayncExit = new (require('./AsyncExit'))();
 const log = new (require('./AppLogger'))().log;//singleton
 const utils = require('./utils');
 const genreTree = require('./genres');
-const Fb2Parser = require('./fb2/Fb2Parser');
+const Fb2Helper = require('./fb2/Fb2Helper');
 
 //server states
 const ssNormal = 'normal';
@@ -45,7 +45,7 @@ class WebWorker {
             }
             
             this.inpxHashCreator = new InpxHashCreator(config);
-            this.fb2Parser = new Fb2Parser();
+            this.fb2Helper = new Fb2Helper();
             this.inpxFileHash = '';
 
             this.wState = this.workerState.getControl('server_state');
@@ -480,7 +480,7 @@ class WebWorker {
                 result.fb2 = false;
 
                 if (book.ext == 'fb2') {
-                    const {desc, cover, coverExt} = await this.fb2Parser.getDescAndCover(bookFile);
+                    const {desc, cover, coverExt} = await this.fb2Helper.getDescAndCover(bookFile);
                     result.fb2 = desc;
 
                     if (cover) {

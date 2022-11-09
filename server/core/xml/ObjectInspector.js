@@ -1,4 +1,4 @@
-class ObjectNavigator {
+class ObjectInspector {
     constructor(raw = null) {
         this.raw = raw;
     }
@@ -62,7 +62,7 @@ class ObjectNavigator {
 
         const result = [];
         for (const r of raw)
-            result.push(new ObjectNavigator(r));
+            result.push(new ObjectInspector(r));
 
         return result;
     }
@@ -106,4 +106,4 @@ class ObjectNavigator {
     }
 }
 
-module.exports = ObjectNavigator;
+module.exports = ObjectInspector;

@@ -1,5 +1,5 @@
 const sax = require('./sax');
-const ObjectNavigator = require('./ObjectNavigator');
+const ObjectInspector = require('./ObjectInspector');
 
 //node types
 const NODE = 1;
@@ -760,11 +760,11 @@ class XmlParser extends NodeBase {
         return this;
     }
 
-    navigator(obj) {
+    inspector(obj) {
         if (!obj)
             obj = this.toObject();
 
-        return new ObjectNavigator(obj);
+        return new ObjectInspector(obj);
     }
 }
 
