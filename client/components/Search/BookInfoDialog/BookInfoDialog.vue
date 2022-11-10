@@ -17,7 +17,7 @@
             </div>
 
             <div class="row q-mt-sm no-wrap">
-                <div class="column justify-center" style="height: 300px; width: 200px;">
+                <div class="column justify-center" style="height: 300px; width: 200px; min-width: 100px">
                     <img v-if="coverSrc" :src="coverSrc" class="fit row justify-center items-center" style="object-fit: contain" @error="coverSrc = ''" />
                     <div v-if="!coverSrc" class="fit row justify-center items-center text-grey-5" style="border: 1px solid #ccc; font-size: 300%">
                         <i>{{ book.ext }}</i>
@@ -81,6 +81,7 @@ import vueComponent from '../../vueComponent.js';
 import Dialog from '../../share/Dialog.vue';
 import Fb2Parser from '../../../../server/core/fb2/Fb2Parser';
 import * as utils from '../../../share/utils';
+import _ from 'lodash';
 
 const componentOptions = {
     components: {
@@ -169,7 +170,6 @@ class BookInfoDialog {
                 {name: 'author', label: 'Автор(ы)'},
                 {name: 'title', label: 'Название'},
                 {name: 'series', label: 'Серия'},
-                {name: 'serno', label: 'Номер в серии'},
                 {name: 'genre', label: 'Жанр'},
                 {name: 'librate', label: 'Оценка'},
                 {name: 'lang', label: 'Язык книги'},
@@ -190,7 +190,7 @@ class BookInfoDialog {
             if (nodePath == 'titleInfo/author')
                 return value.split(',').join(', ');
 
-            if ((nodePath == 'titleInfo/serno' || nodePath == 'titleInfo/librate') && !value)
+            if (nodePath == 'titleInfo/librate' && !value)
                 return null;
 
             if (typeof(value) === 'string') {
@@ -201,6 +201,9 @@ class BookInfoDialog {
         };
 
         let result = [];
+        const book = _.cloneDeep(this.book);
+        book.series = [book.series, book.serno].filter(v => v).join(' #');
+
         for (const item of mapping) {
             const itemOut = {name: item.name, label: item.label, value: []};
 
@@ -208,7 +211,7 @@ class BookInfoDialog {
                 const subItemOut = {
                     name: subItem.name,
                     label: subItem.label,
-                    value: valueToString(this.book[subItem.name], `${item.name}/${subItem.name}`)
+                    value: valueToString(book[subItem.name], `${item.name}/${subItem.name}`)
                 };
                 if (subItemOut.value)
                     itemOut.value.push(subItemOut);
