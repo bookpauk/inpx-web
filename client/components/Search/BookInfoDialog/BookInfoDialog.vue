@@ -54,9 +54,7 @@
                                 <div style="width: 110px">
                                     {{ subItem.label }}
                                 </div>
-                                <div class="q-ml-sm">
-                                    {{ subItem.value }}
-                                </div>
+                                <div class="q-ml-sm" v-html="subItem.value" />
                             </div>
                         </div>
 
@@ -246,7 +244,22 @@ class BookInfoDialog {
 
         //fb2
         if (bookInfo.fb2) {
-            this.fb2 = parser.bookInfoList(bookInfo.fb2);
+            this.fb2 = parser.bookInfoList(bookInfo.fb2, {
+                valueToString(value, nodePath) {//eslint-disable-line no-unused-vars
+                    if (nodePath == 'documentInfo/historyHtml' && value)
+                        return value.replace(/<p>/g, `<p class="p-history">`);
+
+                    if (typeof(value) === 'string') {
+                        return value;
+                    } else if (Array.isArray(value)) {
+                        return value.join(', ');
+                    } else if (typeof(value) === 'object') {
+                        return JSON.stringify(value);
+                    }
+
+                    return value;
+                },
+            });
             
             const infoObj = parser.bookInfo(bookInfo.fb2);
             if (infoObj.titleInfo) {
@@ -279,6 +292,11 @@ export default vueComponent(BookInfoDialog);
 .p-annotation {
     text-indent: 20px;
     text-align: justify;
+    padding: 0;
+    margin: 0;
+}
+
+.p-history {
     padding: 0;
     margin: 0;
 }

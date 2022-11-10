@@ -29,46 +29,44 @@ class Fb2Parser extends XmlParser {
         if (!desc)
             return result;
 
-        //title-info
-        const titleInfo = desc.$('title-info');
-        if (titleInfo) {
+        const parseAuthors = (node, tagName) => {
+            const authors = [];
+            for (const a of node.$$(tagName)) {
+                let names = [];
+                names.push(a.text('last-name'));
+                names.push(a.text('first-name'));
+                names.push(a.text('middle-name'));
+                names = names.filter(n => n);
+                if (!names.length)
+                    names.push(a.text('nickname'));
+
+                authors.push(names.join(' '));
+            }
+
+            return authors;
+        }
+
+        const parseTitleInfo = (titleInfo) => {
             const info = {};
 
             info.genre = [];
             for (const g of titleInfo.$$('genre'))
                 info.genre.push(g.text());
 
-            const parseAuthors = (tagName) => {
-                const authors = [];
-                for (const a of titleInfo.$$(tagName)) {
-                    let names = [];
-                    names.push(a.text('last-name'));
-                    names.push(a.text('first-name'));
-                    names.push(a.text('middle-name'));
-                    names = names.filter(n => n);
-                    if (!names.length)
-                        names.push(a.text('nickname'));
-
-                    authors.push(names.join(' '));
-                }
-
-                return authors;
-            }
-
-            info.author = parseAuthors('author');
+            info.author = parseAuthors(titleInfo, 'author');
 
             info.bookTitle = titleInfo.text('book-title');
 
-            info.annotation = null;
+            //annotation как Object
+            info.annotation = titleInfo.$('annotation') && titleInfo.$('annotation').value;
+            info.annotationXml = null;
             info.annotationHtml = null;
-            const node = titleInfo.$('annotation') && titleInfo.$('annotation').value;
-
-            if (node) {
+            if (info.annotation) {
                 //annotation как кусок xml
-                info.annotation = (new XmlParser()).fromObject(node).toString({noHeader: true});
+                info.annotationXml = (new XmlParser()).fromObject(info.annotation).toString({noHeader: true});
 
                 //annotation как html
-                info.annotationHtml = this.toHtml(info.annotation);
+                info.annotationHtml = this.toHtml(info.annotationXml);
             }
 
             info.keywords = titleInfo.text('keywords');
@@ -77,14 +75,61 @@ class Fb2Parser extends XmlParser {
             info.lang = titleInfo.text('lang');
             info.srcLang = titleInfo.text('src-lang');
 
-            info.translator = parseAuthors('translator');
+            info.translator = parseAuthors(titleInfo, 'translator');
 
             const seqAttrs = titleInfo.attrs('sequence') || {};
             info.sequenceName = seqAttrs['name'] || null;
             info.sequenceNum = seqAttrs['number'] || null;
             info.sequenceLang = seqAttrs['xml:lang'] || null;
 
-            result.titleInfo = info;
+            return info;
+        }
+
+        //title-info
+        const titleInfo = desc.$('title-info');
+        if (titleInfo) {
+            result.titleInfo = parseTitleInfo(titleInfo);
+        }
+
+        //src-title-info
+        const srcTitleInfo = desc.$('src-title-info');
+        if (srcTitleInfo) {
+            result.srcTitleInfo = parseTitleInfo(srcTitleInfo);
+        }
+
+        //document-info
+        const documentInfo = desc.$('document-info');
+        if (documentInfo) {
+            const info = {};
+
+            info.author = parseAuthors(documentInfo, 'author');
+            info.programUsed = documentInfo.text('program-used');
+            info.date = documentInfo.text('date');
+
+            info.srcUrl = [];
+            for (const url of documentInfo.$$('src-url'))
+                info.srcUrl.push(url.text());
+
+            info.srcOcr = documentInfo.text('src-ocr');
+            info.id = documentInfo.text('id');
+            info.version = documentInfo.text('version');
+            
+            //аналогично annotation, но разбирать в Xml и Html пока не будем
+            info.history = documentInfo.$('history') && documentInfo.$('history').value;
+            info.historyXml = null;
+            info.historyHtml = null;
+            if (info.history) {
+                //history как кусок xml
+                info.historyXml = (new XmlParser()).fromObject(info.history).toString({noHeader: true});
+
+                //history как html
+                info.historyHtml = this.toHtml(info.historyXml);
+            }
+
+
+            info.publisher = parseAuthors(documentInfo, 'publisher');
+
+            result.documentInfo = info;
         }
 
         return result;
@@ -126,6 +171,30 @@ class Fb2Parser extends XmlParser {
                 {name: 'srcLang', label: 'Язык оригинала'},
                 {name: 'translator', label: 'Переводчик(и)'},
                 {name: 'keywords', label: 'Ключевые слова'},
+            ]},
+            {name: 'srcTitleInfo', label: 'Информация о произведении на языке оригинала', value: [
+                {name: 'author', label: 'Автор(ы)'},
+                {name: 'bookTitle', label: 'Название'},
+                {name: 'sequenceName', label: 'Серия'},
+                {name: 'sequenceNum', label: 'Номер в серии'},
+                {name: 'genre', label: 'Жанр'},
+
+                {name: 'date', label: 'Дата'},
+                {name: 'lang', label: 'Язык книги'},
+                {name: 'srcLang', label: 'Язык оригинала'},
+                {name: 'translator', label: 'Переводчик(и)'},
+                {name: 'keywords', label: 'Ключевые слова'},
+            ]},
+            {name: 'documentInfo', label: 'Информация о документе (OCR)', value: [
+                {name: 'author', label: 'Автор(ы)'},
+                {name: 'programUsed', label: 'Программа'},
+                {name: 'date', label: 'Дата'},
+                //srcUrl = []
+                {name: 'id', label: 'ID'},
+                {name: 'version', label: 'Версия'},
+                {name: 'srcOcr', label: 'Автор источника'},
+                {name: 'historyHtml', label: 'История'},
+                {name: 'publisher', label: 'Правообладатели'},
             ]},
         ];
 
