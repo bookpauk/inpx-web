@@ -17,7 +17,7 @@ import {QBtn} from 'quasar/src/components/btn';
 import {QBtnToggle} from 'quasar/src/components/btn-toggle';
 import {QIcon} from 'quasar/src/components/icon';
 //import {QSlider} from 'quasar/src/components/slider';
-//import {QTabs, QTab} from 'quasar/src/components/tabs';
+import {QTabs, QTab} from 'quasar/src/components/tabs';
 //import {QTabPanels, QTabPanel} from 'quasar/src/components/tab-panels';
 //import {QSeparator} from 'quasar/src/components/separator';
 //import {QList} from 'quasar/src/components/item';
@@ -52,7 +52,7 @@ const components = {
     QBtnToggle,
     QIcon,
     //QSlider,
-    //QTabs, QTab,
+    QTabs, QTab,
     //QTabPanels, QTabPanel,
     //QSeparator,
     //QList,

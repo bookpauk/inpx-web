@@ -129,31 +129,8 @@ export default class BaseList {
         })();
 
         try {
-            const makeValidFilenameOrEmpty = (s) => {
-                try {
-                    return utils.makeValidFilename(s);
-                } catch(e) {
-                    return '';
-                }
-            };
-
-            //имя файла
-            let downFileName = 'default-name';
-            const author = book.author.split(',');
-            const at = [author[0], book.title];
-            downFileName = makeValidFilenameOrEmpty(at.filter(r => r).join(' - '))
-                || makeValidFilenameOrEmpty(at[0])
-                || makeValidFilenameOrEmpty(at[1])
-                || downFileName;
-            downFileName = downFileName.substring(0, 100);
-
-            const ext = `.${book.ext}`;
-            if (downFileName.substring(downFileName.length - ext.length) != ext)
-                downFileName += ext;
-
-            const bookPath = `${book.folder}/${book.file}${ext}`;
             //подготовка
-            const response = await this.api.getBookLink({bookPath, downFileName});
+            const response = await this.api.getBookLink(book.id);
             
             const link = response.link;
             const href = `${window.location.origin}${link}`;
@@ -162,7 +139,7 @@ export default class BaseList {
                 //скачивание
                 const d = this.$refs.download;
                 d.href = href;
-                d.download = downFileName;
+                d.download = response.downFileName;
 
                 d.click();
             } else if (action == 'copyLink') {
@@ -185,6 +162,10 @@ export default class BaseList {
                     const url = this.config.bookReadLink.replace('${DOWNLOAD_LINK}', href);
                     window.open(url, '_blank');
                 }
+            } else if (action == 'bookInfo') {
+                //информация о книге
+                const response = await this.api.getBookInfo(book.id);
+                this.$emit('listEvent', {action: 'bookInfo', data: response.bookInfo});
             }
         } catch(e) {
             this.$root.stdDialog.alert(e.message, 'Ошибка');
@@ -208,6 +189,7 @@ export default class BaseList {
             case 'download':
             case 'copyLink':
             case 'readBook':
+            case 'bookInfo':
                 this.download(event.book, event.action);//no await
                 break;
         }

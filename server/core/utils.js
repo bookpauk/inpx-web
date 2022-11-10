@@ -115,8 +115,63 @@ function gzipFile(inputFile, outputFile, level = 1) {
     });
 }
 
+function gunzipFile(inputFile, outputFile) {
+    return new Promise((resolve, reject) => {
+        const gzip = zlib.createGunzip();
+        const input = fs.createReadStream(inputFile);
+        const output = fs.createWriteStream(outputFile);
+
+        input.on('error', reject)
+            .pipe(gzip).on('error', reject)
+            .pipe(output).on('error', reject)
+            .on('finish', (err) => {
+            if (err) reject(err);
+            else resolve();
+        });
+    });
+}
+
+function gzipBuffer(buf) {
+    return new Promise((resolve, reject) => {
+        zlib.gzip(buf, {level: 1}, (err, result) => {
+            if (err) reject(err);
+            resolve(result);
+        });
+    });
+}
+
+function gunzipBuffer(buf) {
+    return new Promise((resolve, reject) => {
+        zlib.gunzip(buf, (err, result) => {
+            if (err) reject(err);
+            resolve(result);
+        });
+    });
+}
+
 function toUnixPath(dir) {
     return dir.replace(/\\/g, '/');
+}
+
+function makeValidFileName(fileName, repl = '_') {
+    let f = fileName.replace(/[\x00\\/:*"<>|]/g, repl); // eslint-disable-line no-control-regex
+    f = f.trim();
+    while (f.length && (f[f.length - 1] == '.' || f[f.length - 1] == '_')) {
+        f = f.substring(0, f.length - 1);
+    }
+
+    if (f)
+        return f;
+    else
+        throw new Error('Invalid filename');
+}
+
+function makeValidFileNameOrEmpty(fileName) {
+    try {
+        return makeValidFileName(fileName);
+    } catch(e) {
+        return '';
+    }
 }
 
 module.exports = {
@@ -132,5 +187,10 @@ module.exports = {
     intersectSet,
     randomHexString,
     gzipFile,
+    gunzipFile,
+    gzipBuffer,
+    gunzipBuffer,
     toUnixPath,
+    makeValidFileName,
+    makeValidFileNameOrEmpty,
 };

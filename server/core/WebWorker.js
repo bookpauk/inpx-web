@@ -15,6 +15,7 @@ const ayncExit = new (require('./AsyncExit'))();
 const log = new (require('./AppLogger'))().log;//singleton
 const utils = require('./utils');
 const genreTree = require('./genres');
+const Fb2Helper = require('./fb2/Fb2Helper');
 
 //server states
 const ssNormal = 'normal';
@@ -44,6 +45,7 @@ class WebWorker {
             }
             
             this.inpxHashCreator = new InpxHashCreator(config);
+            this.fb2Helper = new Fb2Helper();
             this.inpxFileHash = '';
 
             this.wState = this.workerState.getControl('server_state');
@@ -400,17 +402,36 @@ class WebWorker {
         return link;
     }
 
-    async getBookLink(params) {
+    async getBookLink(bookId) {
         this.checkMyState();
-
-        const {bookPath, downFileName} = params;
 
         try {
             const db = this.db;
             let link = '';
 
+            //найдем bookPath и downFileName
+            let rows = await db.select({table: 'book', where: `@@id(${db.esc(bookId)})`});
+            if (!rows.length)
+                throw new Error('404 Файл не найден');
+
+            const book = rows[0];            
+            let downFileName = book.file;
+            const author = book.author.split(',');
+            const at = [author[0], book.title];
+            downFileName = utils.makeValidFileNameOrEmpty(at.filter(r => r).join(' - '))
+                || utils.makeValidFileNameOrEmpty(at[0])
+                || utils.makeValidFileNameOrEmpty(at[1])
+                || downFileName;
+            downFileName = downFileName.substring(0, 100);
+
+            const ext = `.${book.ext}`;
+            if (downFileName.substring(downFileName.length - ext.length) != ext)
+                downFileName += ext;
+
+            const bookPath = `${book.folder}/${book.file}${ext}`;
+
             //найдем хеш
-            const rows = await db.select({table: 'file_hash', where: `@@id(${db.esc(bookPath)})`});
+            rows = await db.select({table: 'file_hash', where: `@@id(${db.esc(bookPath)})`});
             if (rows.length) {//хеш найден по bookPath
                 const hash = rows[0].hash;
                 const bookFile = `${this.config.filesDir}/${hash}`;
@@ -428,7 +449,7 @@ class WebWorker {
             if (!link)
                 throw new Error('404 Файл не найден');
 
-            return {link};
+            return {link, bookPath, downFileName};
         } catch(e) {
             log(LM_ERR, `getBookLink error: ${e.message}`);
             if (e.message.indexOf('ENOENT') >= 0)
@@ -437,47 +458,69 @@ class WebWorker {
         }
     }
 
-    /*
-    async restoreBookFile(publicPath) {
+    async getBookInfo(bookId) {
         this.checkMyState();
 
         try {
             const db = this.db;
-            const hash = path.basename(publicPath);
 
-            //найдем bookPath и downFileName
-            const rows = await db.select({table: 'file_hash', where: `@@id(${db.esc(hash)})`});        
-            if (rows.length) {//нашли по хешу
-                const rec = rows[0];
-                await this.restoreBook(rec.bookPath, rec.downFileName);
+            let bookInfo = await this.getBookLink(bookId);
+            const hash = path.basename(bookInfo.link);
+            const bookFile = `${this.config.filesDir}/${hash}`;
+            const bookFileInfo = `${bookFile}.info`;
 
-                return rec.downFileName;
-            } else {//bookPath не найден
-                throw new Error('404 Файл не найден');
+            const restoreBookInfo = async() => {
+                const result = {};
+
+                const rows = await db.select({table: 'book', where: `@@id(${db.esc(bookId)})`});
+                const book = rows[0];
+
+                result.book = book;
+                result.cover = '';
+                result.fb2 = false;
+
+                if (book.ext == 'fb2') {
+                    const {fb2, cover, coverExt} = await this.fb2Helper.getDescAndCover(bookFile);
+                    result.fb2 = fb2;
+
+                    if (cover) {
+                        result.cover = `${this.config.filesPathStatic}/${hash}${coverExt}`;
+                        await fs.writeFile(`${bookFile}${coverExt}`, cover);
+                    }
+                }
+
+                return result;
+            };
+
+            if (!await fs.pathExists(bookFileInfo)) {
+                Object.assign(bookInfo, await restoreBookInfo());
+                await fs.writeFile(bookFileInfo, JSON.stringify(bookInfo, null, 2));
+            } else {
+                await utils.touchFile(bookFileInfo);
+                const info = await fs.readFile(bookFileInfo, 'utf-8');
+                const tmpInfo = JSON.parse(info);
+
+                //проверим существование файла обложки, восстановим если нету
+                let coverFile = '';
+                if (tmpInfo.cover)
+                    coverFile = `${this.config.publicFilesDir}${tmpInfo.cover}`;
+
+                if (coverFile && !await fs.pathExists(coverFile)) {
+                    Object.assign(bookInfo, await restoreBookInfo());
+                    await fs.writeFile(bookFileInfo, JSON.stringify(bookInfo, null, 2));
+                } else {
+                    bookInfo = tmpInfo;
+                }
             }
+
+            return {bookInfo};
         } catch(e) {
-            log(LM_ERR, `restoreBookFile error: ${e.message}`);
+            log(LM_ERR, `getBookInfo error: ${e.message}`);
             if (e.message.indexOf('ENOENT') >= 0)
                 throw new Error('404 Файл не найден');
             throw e;
         }
     }
-
-    async getDownFileName(publicPath) {
-        this.checkMyState();
-
-        const db = this.db;
-        const hash = path.basename(publicPath);
-
-        //найдем downFileName
-        const rows = await db.select({table: 'file_hash', where: `@@id(${db.esc(hash)})`});        
-        if (rows.length) {//downFileName найден по хешу
-            return rows[0].downFileName;
-        } else {//bookPath не найден
-            throw new Error('404 Файл не найден');
-        }
-    }
-    */
 
     async getInpxFile(params) {
         let data = null;

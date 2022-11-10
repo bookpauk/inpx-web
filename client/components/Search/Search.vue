@@ -3,12 +3,23 @@
         <div ref="scroller" class="col fit column no-wrap" style="overflow: auto; position: relative" @scroll="onScroll">
             <div ref="toolPanel" class="tool-panel q-pb-xs column bg-cyan-2" style="position: sticky; top: 0; z-index: 10;">
                 <div class="header q-mx-md q-mb-xs q-mt-sm row items-center">
-                    <a :href="newSearchLink" style="height: 33px">
+                    <a :href="newSearchLink" style="height: 33px; width: 34px">
                         <img src="./assets/logo.png" />
                         <q-tooltip :delay="1500" anchor="bottom middle" content-style="font-size: 80%" max-width="400px">
                             Новый поиск
                         </q-tooltip>
                     </a>
+
+                    <q-btn-toggle
+                        v-model="selectedList"
+                        class="q-ml-sm"
+                        toggle-color="primary"
+                        :options="listOptions"
+                        push
+                        no-caps
+                        rounded
+                    />
+
                     <div class="row items-center q-ml-sm" style="font-size: 150%;">
                         <div class="q-mr-xs">
                             Коллекция
@@ -17,26 +28,10 @@
                             {{ collection }}
                         </div>
                     </div>
-                    
-                    <q-btn-toggle
-                        v-model="selectedList"
-                        class="q-ml-md"
-                        toggle-color="primary"
-                        :options="listOptions"
-                        push
-                        no-caps
-                        rounded
-                    />
 
-                    <DivBtn class="q-ml-md text-white bg-secondary" :size="30" :icon-size="24" :imt="1" icon="la la-cog" round @click="settingsDialogVisible = true">
-                        <template #tooltip>
-                            <q-tooltip :delay="1500" anchor="bottom middle" content-style="font-size: 80%" max-width="400px">
-                                Настройки
-                            </q-tooltip>
-                        </template>
-                    </DivBtn>
+                    <div class="col"></div>
 
-                    <DivBtn class="q-ml-sm text-white bg-secondary" :size="30" :icon-size="24" icon="la la-question" round @click="showSearchHelp">
+                    <DivBtn class="q-ml-md text-white bg-secondary" :size="30" :icon-size="24" icon="la la-question" round @click="showSearchHelp">
                         <template #tooltip>
                             <q-tooltip :delay="1500" anchor="bottom middle" content-style="font-size: 80%" max-width="400px">
                                 Памятка
@@ -44,12 +39,27 @@
                         </template>
                     </DivBtn>
 
-                    <div class="col"></div>
-                    <div class="q-px-sm q-py-xs bg-green-12 clickable2" style="border: 1px solid #aaaaaa; border-radius: 6px" @click="openReleasePage">
-                        {{ projectName }}
-                    </div>
+                    <DivBtn class="q-ml-sm text-white bg-secondary" :size="30" :icon-size="24" :imt="1" icon="la la-cog" round @click="settingsDialogVisible = true">
+                        <template #tooltip>
+                            <q-tooltip :delay="1500" anchor="bottom middle" content-style="font-size: 80%" max-width="400px">
+                                Настройки
+                            </q-tooltip>
+                        </template>
+                    </DivBtn>
                 </div>
                 <div class="row q-mx-md q-mb-xs items-center">
+                    <DivBtn
+                        class="text-grey-5 bg-yellow-1 q-mt-xs" :size="34" :icon-size="24" round
+                        :icon="(extendedParams ? 'la la-angle-double-up' : 'la la-angle-double-down')"
+                        @click="extendedParams = !extendedParams"
+                    >
+                        <template #tooltip>
+                            <q-tooltip :delay="1500" anchor="bottom middle" content-style="font-size: 80%" max-width="400px">
+                                {{ `${(extendedParams ? 'Скрыть' : 'Показать')} дополнительные критерии поиска` }}
+                            </q-tooltip>
+                        </template>
+                    </DivBtn>
+                    <div class="q-mx-xs" />
                     <q-input
                         ref="authorInput" v-model="search.author" :maxlength="5000" :debounce="inputDebounce"
                         class="q-mt-xs" :bg-color="inputBgColor('author')" style="width: 200px;" label="Автор" stack-label outlined dense clearable
@@ -79,7 +89,7 @@
                     <div class="q-mx-xs" />
                     <q-input
                         v-model="search.lang" :maxlength="inputMaxLength" :debounce="inputDebounce"
-                        class="q-mt-xs" :bg-color="inputBgColor()" input-style="cursor: pointer" style="width: 100px;" label="Язык" stack-label outlined dense clearable readonly
+                        class="q-mt-xs" :bg-color="inputBgColor()" input-style="cursor: pointer" style="width: 90px;" label="Язык" stack-label outlined dense clearable readonly
                         @click="selectLang"
                     >
                         <template v-if="search.lang" #append>
@@ -90,21 +100,22 @@
                             {{ search.lang }}
                         </q-tooltip>
                     </q-input>
-
                     <div class="q-mx-xs" />
                     <DivBtn
-                        class="text-grey-5 bg-yellow-1 q-mt-xs" :size="34" :icon-size="24" round
-                        :icon="(extendedParams ? 'la la-angle-double-up' : 'la la-angle-double-down')"
-                        @click="extendedParams = !extendedParams"
+                        class="text-grey-8 bg-yellow-1 q-mt-xs" :size="34" :icon-size="24" round
+                        icon="la la-level-up-alt"
+                        @click="cloneSearch"
                     >
                         <template #tooltip>
                             <q-tooltip :delay="1500" anchor="bottom middle" content-style="font-size: 80%" max-width="400px">
-                                {{ `${(extendedParams ? 'Скрыть' : 'Показать')} дополнительные критерии поиска` }}
+                                Клонировать поиск
                             </q-tooltip>
                         </template>
                     </DivBtn>
                 </div>
                 <div v-show="extendedParams" class="row q-mx-md q-mb-xs items-center">
+                    <div style="width: 34px" />
+                    <div class="q-mx-xs" />
                     <q-input
                         v-model="genreNames" :maxlength="inputMaxLength" :debounce="inputDebounce"
                         class="q-mt-xs" :bg-color="inputBgColor()" input-style="cursor: pointer" style="width: 200px;" label="Жанр" stack-label outlined dense clearable readonly
@@ -153,7 +164,7 @@
                     <div class="q-mx-xs" />
                     <q-input
                         v-model="librateNames" :maxlength="inputMaxLength" :debounce="inputDebounce"
-                        class="q-mt-xs" :bg-color="inputBgColor()" input-style="cursor: pointer" style="width: 100px;" label="Оценка" stack-label outlined dense clearable readonly
+                        class="q-mt-xs" :bg-color="inputBgColor()" input-style="cursor: pointer" style="width: 90px;" label="Оценка" stack-label outlined dense clearable readonly
                         @click="selectLibRate"
                     >
                         <template v-if="librateNames" #append>
@@ -191,12 +202,18 @@
             <div class="row q-ml-lg q-mb-sm">
                 <PageScroller v-show="pageCount > 1" v-model="search.page" :page-count="pageCount" />
             </div>
+
+            <div class="row justify-center">
+                <div class="q-mb-sm q-px-sm q-py-xs bg-cyan-2 clickable2" style="border: 1px solid #aaaaaa; border-radius: 6px; white-space: nowrap;" @click="openReleasePage">
+                    {{ projectName }}
+                </div>
+            </div>
         </div>
 
         <Dialog v-model="settingsDialogVisible">
             <template #header>
-                <div class="row items-center" style="font-size: 130%">
-                    <q-icon class="q-mr-sm" name="la la-cog" size="28px"></q-icon>
+                <div class="row items-center" style="font-size: 110%">
+                    <q-icon class="q-mr-sm text-green" name="la la-cog" size="28px"></q-icon>
                     Настройки
                 </div>
             </template>
@@ -215,6 +232,7 @@
 
                 <q-checkbox v-model="showCounts" size="36px" label="Показывать количество" />                
                 <q-checkbox v-model="showRates" size="36px" label="Показывать оценки" />
+                <q-checkbox v-model="showInfo" size="36px" label="Показывать кнопку 'инфо'" />
                 <q-checkbox v-model="showGenres" size="36px" label="Показывать жанры" />
                 <q-checkbox v-model="showDates" size="36px" label="Показывать даты поступления" />
                 <q-checkbox v-model="showDeleted" size="36px" label="Показывать удаленные" />
@@ -232,6 +250,7 @@
         <SelectLangDialog v-model="selectLangDialogVisible" v-model:lang="search.lang" :lang-list="langList" :lang-default="langDefault" />        
         <SelectLibRateDialog v-model="selectLibRateDialogVisible" v-model:librate="search.librate" />
         <SelectDateDialog v-model="selectDateDialogVisible" v-model:date="search.date" />
+        <BookInfoDialog v-model="bookInfoDialogVisible" :book-info="bookInfo" />
     </div>
 </template>
 
@@ -248,6 +267,7 @@ import SelectGenreDialog from './SelectGenreDialog/SelectGenreDialog.vue';
 import SelectLangDialog from './SelectLangDialog/SelectLangDialog.vue';
 import SelectLibRateDialog from './SelectLibRateDialog/SelectLibRateDialog.vue';
 import SelectDateDialog from './SelectDateDialog/SelectDateDialog.vue';
+import BookInfoDialog from './BookInfoDialog/BookInfoDialog.vue';
 
 import authorBooksStorage from './authorBooksStorage';
 import DivBtn from '../share/DivBtn.vue';
@@ -274,6 +294,7 @@ const componentOptions = {
         SelectLangDialog,
         SelectLibRateDialog,
         SelectDateDialog,
+        BookInfoDialog,
         Dialog,
         DivBtn
     },
@@ -312,6 +333,9 @@ const componentOptions = {
         },
         showRates(newValue) {
             this.setSetting('showRates', newValue);
+        },
+        showInfo(newValue) {
+            this.setSetting('showInfo', newValue);
         },
         showGenres(newValue) {
             this.setSetting('showGenres', newValue);
@@ -383,6 +407,7 @@ class Search {
     selectLangDialogVisible = false;
     selectLibRateDialogVisible = false;
     selectDateDialogVisible = false;
+    bookInfoDialogVisible = false;
 
     pageCount = 1;    
 
@@ -413,6 +438,7 @@ class Search {
     //settings
     showCounts = true;
     showRates = true;
+    showInfo = true;
     showGenres = true;
     showDates = true;
     showDeleted = false;
@@ -435,6 +461,8 @@ class Search {
     langList = [];
     genreTreeInpxHash = '';
     showTooltips = true;
+
+    bookInfo = {};
 
     limitOptions = [
         {label: '10', value: 10},
@@ -504,6 +532,7 @@ class Search {
         this.expandedSeries = _.cloneDeep(settings.expandedSeries);
         this.showCounts = settings.showCounts;
         this.showRates = settings.showRates;
+        this.showInfo = settings.showInfo;
         this.showGenres = settings.showGenres;
         this.showDates = settings.showDates;
         this.showDeleted = settings.showDeleted;
@@ -786,6 +815,8 @@ class Search {
 
         if (this.ignoreScrolling) {
             this.lastScrollTop = curScrollTop;
+            if (this.$refs.toolPanel.offsetTop > curScrollTop)
+                this.$refs.toolPanel.style.top = `${curScrollTop}px`;
             return;
         }
 
@@ -853,6 +884,10 @@ class Search {
                 break;
             case 'submitUrl':
                 this.sendMessage({type: 'submitUrl', data: event.data});
+                break;
+            case 'bookInfo':
+                this.bookInfo = event.data;
+                this.bookInfoDialogVisible = true;
                 break;
         }
     }
@@ -1015,6 +1050,10 @@ class Search {
             }
             this.selectDateDialogVisible = true
         }
+    }
+
+    cloneSearch() {
+        window.open(window.location.href, '_blank');
     }
 }
 
