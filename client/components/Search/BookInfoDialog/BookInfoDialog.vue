@@ -24,7 +24,7 @@
                     </div>
                 </div>
 
-                <div class="col column q-ml-sm" style="min-width: 300px; border: 1px solid #ccc">
+                <div class="col column q-ml-sm" style="min-width: 400px; border: 1px solid #ccc">
                     <div class="bg-grey-3 row">
                         <q-tabs
                             v-model="selectedTab"
@@ -36,7 +36,7 @@
                             inline-label
                             class="bg-grey-4 text-grey-7"
                         >
-                            <q-tab name="fb2" label="Fb2 инфо" />
+                            <q-tab v-if="fb2.length" name="fb2" label="Fb2 инфо" />
                             <q-tab name="inpx" label="Inpx инфо" />
                         </q-tabs>
                     </div>
@@ -130,6 +130,9 @@ class BookInfoDialog {
         this.book = {};
 
         this.parseBookInfo();
+
+        if (!this.fb2.length)
+            this.selectedTab = 'inpx';
     }
 
     get bookAuthor() {
@@ -188,6 +191,9 @@ class BookInfoDialog {
 
             if (nodePath == 'titleInfo/author')
                 return value.split(',').join(', ');
+
+            if ((nodePath == 'titleInfo/serno' || nodePath == 'titleInfo/librate') && !value)
+                return null;
 
             if (typeof(value) === 'string') {
                 return value;
