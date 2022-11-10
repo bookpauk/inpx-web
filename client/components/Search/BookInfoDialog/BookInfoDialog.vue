@@ -51,7 +51,7 @@
                             </div>
 
                             <div v-for="subItem in item.value" :key="subItem.name" class="row q-ml-md">
-                                <div style="width: 110px">
+                                <div style="width: 100px">
                                     {{ subItem.label }}
                                 </div>
                                 <div class="q-ml-sm" v-html="subItem.value" />
