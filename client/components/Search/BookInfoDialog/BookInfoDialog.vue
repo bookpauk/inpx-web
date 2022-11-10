@@ -47,7 +47,7 @@
                                 <div class="text-blue" style="font-size: 90%">
                                     {{ item.label }}
                                 </div>
-                                <div class="col q-mx-xs" style="height: 0px; border-top: 1px solid #ccc" />
+                                <div class="col q-mx-xs" style="height: 0px; border-top: 1px solid #ccc"></div>
                             </div>
 
                             <div v-for="subItem in item.value" :key="subItem.name" class="row q-ml-md">
@@ -59,6 +59,8 @@
                                 </div>
                             </div>
                         </div>
+
+                        <div class="q-mt-xs"></div>
                     </div>
                 </div>
             </div>
@@ -80,6 +82,7 @@ import vueComponent from '../../vueComponent.js';
 
 import Dialog from '../../share/Dialog.vue';
 import Fb2Parser from '../../../../server/core/fb2/Fb2Parser';
+import * as utils from '../../../share/utils';
 
 const componentOptions = {
     components: {
@@ -138,52 +141,59 @@ class BookInfoDialog {
         return '';
     }
 
+    formatSize(size) {
+        size = size/1024;
+        let unit = 'KB';
+        if (size > 1024) {
+            size = size/1024;
+            unit = 'MB';
+        }
+        return `${size.toFixed(1)} ${unit}`;
+    }
+
     get inpx() {
         const mapping = [
             {name: 'fileInfo', label: 'Информация о файле', value: [
                 {name: 'folder', label: 'Папка'},
                 {name: 'file', label: 'Файл'},
+                {name: 'ext', label: 'Тип'},
                 {name: 'size', label: 'Размер'},
                 {name: 'date', label: 'Добавлен'},
+                {name: 'del', label: 'Удален'},
+                {name: 'libid', label: 'LibId'},
+                {name: 'insno', label: 'InsideNo'},
+            ]},
+
+            {name: 'titleInfo', label: 'Общая информация', value: [
+                {name: 'author', label: 'Автор(ы)'},
+                {name: 'title', label: 'Название'},
+                {name: 'series', label: 'Серия'},
+                {name: 'serno', label: 'Номер в серии'},
+                {name: 'genre', label: 'Жанр'},
+                {name: 'librate', label: 'Оценка'},
+                {name: 'lang', label: 'Язык книги'},
+                {name: 'keywords', label: 'Ключевые слова'},
             ]},
         ];
-/*
-                {name: 'author', label: 'Автор(ы)'},
-                {name: 'bookTitle', label: 'Название'},
-                {name: 'sequenceName', label: 'Серия'},
-                {name: 'sequenceNum', label: 'Номер в серии'},
-                {name: 'genre', label: 'Жанр'},
 
-                {name: 'date', label: 'Дата'},
-                {name: 'lang', label: 'Язык книги'},
-                {name: 'srcLang', label: 'Язык оригинала'},
-                {name: 'translator', label: 'Переводчик(и)'},
-                {name: 'keywords', label: 'Ключевые слова'},
-
-
-        {"author":"Грант Максвелл",
-         "genre":"det_hard",
-         "title":"Tower of Death",
-         "series":"The Shadow[a]",
-         "serno":53,
-         "file":"641310",
-         "size":420422,
-         "libid":"641310",
-         "del":0,
-         "ext":"fb2",
-         "date":"2021-11-04",
-         "insno":181,
-         "folder":"f.fb2-641019-643928.zip",
-         "lang":"en",
-         "librate":0,
-         "keywords":"Hard-Boiled, Pulp Fiction,det",
-*/
         const valueToString = (value, nodePath) => {//eslint-disable-line no-unused-vars
+            if (nodePath == 'fileInfo/size')
+                return `${this.formatSize(value)} (${value.toString().replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1 ')} Bytes)`;
+
+            if (nodePath == 'fileInfo/date')
+                return utils.sqlDateFormat(value);
+
+            if (nodePath == 'fileInfo/del')
+                return (value ? 'Да' : 'Нет');
+
+            if (nodePath == 'titleInfo/author')
+                return value.split(',').join(', ');
+
             if (typeof(value) === 'string') {
                 return value;
             }
 
-            return value;
+            return (value.toString ? value.toString() : '');
         };
 
         let result = [];
