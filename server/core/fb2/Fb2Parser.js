@@ -79,10 +79,10 @@ class Fb2Parser extends XmlParser {
 
             info.translator = parseAuthors('translator');
 
-            const seqAttrs = titleInfo.attrs('sequence') || new Map();
-            info.sequenceName = seqAttrs.get('name') || null;
-            info.sequenceNum = seqAttrs.get('number') || null;
-            info.sequenceLang = seqAttrs.get('xml:lang') || null;
+            const seqAttrs = titleInfo.attrs('sequence') || {};
+            info.sequenceName = seqAttrs['name'] || null;
+            info.sequenceNum = seqAttrs['number'] || null;
+            info.sequenceLang = seqAttrs['xml:lang'] || null;
 
             result.titleInfo = info;
         }
@@ -141,12 +141,16 @@ class Fb2Parser extends XmlParser {
                 continue;
 
             for (const subItem of item.value) {
-                if (info[subItem.name] !== null)
-                    itemOut.value.push({
+                if (info[subItem.name] !== null) {
+                    const subItemOut = {
                         name: subItem.name,
                         label: subItem.label,
-                        value: valueToString(info[subItem.name])
-                    });
+                        value: valueToString(info[subItem.name], `${item.name}/${subItem.name}`)
+                    };
+
+                    if (subItemOut.value)
+                        itemOut.value.push(subItemOut);
+                }
             }
 
             if (itemOut.value.length)
