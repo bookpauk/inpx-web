@@ -16,7 +16,6 @@
             </div>
 
             <div class="q-mt-md" v-html="annotation" />
-            <pre>{{ annotation }}</pre>
         </div>
 
         <template #footer>
@@ -62,6 +61,7 @@ class BookInfoDialog {
     //info props
     coverSrc = '';
     annotation = '';
+    info = [];
 
     created() {
         this.commit = this.$store.commit;
@@ -78,24 +78,25 @@ class BookInfoDialog {
         //defaults
         this.coverSrc = '';
         this.annotation = '';
+        this.info = [];
 
         //cover
         if (bookInfo.cover)
             this.coverSrc = bookInfo.cover;
 
         //fb2
-        if (bookInfo.fb2 && bookInfo.fb2.fictionbook && bookInfo.fb2.fictionbook.description) {
-            const desc = parser.inspector(bookInfo.fb2.fictionbook.description);
-
-            //annotation
-            const annObj = desc.v('title-info/annotation');
-            if (annObj) {
-                this.annotation = parser.fromObject(annObj).toString({noHeader: true, format: true});
-                this.annotation = parser.toHtml(this.annotation);
-                this.annotation = this.annotation.replace(/<p>/g, `<p class="p-annotation">`);
+        if (bookInfo.fb2) {
+            this.info = parser.bookInfoList(bookInfo.fb2);
+            
+            const infoObj = parser.bookInfo(bookInfo.fb2);
+            if (infoObj) {
+                let ann = infoObj.titleInfo.annotationHtml;
+                if (ann) {
+                    ann = ann.replace(/<p>/g, `<p class="p-annotation">`);
+                    this.annotation = ann;
+                }
             }
         }
-
     }
 
     okClick() {

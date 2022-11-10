@@ -70,7 +70,7 @@ class Fb2Helper {
         let coverExt = '';
         if (coverImage) {
             const coverAttrs = coverImage.attrs();
-            const href = coverAttrs['l:href'];
+            const href = coverAttrs[`${parser.xlinkNS}:href`];
             let coverType = coverAttrs['content-type'];
             coverType = (coverType == 'image/jpg' || coverType == 'application/octet-stream' ? 'image/jpeg' : coverType);
             coverExt = (coverType == 'image/png' ? '.png' : '.jpg');

@@ -56,7 +56,7 @@ class ObjectInspector {
         }
 
         if (raw === null)
-            return null;
+            return [];
 
         raw = (Array.isArray(raw) ? raw : [raw]);
 
