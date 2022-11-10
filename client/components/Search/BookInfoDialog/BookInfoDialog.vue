@@ -245,19 +245,11 @@ class BookInfoDialog {
         //fb2
         if (bookInfo.fb2) {
             this.fb2 = parser.bookInfoList(bookInfo.fb2, {
-                valueToString(value, nodePath) {//eslint-disable-line no-unused-vars
+                valueToString(value, nodePath, origVTS) {//eslint-disable-line no-unused-vars
                     if (nodePath == 'documentInfo/historyHtml' && value)
                         return value.replace(/<p>/g, `<p class="p-history">`);
 
-                    if (typeof(value) === 'string') {
-                        return value;
-                    } else if (Array.isArray(value)) {
-                        return value.join(', ');
-                    } else if (typeof(value) === 'object') {
-                        return JSON.stringify(value);
-                    }
-
-                    return value;
+                    return origVTS(value, nodePath);
                 },
             });
             

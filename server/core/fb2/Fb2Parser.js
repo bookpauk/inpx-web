@@ -46,6 +46,20 @@ class Fb2Parser extends XmlParser {
             return authors;
         }
 
+        const parseSequence = (node, tagName) => {
+            const sequence = [];
+            for (const s of node.$$(tagName)) {
+                const seqAttrs = s.attrs() || {};
+                const name = seqAttrs['name'] || null;
+                const num = seqAttrs['number'] || null;
+                const lang = seqAttrs['xml:lang'] || null;
+
+                sequence.push({name, num, lang});
+            }
+
+            return sequence;
+        }
+
         const parseTitleInfo = (titleInfo) => {
             const info = {};
 
@@ -77,10 +91,7 @@ class Fb2Parser extends XmlParser {
 
             info.translator = parseAuthors(titleInfo, 'translator');
 
-            const seqAttrs = titleInfo.attrs('sequence') || {};
-            info.sequenceName = seqAttrs['name'] || null;
-            info.sequenceNum = seqAttrs['number'] || null;
-            info.sequenceLang = seqAttrs['xml:lang'] || null;
+            info.sequence = parseSequence(titleInfo, 'sequence');
 
             return info;
         }
@@ -114,7 +125,7 @@ class Fb2Parser extends XmlParser {
             info.id = documentInfo.text('id');
             info.version = documentInfo.text('version');
             
-            //аналогично annotation, но разбирать в Xml и Html пока не будем
+            //аналогично annotation
             info.history = documentInfo.$('history') && documentInfo.$('history').value;
             info.historyXml = null;
             info.historyHtml = null;
@@ -126,10 +137,24 @@ class Fb2Parser extends XmlParser {
                 info.historyHtml = this.toHtml(info.historyXml);
             }
 
-
             info.publisher = parseAuthors(documentInfo, 'publisher');
 
             result.documentInfo = info;
+        }
+
+        //publish-info
+        const publishInfo = desc.$('publish-info');
+        if (publishInfo) {
+            const info = {};
+
+            info.bookName = publishInfo.text('book-name');
+            info.publisher = publishInfo.text('publisher');
+            info.city = publishInfo.text('city');
+            info.year = publishInfo.text('year');
+            info.isbn = publishInfo.text('isbn');
+            info.sequence = parseSequence(publishInfo, 'sequence');
+
+            result.publishInfo = info;
         }
 
         return result;
@@ -144,26 +169,31 @@ class Fb2Parser extends XmlParser {
         if (!correctMapping)
             correctMapping = mapping => mapping;
 
-        if (!valueToString) {
-            valueToString = (value, nodePath) => {//eslint-disable-line no-unused-vars
-                if (typeof(value) === 'string') {
-                    return value;
-                } else if (Array.isArray(value)) {
-                    return value.join(', ');
-                } else if (typeof(value) === 'object') {
-                    return JSON.stringify(value);
-                }
+        const myValueToString = (value, nodePath, origVTS) => {//eslint-disable-line no-unused-vars
+            if (nodePath == 'titleInfo/sequence' 
+                || nodePath == 'srcTitleInfo/sequence' 
+                || nodePath == 'publishInfo/sequence')
+                return value.map(v => [v.name, v.num].filter(s => s).join(' #')).join(', ');
 
+            if (typeof(value) === 'string') {
                 return value;
-            };
-        }
+            } else if (Array.isArray(value)) {
+                return value.join(', ');
+            } else if (typeof(value) === 'object') {
+                return JSON.stringify(value);
+            }
+
+            return value;
+        };
+
+        if (!valueToString)
+            valueToString = myValueToString;
 
         let mapping = [
             {name: 'titleInfo', label: 'Общая информация', value: [
                 {name: 'author', label: 'Автор(ы)'},
                 {name: 'bookTitle', label: 'Название'},
-                {name: 'sequenceName', label: 'Серия'},
-                {name: 'sequenceNum', label: 'Номер в серии'},
+                {name: 'sequence', label: 'Серия'},
                 {name: 'genre', label: 'Жанр'},
 
                 {name: 'date', label: 'Дата'},
@@ -175,8 +205,7 @@ class Fb2Parser extends XmlParser {
             {name: 'srcTitleInfo', label: 'Информация о произведении на языке оригинала', value: [
                 {name: 'author', label: 'Автор(ы)'},
                 {name: 'bookTitle', label: 'Название'},
-                {name: 'sequenceName', label: 'Серия'},
-                {name: 'sequenceNum', label: 'Номер в серии'},
+                {name: 'sequence', label: 'Серия'},
                 {name: 'genre', label: 'Жанр'},
 
                 {name: 'date', label: 'Дата'},
@@ -184,6 +213,14 @@ class Fb2Parser extends XmlParser {
                 {name: 'srcLang', label: 'Язык оригинала'},
                 {name: 'translator', label: 'Переводчик(и)'},
                 {name: 'keywords', label: 'Ключевые слова'},
+            ]},
+            {name: 'publishInfo', label: 'Издательская информация', value: [
+                {name: 'bookName', label: 'Название'},
+                {name: 'publisher', label: 'Издательство'},
+                {name: 'city', label: 'Город'},
+                {name: 'year', label: 'Год'},
+                {name: 'isbn', label: 'ISBN'},
+                {name: 'sequence', label: 'Серия'},
             ]},
             {name: 'documentInfo', label: 'Информация о документе (OCR)', value: [
                 {name: 'author', label: 'Автор(ы)'},
@@ -214,7 +251,7 @@ class Fb2Parser extends XmlParser {
                     const subItemOut = {
                         name: subItem.name,
                         label: subItem.label,
-                        value: valueToString(info[subItem.name], `${item.name}/${subItem.name}`)
+                        value: valueToString(info[subItem.name], `${item.name}/${subItem.name}`, myValueToString),
                     };
 
                     if (subItemOut.value)
