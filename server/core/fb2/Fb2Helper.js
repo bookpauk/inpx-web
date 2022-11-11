@@ -63,12 +63,11 @@ class Fb2Helper {
             pickNode: route => route.indexOf('fictionbook/body') !== 0,
         });
 
-        const desc = parser.$$('description').toObject();
-        const coverImage = parser.inspector(desc).$('description/title-info/coverpage/image');
+        const coverImage = parser.$$('/description/title-info/coverpage/image');
 
         let cover = null;
         let coverExt = '';
-        if (coverImage) {
+        if (coverImage.count) {
             const coverAttrs = coverImage.attrs();
             const href = coverAttrs[`${parser.xlinkNS}:href`];
             let coverType = coverAttrs['content-type'];
@@ -79,24 +78,21 @@ class Fb2Helper {
                 const binaryId = (href[0] == '#' ? href.substring(1) : href);
 
                 //найдем нужный image
-                parser.$$('binary').eachSelf(node => {
+                for (const node of parser.$$array('/binary')) {
                     let attrs = node.attrs();
                     if (!attrs)
                         return;
-                    attrs = Object.fromEntries(attrs);
 
                     if (attrs.id === binaryId) {
-                        const textNode = new Fb2Parser(node.value);
-                        const base64 = textNode.$self('*TEXT').value;
-
+                        const base64 = node.text();
                         cover = (base64 ? Buffer.from(base64, 'base64') : null);
                     }
-                });
+                }
             }
         }
 
         parser.remove('binary');
-        return {fb2: parser.toObject(), cover, coverExt};
+        return {fb2: parser, cover, coverExt};
     }
 }
 

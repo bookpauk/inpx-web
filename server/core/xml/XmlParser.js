@@ -817,7 +817,7 @@ class XmlParser extends NodeBase {
             if (raw.length && !s.last) {
                 if (s.index < raw.length) {
                     raw = raw[s.index];
-                    if (raw[0] === NODE)
+                    if (raw[0] === NODE && raw[3])
                         raw = raw[3];
                     else {
                         raw = [];

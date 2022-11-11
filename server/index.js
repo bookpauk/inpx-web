@@ -191,7 +191,7 @@ function initStatic(app, config) {
 
         if (path.extname(req.path) == '') {
             const bookFile = `${config.publicFilesDir}${req.path}`;
-            const bookFileDesc = `${bookFile}.json`;
+            const bookFileDesc = `${bookFile}.d.json`;
 
             let downFileName = '';
             //восстановим из json-файла описания

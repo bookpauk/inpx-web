@@ -369,7 +369,7 @@ class WebWorker {
 
         const link = `${this.config.filesPathStatic}/${hash}`;
         const bookFile = `${this.config.filesDir}/${hash}`;
-        const bookFileDesc = `${bookFile}.json`;
+        const bookFileDesc = `${bookFile}.d.json`;
 
         if (!await fs.pathExists(bookFile) || !await fs.pathExists(bookFileDesc)) {
             if (!await fs.pathExists(bookFile) && extractedFile) {
@@ -435,7 +435,7 @@ class WebWorker {
             if (rows.length) {//хеш найден по bookPath
                 const hash = rows[0].hash;
                 const bookFile = `${this.config.filesDir}/${hash}`;
-                const bookFileDesc = `${bookFile}.json`;
+                const bookFileDesc = `${bookFile}.d.json`;
 
                 if (await fs.pathExists(bookFile) && await fs.pathExists(bookFileDesc)) {
                     link = `${this.config.filesPathStatic}/${hash}`;
@@ -467,9 +467,9 @@ class WebWorker {
             let bookInfo = await this.getBookLink(bookId);
             const hash = path.basename(bookInfo.link);
             const bookFile = `${this.config.filesDir}/${hash}`;
-            const bookFileInfo = `${bookFile}.info`;
+            const bookFileInfo = `${bookFile}.i.json`;
 
-            const restoreBookInfo = async() => {
+            const restoreBookInfo = async(info) => {
                 const result = {};
 
                 const rows = await db.select({table: 'book', where: `@@id(${db.esc(bookId)})`});
@@ -478,10 +478,12 @@ class WebWorker {
                 result.book = book;
                 result.cover = '';
                 result.fb2 = false;
+                let parser = null;
 
                 if (book.ext == 'fb2') {
                     const {fb2, cover, coverExt} = await this.fb2Helper.getDescAndCover(bookFile);
-                    result.fb2 = fb2;
+                    parser = fb2;
+                    result.fb2 = fb2.rawNodes;
 
                     if (cover) {
                         result.cover = `${this.config.filesPathStatic}/${hash}${coverExt}`;
@@ -489,12 +491,16 @@ class WebWorker {
                     }
                 }
 
-                return result;
+                Object.assign(info ,result);
+                await fs.writeFile(bookFileInfo, JSON.stringify(info));
+
+                if (this.config.branch === 'development') {
+                    await fs.writeFile(`${bookFile}.dev`, `${JSON.stringify(info, null, 2)}\n\n${parser ? parser.toString({format: true}) : ''}`);
+                }
             };
 
             if (!await fs.pathExists(bookFileInfo)) {
-                Object.assign(bookInfo, await restoreBookInfo());
-                await fs.writeFile(bookFileInfo, JSON.stringify(bookInfo, null, 2));
+                await restoreBookInfo(bookInfo);
             } else {
                 await utils.touchFile(bookFileInfo);
                 const info = await fs.readFile(bookFileInfo, 'utf-8');
@@ -506,8 +512,7 @@ class WebWorker {
                     coverFile = `${this.config.publicFilesDir}${tmpInfo.cover}`;
 
                 if (coverFile && !await fs.pathExists(coverFile)) {
-                    Object.assign(bookInfo, await restoreBookInfo());
-                    await fs.writeFile(bookFileInfo, JSON.stringify(bookInfo, null, 2));
+                    await restoreBookInfo(bookInfo);
                 } else {
                     bookInfo = tmpInfo;
                 }
