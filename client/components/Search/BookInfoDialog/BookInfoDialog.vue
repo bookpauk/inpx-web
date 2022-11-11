@@ -249,7 +249,7 @@ class BookInfoDialog {
             const parser = new Fb2Parser(bookInfo.fb2);
 
             const infoObj = parser.bookInfo();
-console.log(JSON.stringify(infoObj, null, 2));
+
             if (infoObj.titleInfo) {
                 let ann = infoObj.titleInfo.annotationHtml;
                 if (ann) {
