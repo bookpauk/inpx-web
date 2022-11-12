@@ -1,4 +1,4 @@
-import moment from 'moment';
+import dayjs from 'dayjs';
 import {Buffer} from 'safe-buffer';
 //import _ from 'lodash';
 
@@ -121,11 +121,11 @@ export function isDigit(c) {
 }
 
 export function dateFormat(date, format = 'DD.MM.YYYY') {
-    return moment(date).format(format);
+    return dayjs(date).format(format);
 }
 
 export function sqlDateFormat(date, format = 'DD.MM.YYYY') {
-    return moment(date, 'YYYY-MM-DD').format(format);
+    return dayjs(date, 'YYYY-MM-DD').format(format);
 }
 
 export function isManualDate(date) {

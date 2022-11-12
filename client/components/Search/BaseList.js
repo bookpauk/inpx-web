@@ -1,4 +1,4 @@
-import moment from 'moment';
+import dayjs from 'dayjs';
 import _ from 'lodash';
 
 import authorBooksStorage from './authorBooksStorage';
@@ -467,13 +467,13 @@ export default class BaseList {
             */
             const sqlFormat = 'YYYY-MM-DD';
             switch (date) {
-                case 'today': date = utils.dateFormat(moment(), sqlFormat); break;
-                case '3days': date = utils.dateFormat(moment().subtract(3, 'days'), sqlFormat); break;
-                case 'week': date = utils.dateFormat(moment().subtract(1, 'weeks'), sqlFormat); break;
-                case '2weeks': date = utils.dateFormat(moment().subtract(2, 'weeks'), sqlFormat); break;
-                case 'month': date = utils.dateFormat(moment().subtract(1, 'months'), sqlFormat); break;
-                case '2months': date = utils.dateFormat(moment().subtract(2, 'months'), sqlFormat); break;
-                case '3months': date = utils.dateFormat(moment().subtract(3, 'months'), sqlFormat); break;
+                case 'today': date = utils.dateFormat(dayjs(), sqlFormat); break;
+                case '3days': date = utils.dateFormat(dayjs().subtract(3, 'days'), sqlFormat); break;
+                case 'week': date = utils.dateFormat(dayjs().subtract(1, 'weeks'), sqlFormat); break;
+                case '2weeks': date = utils.dateFormat(dayjs().subtract(2, 'weeks'), sqlFormat); break;
+                case 'month': date = utils.dateFormat(dayjs().subtract(1, 'months'), sqlFormat); break;
+                case '2months': date = utils.dateFormat(dayjs().subtract(2, 'months'), sqlFormat); break;
+                case '3months': date = utils.dateFormat(dayjs().subtract(3, 'months'), sqlFormat); break;
                 default:
                     date = '';
             }
