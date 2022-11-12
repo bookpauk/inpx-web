@@ -3,7 +3,7 @@ const XmlParser = require('../xml/XmlParser');
 class Fb2Parser extends XmlParser {
     get xlinkNS() {
         if (!this._xlinkNS) {
-            const rootAttrs = this.$self().attrs();
+            const rootAttrs = this.selectFirstSelf().attrs();
             let ns = 'l';
             for (const [key, value] of rootAttrs) {
                 if (value == 'http://www.w3.org/1999/xlink') {
@@ -18,27 +18,24 @@ class Fb2Parser extends XmlParser {
         return this._xlinkNS;
     }
 
-    bookInfo(fb2Object) {
+    bookInfo() {
         const result = {};
 
-        if (!fb2Object)
-            fb2Object = this.toObject();
-
-        const desc = this.inspector(fb2Object).$('fictionbook/description');
+        const desc = this.$$('/description/');
 
         if (!desc)
             return result;
 
         const parseAuthors = (node, tagName) => {
             const authors = [];
-            for (const a of node.$$(tagName)) {
+            for (const a of node.$$array(tagName)) {
                 let names = [];
-                names.push(a.text('last-name'));
-                names.push(a.text('first-name'));
-                names.push(a.text('middle-name'));
+                names.push(a.text('/last-name'));
+                names.push(a.text('/first-name'));
+                names.push(a.text('/middle-name'));
                 names = names.filter(n => n);
                 if (!names.length)
-                    names.push(a.text('nickname'));
+                    names.push(a.text('/nickname'));
 
                 authors.push(names.join(' '));
             }
@@ -48,7 +45,7 @@ class Fb2Parser extends XmlParser {
 
         const parseSequence = (node, tagName) => {
             const sequence = [];
-            for (const s of node.$$(tagName)) {
+            for (const s of node.$$array(tagName)) {
                 const seqAttrs = s.attrs() || {};
                 const name = seqAttrs['name'] || null;
                 const num = seqAttrs['number'] || null;
@@ -64,7 +61,7 @@ class Fb2Parser extends XmlParser {
             const info = {};
 
             info.genre = [];
-            for (const g of titleInfo.$$('genre'))
+            for (const g of titleInfo.$$array('genre'))
                 info.genre.push(g.text());
 
             info.author = parseAuthors(titleInfo, 'author');
@@ -77,7 +74,7 @@ class Fb2Parser extends XmlParser {
             info.annotationHtml = null;
             if (info.annotation) {
                 //annotation как кусок xml
-                info.annotationXml = (new XmlParser()).fromObject(info.annotation).toString({noHeader: true});
+                info.annotationXml = titleInfo.$$('annotation/').toString({noHeader: true});
 
                 //annotation как html
                 info.annotationHtml = this.toHtml(info.annotationXml);
@@ -97,19 +94,19 @@ class Fb2Parser extends XmlParser {
         }
 
         //title-info
-        const titleInfo = desc.$('title-info');
+        const titleInfo = desc.$$('title-info/');
         if (titleInfo) {
             result.titleInfo = parseTitleInfo(titleInfo);
         }
 
         //src-title-info
-        const srcTitleInfo = desc.$('src-title-info');
+        const srcTitleInfo = desc.$$('src-title-info/');
         if (srcTitleInfo) {
             result.srcTitleInfo = parseTitleInfo(srcTitleInfo);
         }
 
         //document-info
-        const documentInfo = desc.$('document-info');
+        const documentInfo = desc.$$('document-info/');
         if (documentInfo) {
             const info = {};
 
@@ -118,7 +115,7 @@ class Fb2Parser extends XmlParser {
             info.date = documentInfo.text('date');
 
             info.srcUrl = [];
-            for (const url of documentInfo.$$('src-url'))
+            for (const url of documentInfo.$$array('src-url'))
                 info.srcUrl.push(url.text());
 
             info.srcOcr = documentInfo.text('src-ocr');
@@ -131,7 +128,7 @@ class Fb2Parser extends XmlParser {
             info.historyHtml = null;
             if (info.history) {
                 //history как кусок xml
-                info.historyXml = (new XmlParser()).fromObject(info.history).toString({noHeader: true});
+                info.historyXml = documentInfo.$$('history/').toString({noHeader: true});
 
                 //history как html
                 info.historyHtml = this.toHtml(info.historyXml);
@@ -143,7 +140,7 @@ class Fb2Parser extends XmlParser {
         }
 
         //publish-info
-        const publishInfo = desc.$('publish-info');
+        const publishInfo = desc.$$('publish-info/');
         if (publishInfo) {
             const info = {};
 
@@ -160,7 +157,7 @@ class Fb2Parser extends XmlParser {
         return result;
     }
 
-    bookInfoList(fb2Object, options = {}) {
+    bookInfoList(bookInfo, options = {}) {
         let {
             correctMapping = false,
             valueToString = false,
@@ -236,7 +233,7 @@ class Fb2Parser extends XmlParser {
         ];
 
         mapping = correctMapping(mapping);
-        const bookInfo = this.bookInfo(fb2Object);
+        bookInfo = (bookInfo ? bookInfo : this.bookInfo());
 
         //заполняем mapping
         let result = [];

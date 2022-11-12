@@ -185,7 +185,7 @@ class BookInfoDialog {
                 return utils.sqlDateFormat(value);
 
             if (nodePath == 'fileInfo/del')
-                return (value ? 'Да' : 'Нет');
+                return (value ? 'Да' : '');
 
             if (nodePath == 'titleInfo/author')
                 return value.split(',').join(', ');
@@ -239,7 +239,6 @@ class BookInfoDialog {
 
     parseBookInfo() {
         const bookInfo = this.bookInfo;
-        const parser = new Fb2Parser();
 
         //cover
         if (bookInfo.cover)
@@ -247,16 +246,10 @@ class BookInfoDialog {
 
         //fb2
         if (bookInfo.fb2) {
-            this.fb2 = parser.bookInfoList(bookInfo.fb2, {
-                valueToString(value, nodePath, origVTS) {//eslint-disable-line no-unused-vars
-                    if (nodePath == 'documentInfo/historyHtml' && value)
-                        return value.replace(/<p>/g, `<p class="p-history">`);
+            const parser = new Fb2Parser(bookInfo.fb2);
 
-                    return origVTS(value, nodePath);
-                },
-            });
-            
-            const infoObj = parser.bookInfo(bookInfo.fb2);
+            const infoObj = parser.bookInfo();
+
             if (infoObj.titleInfo) {
                 let ann = infoObj.titleInfo.annotationHtml;
                 if (ann) {
@@ -264,6 +257,15 @@ class BookInfoDialog {
                     this.annotation = ann;
                 }
             }
+
+            this.fb2 = parser.bookInfoList(infoObj, {
+                valueToString(value, nodePath, origVTS) {//eslint-disable-line no-unused-vars
+                    if (nodePath == 'documentInfo/historyHtml' && value)
+                        return value.replace(/<p>/g, `<p class="p-history">`);
+
+                    return origVTS(value, nodePath);
+                },
+            });
         }
 
         //book

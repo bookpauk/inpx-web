@@ -1,5 +1,4 @@
 const sax = require('./sax');
-const ObjectInspector = require('./ObjectInspector');
 
 //node types
 const NODE = 1;
@@ -22,7 +21,7 @@ const type2name = {
 };
 
 class NodeBase {
-    makeSelectorObj(selectorString) {
+    wideSelector(selectorString) {
         const result = {all: false, before: false, type: 0, name: ''};
 
         if (selectorString === '') {
@@ -153,7 +152,7 @@ class NodeObject extends NodeBase {
         if (this.type !== NODE)
             return;
 
-        const selectorObj = this.makeSelectorObj(after);
+        const selectorObj = this.wideSelector(after);
 
         if (!Array.isArray(this.raw[3]))
             this.raw[3] = [];
@@ -172,7 +171,7 @@ class NodeObject extends NodeBase {
         if (this.type !== NODE || !this.raw[3])
             return;
 
-        const selectorObj = this.makeSelectorObj(selector);
+        const selectorObj = this.wideSelector(selector);
 
         this.rawRemove(this.raw[3], selectorObj);
         if (!this.raw[3].length)
@@ -233,6 +232,14 @@ class XmlParser extends NodeBase {
         return this.rawNodes.length;
     }
 
+    get nodes() {
+        const result = [];
+        for (const n of this.rawNodes)
+            result.push(new NodeObject(n));
+
+        return result;
+    }
+
     nodeObject(node) {
         return new NodeObject(node);
     }
@@ -279,7 +286,7 @@ class XmlParser extends NodeBase {
     }
 
     add(node, after = '*') {
-        const selectorObj = this.makeSelectorObj(after);
+        const selectorObj = this.wideSelector(after);
 
         for (const n of this.rawNodes) {
             if (n && n[0] === NODE) {
@@ -299,7 +306,7 @@ class XmlParser extends NodeBase {
     }
 
     addRoot(node, after = '*') {
-        const selectorObj = this.makeSelectorObj(after);
+        const selectorObj = this.wideSelector(after);
 
         if (Array.isArray(node)) {
             for (const node_ of node)
@@ -312,7 +319,7 @@ class XmlParser extends NodeBase {
     }
 
     remove(selector = '') {
-        const selectorObj = this.makeSelectorObj(selector);
+        const selectorObj = this.wideSelector(selector);
 
         for (const n of this.rawNodes) {
             if (n && n[0] === NODE && Array.isArray(n[3])) {
@@ -326,7 +333,7 @@ class XmlParser extends NodeBase {
     }
 
     removeRoot(selector = '') {
-        const selectorObj = this.makeSelectorObj(selector);
+        const selectorObj = this.wideSelector(selector);
 
         this.rawRemove(this.rawNodes, selectorObj);
 
@@ -409,7 +416,7 @@ class XmlParser extends NodeBase {
 
             newRawNodes = res.rawNodes;
         } else {
-            const selectorObj = this.makeSelectorObj(selector);
+            const selectorObj = this.wideSelector(selector);
 
             if (self) {
                 this.rawSelect(this.rawNodes, selectorObj, (node) => {
@@ -429,11 +436,7 @@ class XmlParser extends NodeBase {
         return new XmlParser(newRawNodes);
     }
 
-    $$(selector, self) {
-        return this.select(selector, self);
-    }
-
-    $$self(selector) {
+    selectSelf(selector) {
         return this.select(selector, true);
     }
 
@@ -443,11 +446,7 @@ class XmlParser extends NodeBase {
         return new NodeObject(node);
     }
 
-    $(selector, self) {
-        return this.selectFirst(selector, self);
-    }
-
-    $self(selector) {
+    selectFirstSelf(selector) {
         return this.selectFirst(selector, true);
     }
 
@@ -760,12 +759,138 @@ class XmlParser extends NodeBase {
         return this;
     }
 
-    inspector(obj) {
-        if (!obj)
-            obj = this.toObject();
+    // XML Inspector start
+    narrowSelector(selector) {
+        const result = [];
+        selector = selector.trim();
+        
+        //последний индекс не учитывется, только если не задан явно
+        if (selector && selector[selector.length - 1] == ']')
+            selector += '/';
 
-        return new ObjectInspector(obj);
+        const levels = selector.split('/');
+
+        for (const level of levels) {
+            const [name, indexPart] = level.split('[');
+            let index = 0;
+            if (indexPart) {
+                const i = indexPart.indexOf(']');
+                index = parseInt(indexPart.substring(0, i), 10) || 0;
+            }
+
+            let type = NODE;
+            if (name[0] === '*') {
+                const typeName = name.substring(1);
+                type = name2type[typeName];
+                if (!type)
+                    throw new Error(`Unknown selector type: ${typeName}`);
+            }
+
+            result.push({type, name, index});
+        }
+
+        if (result.length);
+            result[result.length - 1].last = true;
+
+        return result;
     }
+
+    inspect(selector = '') {
+        selector = this.narrowSelector(selector);
+
+        let raw = this.rawNodes;
+        for (const s of selector) {
+            if (s.name) {
+                let found = [];
+                for (const n of raw) {
+                    if (n[0] === s.type && (n[0] !== NODE || s.name === '*NODE' || n[1] === s.name)) {
+                        found.push(n);
+
+                        if (found.length > s.index && !s.last)
+                            break;
+                    }
+                }
+
+                raw = found;
+            }
+
+            if (raw.length && !s.last) {
+                if (s.index < raw.length) {
+                    raw = raw[s.index];
+                    if (raw[0] === NODE && raw[3])
+                        raw = raw[3];
+                    else {
+                        raw = [];
+                        break;
+                    }
+                } else {
+                    raw = [];
+                    break;
+                }
+            }
+        }
+
+        return new XmlParser(raw);
+    }
+
+    $$(selector) {
+        return this.inspect(selector);
+    }
+
+    $$array(selector) {
+        const res = this.inspect(selector);
+        const result = [];
+        for (const n of res.rawNodes)
+            if (n[0] === NODE)
+                result.push(new XmlParser([n]));
+
+        return result;
+    }
+
+    $(selector) {
+        const res = this.inspect(selector);
+        const node = (res.count ? res.rawNodes[0] : null);
+        return new NodeObject(node);
+    }
+
+    v(selector = '') {
+        const res = this.$(selector);
+        return (res.type ? res.value : null);
+    }
+
+    text(selector = '') {
+        const res = this.$(`${selector}/*TEXT`);
+        return (res.type === TEXT ? res.value : null);
+    }
+
+    comment(selector = '') {
+        const res = this.$(`${selector}/*COMMENT`);
+        return (res.type === COMMENT ? res.value : null);
+    }
+
+    cdata(selector = '') {
+        const res = this.$(`${selector}/*CDATA`);
+        return (res.type === CDATA ? res.value : null);
+    }
+
+    concat(selector = '') {
+        const res = this.$$(selector);
+        const out = [];
+        for (const n of res.rawNodes) {
+            const node = new NodeObject(n);
+            if (node.type && node.type !== NODE)
+                out.push(node.value);
+        }
+
+        return (out.length ? out.join('') : null);
+    }
+
+    attrs(selector = '') {
+        const res = this.$(selector);
+        const attrs = res.attrs();
+        return (res.type === NODE && attrs ? Object.fromEntries(attrs) : null);
+    }
+    // XML Inspector finish
 }
 
 module.exports = XmlParser;

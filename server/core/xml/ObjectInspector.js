@@ -3,7 +3,7 @@ class ObjectInspector {
         this.raw = raw;
     }
 
-    makeSelector(selector) {
+    narrowSelector(selector) {
         const result = [];
         selector = selector.trim();
         
@@ -31,7 +31,7 @@ class ObjectInspector {
     }
 
     select(selector = '') {
-        selector = this.makeSelector(selector);
+        selector = this.narrowSelector(selector);
 
         let raw = this.raw;
         for (const s of selector) {
@@ -50,13 +50,9 @@ class ObjectInspector {
             }
 
             if (raw === undefined || raw === null) {
-                raw = null;
-                break;
+                return [];
             }
         }
-
-        if (raw === null)
-            return [];
 
         raw = (Array.isArray(raw) ? raw : [raw]);
 
