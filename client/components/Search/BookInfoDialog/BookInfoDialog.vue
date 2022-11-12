@@ -185,7 +185,10 @@ class BookInfoDialog {
                 return utils.sqlDateFormat(value);
 
             if (nodePath == 'fileInfo/del')
-                return (value ? 'Да' : '');
+                return (value ? 'Да' : null);
+
+            if (nodePath == 'fileInfo/insno')
+                return (value ? value : null);
 
             if (nodePath == 'titleInfo/author')
                 return value.split(',').join(', ');
