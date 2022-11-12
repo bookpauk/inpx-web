@@ -204,7 +204,7 @@
             </div>
 
             <div class="row justify-center">
-                <div class="q-mb-xl q-px-sm q-py-xs bg-cyan-2 clickable2" style="border: 1px solid #aaaaaa; border-radius: 6px; white-space: nowrap;" @click="openReleasePage">
+                <div class="q-mb-lg q-px-sm q-py-xs bg-cyan-2 clickable2" style="border: 1px solid #aaaaaa; border-radius: 6px; white-space: nowrap;" @click="openReleasePage">
                     {{ projectName }}
                 </div>
             </div>
