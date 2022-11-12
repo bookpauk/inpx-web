@@ -238,6 +238,13 @@ class AuthorList extends BaseList {
             const booksToFilter = await this.loadAuthorBooks(item.key);
             const filtered = this.filterBooks(booksToFilter);
 
+            if (!filtered.length && this.list.totalFound == 1) {
+                this.list.queryFound = 0;
+                this.list.totalFound = 0;
+                this.searchResult.found = [];
+                return false;
+            }
+
             const prepareBook = (book) => {
                 return Object.assign(
                     {
@@ -345,7 +352,10 @@ class AuthorList extends BaseList {
                 if (authors.length > 1 || item.count > this.maxItemCount)
                     this.getAuthorBooks(item);//no await
                 else 
-                    await this.getAuthorBooks(item);
+                    if (await this.getAuthorBooks(item) === false) {
+                        this.tableData = [];
+                        return;
+                    }
             }
 
             result.push(item);
