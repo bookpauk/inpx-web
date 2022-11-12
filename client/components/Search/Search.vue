@@ -204,7 +204,7 @@
             </div>
 
             <div class="row justify-center">
-                <div class="q-mb-sm q-px-sm q-py-xs bg-cyan-2 clickable2" style="border: 1px solid #aaaaaa; border-radius: 6px; white-space: nowrap;" @click="openReleasePage">
+                <div class="q-mb-xl q-px-sm q-py-xs bg-cyan-2 clickable2" style="border: 1px solid #aaaaaa; border-radius: 6px; white-space: nowrap;" @click="openReleasePage">
                     {{ projectName }}
                 </div>
             </div>
@@ -232,7 +232,7 @@
 
                 <q-checkbox v-model="showCounts" size="36px" label="Показывать количество" />                
                 <q-checkbox v-model="showRates" size="36px" label="Показывать оценки" />
-                <q-checkbox v-model="showInfo" size="36px" label="Показывать кнопку 'инфо'" />
+                <q-checkbox v-model="showInfo" size="36px" label="Показывать кнопку (инфо)" />
                 <q-checkbox v-model="showGenres" size="36px" label="Показывать жанры" />
                 <q-checkbox v-model="showDates" size="36px" label="Показывать даты поступления" />
                 <q-checkbox v-model="showDeleted" size="36px" label="Показывать удаленные" />
