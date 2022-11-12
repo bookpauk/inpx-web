@@ -1,4 +1,5 @@
 const path = require('path');
+const crypto = require('crypto');
 const ZipReader = require('./ZipReader');
 
 const collectionInfo = 'collection.info';
@@ -98,9 +99,13 @@ class InpxParser {
             if (line[line.length - 1] == '\x0D')
                 line = line.substring(0, line.length - 1);
 
+            const rec = {};
+            //уникальный идентификатор записи
+            const sha256 = crypto.createHash('sha256');
+            rec._uid = sha256.update(line).digest('base64');
+
             //парсим запись
             const parts = line.split('\x04');
-            const rec = {};
 
             const len = (parts.length > structLen ? structLen : parts.length);
             for (let i = 0; i < len; i++) {

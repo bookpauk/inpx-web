@@ -58,9 +58,9 @@ class RemoteLib {
         }
     }
 
-    async downloadBook(bookId) {
+    async downloadBook(bookUid) {
         try {
-            const response = await await this.wsRequest({action: 'get-book-link', bookId});
+            const response = await await this.wsRequest({action: 'get-book-link', bookUid});
             const link = response.link;
 
             const buf = await this.down.load(`${this.remoteHost}${link}`, {decompress: false});

@@ -231,12 +231,12 @@ class Api {
         return await this.request({action: 'get-genre-tree'});
     }    
 
-    async getBookLink(bookId) {
-        return await this.request({action: 'get-book-link', bookId}, 120);
+    async getBookLink(bookUid) {
+        return await this.request({action: 'get-book-link', bookUid}, 120);
     }
 
-    async getBookInfo(bookId) {
-        return await this.request({action: 'get-book-info', bookId}, 120);
+    async getBookInfo(bookUid) {
+        return await this.request({action: 'get-book-info', bookUid}, 120);
     }
 
     async getConfig() {

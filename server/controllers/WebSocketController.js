@@ -165,19 +165,19 @@ class WebSocketController {
     }
 
     async getBookLink(req, ws) {
-        if (!utils.hasProp(req, 'bookId'))
-            throw new Error(`bookId is empty`);
+        if (!utils.hasProp(req, 'bookUid'))
+            throw new Error(`bookUid is empty`);
 
-        const result = await this.webWorker.getBookLink(req.bookId);
+        const result = await this.webWorker.getBookLink(req.bookUid);
 
         this.send(result, req, ws);
     }
 
     async getBookInfo(req, ws) {
-        if (!utils.hasProp(req, 'bookId'))
-            throw new Error(`bookId is empty`);
+        if (!utils.hasProp(req, 'bookUid'))
+            throw new Error(`bookUid is empty`);
 
-        const result = await this.webWorker.getBookInfo(req.bookId);
+        const result = await this.webWorker.getBookInfo(req.bookUid);
 
         this.send(result, req, ws);
     }

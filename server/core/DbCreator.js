@@ -65,6 +65,8 @@ class DbCreator {
         let librateMap = new Map();//оценка
         let librateArr = [];
 
+        let uidSet = new Set();//уникальные идентификаторы
+
         //stats
         let authorCount = 0;
         let bookCount = 0;
@@ -221,13 +223,14 @@ class DbCreator {
             let filtered = false;
             for (const rec of chunk) {
                 //сначала фильтр
-                if (!filter(rec)) {
+                if (!filter(rec) || uidSet.has(rec._uid)) {
                     rec.id = 0;
                     filtered = true;
                     continue;
                 }
 
                 rec.id = ++id;
+                uidSet.add(rec._uid);
 
                 if (!rec.del) {
                     bookCount++;
@@ -269,6 +272,7 @@ class DbCreator {
         delMap = null;
         dateMap = null;
         librateMap = null;
+        uidSet = null;
 
         await db.close({table: 'book'});
         await db.freeMemory();
@@ -623,6 +627,12 @@ class DbCreator {
             stats.filesCountAll = res.filesCount + res.filesDelCount;
             stats.filesDelCount = res.filesDelCount;
         }
+
+        //заодно добавим нужный индекс
+        await db.create({
+            in: 'book',
+            hash: {field: '_uid', type: 'string', depth: 100, unique: true},
+        });
 
         countDone = true;
     }
