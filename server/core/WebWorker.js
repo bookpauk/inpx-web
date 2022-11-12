@@ -354,7 +354,7 @@ class WebWorker {
         }
     }
 
-    async restoreBook(bookPath, downFileName) {
+    async restoreBook(bookId, bookPath, downFileName) {
         const db = this.db;
 
         let extractedFile = '';
@@ -364,7 +364,7 @@ class WebWorker {
             extractedFile = await this.extractBook(bookPath);
             hash = await utils.getFileHash(extractedFile, 'sha256', 'hex');
         } else {
-            hash = await this.remoteLib.downloadBook(bookPath, downFileName);
+            hash = await this.remoteLib.downloadBook(bookId);
         }
 
         const link = `${this.config.filesPathStatic}/${hash}`;
@@ -443,7 +443,7 @@ class WebWorker {
             }
 
             if (!link) {
-                link = await this.restoreBook(bookPath, downFileName)
+                link = await this.restoreBook(bookId, bookPath, downFileName)
             }
 
             if (!link)
