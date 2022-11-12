@@ -130,7 +130,7 @@ export default class BaseList {
 
         try {
             //подготовка
-            const response = await this.api.getBookLink(book.id);
+            const response = await this.api.getBookLink(book._uid);
             
             const link = response.link;
             const href = `${window.location.origin}${link}`;
@@ -164,7 +164,7 @@ export default class BaseList {
                 }
             } else if (action == 'bookInfo') {
                 //информация о книге
-                const response = await this.api.getBookInfo(book.id);
+                const response = await this.api.getBookInfo(book._uid);
                 this.$emit('listEvent', {action: 'bookInfo', data: response.bookInfo});
             }
         } catch(e) {

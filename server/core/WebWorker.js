@@ -354,7 +354,7 @@ class WebWorker {
         }
     }
 
-    async restoreBook(bookId, bookPath, downFileName) {
+    async restoreBook(bookUid, bookPath, downFileName) {
         const db = this.db;
 
         let extractedFile = '';
@@ -364,7 +364,7 @@ class WebWorker {
             extractedFile = await this.extractBook(bookPath);
             hash = await utils.getFileHash(extractedFile, 'sha256', 'hex');
         } else {
-            hash = await this.remoteLib.downloadBook(bookId);
+            hash = await this.remoteLib.downloadBook(bookUid);
         }
 
         const link = `${this.config.filesPathStatic}/${hash}`;
@@ -402,7 +402,7 @@ class WebWorker {
         return link;
     }
 
-    async getBookLink(bookId) {
+    async getBookLink(bookUid) {
         this.checkMyState();
 
         try {
@@ -410,11 +410,11 @@ class WebWorker {
             let link = '';
 
             //найдем bookPath и downFileName
-            let rows = await db.select({table: 'book', where: `@@id(${db.esc(bookId)})`});
+            let rows = await db.select({table: 'book', where: `@@hash('_uid', ${db.esc(bookUid)})`});
             if (!rows.length)
                 throw new Error('404 Файл не найден');
 
-            const book = rows[0];            
+            const book = rows[0];
             let downFileName = book.file;
             const author = book.author.split(',');
             const at = [author[0], book.title];
@@ -443,7 +443,7 @@ class WebWorker {
             }
 
             if (!link) {
-                link = await this.restoreBook(bookId, bookPath, downFileName)
+                link = await this.restoreBook(bookUid, bookPath, downFileName)
             }
 
             if (!link)
@@ -458,13 +458,13 @@ class WebWorker {
         }
     }
 
-    async getBookInfo(bookId) {
+    async getBookInfo(bookUid) {
         this.checkMyState();
 
         try {
             const db = this.db;
 
-            let bookInfo = await this.getBookLink(bookId);
+            let bookInfo = await this.getBookLink(bookUid);
             const hash = path.basename(bookInfo.link);
             const bookFile = `${this.config.filesDir}/${hash}`;
             const bookFileInfo = `${bookFile}.i.json`;
@@ -472,7 +472,9 @@ class WebWorker {
             const restoreBookInfo = async(info) => {
                 const result = {};
 
-                const rows = await db.select({table: 'book', where: `@@id(${db.esc(bookId)})`});
+                let rows = await db.select({table: 'book', where: `@@hash('_uid', ${db.esc(bookUid)})`});
+                if (!rows.length)
+                    throw new Error('404 Файл не найден');
                 const book = rows[0];
 
                 result.book = book;
