@@ -210,42 +210,7 @@
             </div>
         </div>
 
-        <Dialog v-model="settingsDialogVisible">
-            <template #header>
-                <div class="row items-center" style="font-size: 110%">
-                    <q-icon class="q-mr-sm text-green" name="la la-cog" size="28px"></q-icon>
-                    Настройки
-                </div>
-            </template>
-
-            <div class="q-mx-md column" style="min-width: 300px; font-size: 120%;">
-                <div class="row items-center q-ml-sm">
-                    <div class="q-mr-sm">
-                        Результатов на странице
-                    </div>
-                    <q-select
-                        v-model="limit" :options="limitOptions" class="bg-white"
-                        dropdown-icon="la la-angle-down la-sm"
-                        outlined dense emit-value map-options
-                    />
-                </div>
-
-                <q-checkbox v-model="showCounts" size="36px" label="Показывать количество" />                
-                <q-checkbox v-model="showRates" size="36px" label="Показывать оценки" />
-                <q-checkbox v-model="showInfo" size="36px" label="Показывать кнопку (инфо)" />
-                <q-checkbox v-model="showGenres" size="36px" label="Показывать жанры" />
-                <q-checkbox v-model="showDates" size="36px" label="Показывать даты поступления" />
-                <q-checkbox v-model="showDeleted" size="36px" label="Показывать удаленные" />
-                <q-checkbox v-model="abCacheEnabled" size="36px" label="Кешировать запросы" />
-            </div>
-
-            <template #footer>
-                <q-btn class="q-px-md q-ml-sm" color="primary" dense no-caps @click.stop.prevent="settingsDialogVisible = false">
-                    OK
-                </q-btn>
-            </template>
-        </Dialog>
-
+        <SettingsDialog v-model="settingsDialogVisible" />
         <SelectGenreDialog v-model="selectGenreDialogVisible" v-model:genre="search.genre" :genre-tree="genreTree" />
         <SelectLangDialog v-model="selectLangDialogVisible" v-model:lang="search.lang" :lang-list="langList" :lang-default="langDefault" />        
         <SelectLibRateDialog v-model="selectLibRateDialogVisible" v-model:librate="search.librate" />
@@ -263,6 +228,7 @@ import SeriesList from './SeriesList/SeriesList.vue';
 import TitleList from './TitleList/TitleList.vue';
 
 import PageScroller from './PageScroller/PageScroller.vue';
+import SettingsDialog from './SettingsDialog/SettingsDialog.vue';
 import SelectGenreDialog from './SelectGenreDialog/SelectGenreDialog.vue';
 import SelectLangDialog from './SelectLangDialog/SelectLangDialog.vue';
 import SelectLibRateDialog from './SelectLibRateDialog/SelectLibRateDialog.vue';
@@ -290,6 +256,7 @@ const componentOptions = {
         SeriesList,
         TitleList,
         PageScroller,
+        SettingsDialog,
         SelectGenreDialog,
         SelectLangDialog,
         SelectLibRateDialog,
@@ -327,27 +294,6 @@ const componentOptions = {
             this.setSetting('limit', newValue);
 
             this.updatePageCount();
-        },
-        showCounts(newValue) {
-            this.setSetting('showCounts', newValue);
-        },
-        showRates(newValue) {
-            this.setSetting('showRates', newValue);
-        },
-        showInfo(newValue) {
-            this.setSetting('showInfo', newValue);
-        },
-        showGenres(newValue) {
-            this.setSetting('showGenres', newValue);
-        },
-        showDates(newValue) {
-            this.setSetting('showDates', newValue);
-        },
-        showDeleted(newValue) {
-            this.setSetting('showDeleted', newValue);
-        },
-        abCacheEnabled(newValue) {
-            this.setSetting('abCacheEnabled', newValue);
         },
         $route(to) {
             this.updateListFromRoute(to);
@@ -436,12 +382,6 @@ class Search {
     prevManualDate = '';
 
     //settings
-    showCounts = true;
-    showRates = true;
-    showInfo = true;
-    showGenres = true;
-    showDates = true;
-    showDeleted = false;
     abCacheEnabled = true;
     langDefault = '';
     limit = 20;
@@ -463,16 +403,6 @@ class Search {
     showTooltips = true;
 
     bookInfo = {};
-
-    limitOptions = [
-        {label: '10', value: 10},
-        {label: '20', value: 20},
-        {label: '50', value: 50},
-        {label: '100', value: 100},
-        {label: '200', value: 200},
-        {label: '500', value: 500},
-        {label: '1000', value: 1000},
-    ];
 
     searchDateOptions = [
         {label: 'сегодня', value: 'today'},
@@ -530,12 +460,6 @@ class Search {
         this.extendedParams = settings.extendedParams;
         this.expanded = _.cloneDeep(settings.expanded);
         this.expandedSeries = _.cloneDeep(settings.expandedSeries);
-        this.showCounts = settings.showCounts;
-        this.showRates = settings.showRates;
-        this.showInfo = settings.showInfo;
-        this.showGenres = settings.showGenres;
-        this.showDates = settings.showDates;
-        this.showDeleted = settings.showDeleted;
         this.abCacheEnabled = settings.abCacheEnabled;
         this.langDefault = settings.langDefault;
     }
