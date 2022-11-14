@@ -17,10 +17,12 @@
             </div>
 
             <div class="row q-mt-sm no-wrap">
-                <div class="column justify-center" style="height: 300px; width: 200px; min-width: 100px">
-                    <img v-if="coverSrc" :src="coverSrc" class="fit row justify-center items-center" style="object-fit: contain" @error="coverSrc = ''" />
-                    <div v-if="!coverSrc" class="fit row justify-center items-center text-grey-5" style="border: 1px solid #ccc; font-size: 300%">
-                        <i>{{ book.ext }}</i>
+                <div class="poster-size">
+                    <div class="poster-size column justify-center items-center" :class="{poster: coverSrc}" @click.stop.prevent="posterClick">
+                        <img v-if="coverSrc" :src="coverSrc" class="fit row justify-center items-center" style="object-fit: contain" @error="coverSrc = ''" />
+                        <div v-if="!coverSrc" class="fit row justify-center items-center text-grey-5" style="border: 1px solid #ccc; font-size: 300%">
+                            <i>{{ book.ext }}</i>
+                        </div>
                     </div>
                 </div>
 
@@ -71,6 +73,19 @@
                 OK
             </q-btn>
         </template>
+
+
+        <Dialog v-model="posterDialogVisible">
+            <template #header>
+                <div class="row items-center">
+                    <div style="font-size: 110%">
+                        Обложка
+                    </div>
+                </div>
+            </template>
+
+            <img :src="coverSrc" class="fit q-pb-sm" style="height: 100%; max-height: calc(100vh - 140px); object-fit: contain" />
+        </Dialog>
     </Dialog>
 </template>
 
@@ -106,6 +121,7 @@ class BookInfoDialog {
     };
 
     dialogVisible = false;
+    posterDialogVisible = false;
     selectedTab = 'fb2';
 
     //info props
@@ -276,6 +292,13 @@ class BookInfoDialog {
             this.book = bookInfo.book;
     }
 
+    posterClick() {
+        if (!this.coverSrc)
+            return;
+
+        this.posterDialogVisible = true;
+    }
+
     okClick() {
         this.dialogVisible = false;
     }
@@ -286,6 +309,26 @@ export default vueComponent(BookInfoDialog);
 </script>
 
 <style scoped>
+.poster-size {
+    height: 300px;
+    width: 200px;
+    min-width: 100px;
+}
+
+.poster {
+    width: 100%;
+    height: 100%;
+}
+
+.poster:hover {
+    position: relative;
+    top: -1%;
+    left: -1%;
+    width: 102%;
+    height: 102%;
+    cursor: pointer;
+}
+
 </style>
 
 <style>
