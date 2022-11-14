@@ -24,14 +24,14 @@
                         <div class="q-mr-xs">
                             Коллекция
                         </div>
-                        <div class="clickable" @click="showCollectionInfo">
+                        <div class="clickable" @click.stop.prevent="showCollectionInfo">
                             {{ collection }}
                         </div>
                     </div>
 
                     <div class="col"></div>
 
-                    <DivBtn class="q-ml-md text-white bg-secondary" :size="30" :icon-size="24" icon="la la-question" round @click="showSearchHelp">
+                    <DivBtn class="q-ml-md text-white bg-secondary" :size="30" :icon-size="24" icon="la la-question" round @click.stop.prevent="showSearchHelp">
                         <template #tooltip>
                             <q-tooltip :delay="1500" anchor="bottom middle" content-style="font-size: 80%" max-width="400px">
                                 Памятка
@@ -39,7 +39,7 @@
                         </template>
                     </DivBtn>
 
-                    <DivBtn class="q-ml-sm text-white bg-secondary" :size="30" :icon-size="24" :imt="1" icon="la la-cog" round @click="settingsDialogVisible = true">
+                    <DivBtn class="q-ml-sm text-white bg-secondary" :size="30" :icon-size="24" :imt="1" icon="la la-cog" round @click.stop.prevent="settingsDialogVisible = true">
                         <template #tooltip>
                             <q-tooltip :delay="1500" anchor="bottom middle" content-style="font-size: 80%" max-width="400px">
                                 Настройки
@@ -51,7 +51,7 @@
                     <DivBtn
                         class="text-grey-5 bg-yellow-1 q-mt-xs" :size="34" :icon-size="24" round
                         :icon="(extendedParams ? 'la la-angle-double-up' : 'la la-angle-double-down')"
-                        @click="extendedParams = !extendedParams"
+                        @click.stop.prevent="extendedParams = !extendedParams"
                     >
                         <template #tooltip>
                             <q-tooltip :delay="1500" anchor="bottom middle" content-style="font-size: 80%" max-width="400px">
@@ -90,7 +90,7 @@
                     <q-input
                         v-model="search.lang" :maxlength="inputMaxLength" :debounce="inputDebounce"
                         class="q-mt-xs" :bg-color="inputBgColor()" input-style="cursor: pointer" style="width: 90px;" label="Язык" stack-label outlined dense clearable readonly
-                        @click="selectLang"
+                        @click.stop.prevent="selectLang"
                     >
                         <template v-if="search.lang" #append>
                             <q-icon name="la la-times-circle" class="q-field__focusable-action" @click.stop.prevent="search.lang = ''" />
@@ -104,7 +104,7 @@
                     <DivBtn
                         class="text-grey-8 bg-yellow-1 q-mt-xs" :size="34" :icon-size="24" round
                         icon="la la-level-up-alt"
-                        @click="cloneSearch"
+                        @click.stop.prevent="cloneSearch"
                     >
                         <template #tooltip>
                             <q-tooltip :delay="1500" anchor="bottom middle" content-style="font-size: 80%" max-width="400px">
@@ -119,7 +119,7 @@
                     <q-input
                         v-model="genreNames" :maxlength="inputMaxLength" :debounce="inputDebounce"
                         class="q-mt-xs" :bg-color="inputBgColor()" input-style="cursor: pointer" style="width: 200px;" label="Жанр" stack-label outlined dense clearable readonly
-                        @click="selectGenre"
+                        @click.stop.prevent="selectGenre"
                     >
                         <template v-if="genreNames" #append>
                             <q-icon name="la la-times-circle" class="q-field__focusable-action" @click.stop.prevent="search.genre = ''" />
@@ -151,7 +151,7 @@
                         </template>
 
                         <template #option="scope">
-                            <q-item v-bind="scope.itemProps" @click="dateSelectItemClick(scope.opt.value)">
+                            <q-item v-bind="scope.itemProps" @click.stop.prevent="dateSelectItemClick(scope.opt.value)">
                                 <q-item-section>
                                     <q-item-label>
                                         {{ scope.opt.label }}
@@ -165,7 +165,7 @@
                     <q-input
                         v-model="librateNames" :maxlength="inputMaxLength" :debounce="inputDebounce"
                         class="q-mt-xs" :bg-color="inputBgColor()" input-style="cursor: pointer" style="width: 90px;" label="Оценка" stack-label outlined dense clearable readonly
-                        @click="selectLibRate"
+                        @click.stop.prevent="selectLibRate"
                     >
                         <template v-if="librateNames" #append>
                             <q-icon name="la la-times-circle" class="q-field__focusable-action" @click.stop.prevent="search.librate = ''" />
@@ -176,7 +176,7 @@
                         </q-tooltip>
                     </q-input>
                 </div>
-                <div v-show="!extendedParams && extendedParamsMessage" class="row q-mx-md items-center clickable" @click="extendedParams = true">
+                <div v-show="!extendedParams && extendedParamsMessage" class="row q-mx-md items-center clickable" @click.stop.prevent="extendedParams = true">
                     +{{ extendedParamsMessage }}
                 </div>
             </div>
@@ -204,48 +204,13 @@
             </div>
 
             <div class="row justify-center">
-                <div class="q-mb-lg q-px-sm q-py-xs bg-cyan-2 clickable2" style="border: 1px solid #aaaaaa; border-radius: 6px; white-space: nowrap;" @click="openReleasePage">
+                <div class="q-mb-lg q-px-sm q-py-xs bg-cyan-2 clickable2" style="border: 1px solid #aaaaaa; border-radius: 6px; white-space: nowrap;" @click.stop.prevent="openReleasePage">
                     {{ projectName }}
                 </div>
             </div>
         </div>
 
-        <Dialog v-model="settingsDialogVisible">
-            <template #header>
-                <div class="row items-center" style="font-size: 110%">
-                    <q-icon class="q-mr-sm text-green" name="la la-cog" size="28px"></q-icon>
-                    Настройки
-                </div>
-            </template>
-
-            <div class="q-mx-md column" style="min-width: 300px; font-size: 120%;">
-                <div class="row items-center q-ml-sm">
-                    <div class="q-mr-sm">
-                        Результатов на странице
-                    </div>
-                    <q-select
-                        v-model="limit" :options="limitOptions" class="bg-white"
-                        dropdown-icon="la la-angle-down la-sm"
-                        outlined dense emit-value map-options
-                    />
-                </div>
-
-                <q-checkbox v-model="showCounts" size="36px" label="Показывать количество" />                
-                <q-checkbox v-model="showRates" size="36px" label="Показывать оценки" />
-                <q-checkbox v-model="showInfo" size="36px" label="Показывать кнопку (инфо)" />
-                <q-checkbox v-model="showGenres" size="36px" label="Показывать жанры" />
-                <q-checkbox v-model="showDates" size="36px" label="Показывать даты поступления" />
-                <q-checkbox v-model="showDeleted" size="36px" label="Показывать удаленные" />
-                <q-checkbox v-model="abCacheEnabled" size="36px" label="Кешировать запросы" />
-            </div>
-
-            <template #footer>
-                <q-btn class="q-px-md q-ml-sm" color="primary" dense no-caps @click="settingsDialogVisible = false">
-                    OK
-                </q-btn>
-            </template>
-        </Dialog>
-
+        <SettingsDialog v-model="settingsDialogVisible" />
         <SelectGenreDialog v-model="selectGenreDialogVisible" v-model:genre="search.genre" :genre-tree="genreTree" />
         <SelectLangDialog v-model="selectLangDialogVisible" v-model:lang="search.lang" :lang-list="langList" :lang-default="langDefault" />        
         <SelectLibRateDialog v-model="selectLibRateDialogVisible" v-model:librate="search.librate" />
@@ -263,6 +228,7 @@ import SeriesList from './SeriesList/SeriesList.vue';
 import TitleList from './TitleList/TitleList.vue';
 
 import PageScroller from './PageScroller/PageScroller.vue';
+import SettingsDialog from './SettingsDialog/SettingsDialog.vue';
 import SelectGenreDialog from './SelectGenreDialog/SelectGenreDialog.vue';
 import SelectLangDialog from './SelectLangDialog/SelectLangDialog.vue';
 import SelectLibRateDialog from './SelectLibRateDialog/SelectLibRateDialog.vue';
@@ -290,6 +256,7 @@ const componentOptions = {
         SeriesList,
         TitleList,
         PageScroller,
+        SettingsDialog,
         SelectGenreDialog,
         SelectLangDialog,
         SelectLibRateDialog,
@@ -327,27 +294,6 @@ const componentOptions = {
             this.setSetting('limit', newValue);
 
             this.updatePageCount();
-        },
-        showCounts(newValue) {
-            this.setSetting('showCounts', newValue);
-        },
-        showRates(newValue) {
-            this.setSetting('showRates', newValue);
-        },
-        showInfo(newValue) {
-            this.setSetting('showInfo', newValue);
-        },
-        showGenres(newValue) {
-            this.setSetting('showGenres', newValue);
-        },
-        showDates(newValue) {
-            this.setSetting('showDates', newValue);
-        },
-        showDeleted(newValue) {
-            this.setSetting('showDeleted', newValue);
-        },
-        abCacheEnabled(newValue) {
-            this.setSetting('abCacheEnabled', newValue);
         },
         $route(to) {
             this.updateListFromRoute(to);
@@ -436,12 +382,6 @@ class Search {
     prevManualDate = '';
 
     //settings
-    showCounts = true;
-    showRates = true;
-    showInfo = true;
-    showGenres = true;
-    showDates = true;
-    showDeleted = false;
     abCacheEnabled = true;
     langDefault = '';
     limit = 20;
@@ -463,16 +403,6 @@ class Search {
     showTooltips = true;
 
     bookInfo = {};
-
-    limitOptions = [
-        {label: '10', value: 10},
-        {label: '20', value: 20},
-        {label: '50', value: 50},
-        {label: '100', value: 100},
-        {label: '200', value: 200},
-        {label: '500', value: 500},
-        {label: '1000', value: 1000},
-    ];
 
     searchDateOptions = [
         {label: 'сегодня', value: 'today'},
@@ -530,12 +460,6 @@ class Search {
         this.extendedParams = settings.extendedParams;
         this.expanded = _.cloneDeep(settings.expanded);
         this.expandedSeries = _.cloneDeep(settings.expandedSeries);
-        this.showCounts = settings.showCounts;
-        this.showRates = settings.showRates;
-        this.showInfo = settings.showInfo;
-        this.showGenres = settings.showGenres;
-        this.showDates = settings.showDates;
-        this.showDeleted = settings.showDeleted;
         this.abCacheEnabled = settings.abCacheEnabled;
         this.langDefault = settings.langDefault;
     }

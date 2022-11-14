@@ -34,7 +34,7 @@
 
         <div class="q-ml-sm column">
             <div v-if="(mode == 'series' || mode == 'title') && bookAuthor" class="row">
-                <div class="clickable2 text-green-10" @click="emit('authorClick')">
+                <div class="clickable2 text-green-10" @click.stop.prevent="emit('authorClick')">
                     {{ bookAuthor }}
                 </div>
             </div>
@@ -43,10 +43,10 @@
                 <div v-if="book.serno" class="q-mr-xs">
                     {{ book.serno }}.
                 </div>
-                <div class="clickable2" :class="titleColor" @click="emit('titleClick')">
+                <div class="clickable2" :class="titleColor" @click.stop.prevent="emit('titleClick')">
                     {{ book.title }}
                 </div>
-                <div v-if="mode == 'title' && bookSeries" class="q-ml-xs clickable2" @click="emit('seriesClick')">
+                <div v-if="mode == 'title' && bookSeries" class="q-ml-xs clickable2" @click.stop.prevent="emit('seriesClick')">
                     {{ bookSeries }}
                 </div>
 
@@ -55,19 +55,19 @@
                     {{ bookSize }}, {{ book.ext }}
                 </div>
 
-                <div v-if="showInfo" class="q-ml-sm clickable" @click="emit('bookInfo')">
+                <div v-if="showInfo" class="q-ml-sm clickable" @click.stop.prevent="emit('bookInfo')">
                     (инфо)
                 </div>
 
-                <div class="q-ml-sm clickable" @click="emit('download')">
+                <div class="q-ml-sm clickable" @click.stop.prevent="emit('download')">
                     (скачать)
                 </div>
 
-                <div class="q-ml-sm clickable" @click="emit('copyLink')">
+                <div class="q-ml-sm clickable" @click.stop.prevent="emit('copyLink')">
                     <q-icon name="la la-copy" size="20px" />
                 </div>
 
-                <div v-if="showReadLink" class="q-ml-sm clickable" @click="emit('readBook')">
+                <div v-if="showReadLink" class="q-ml-sm clickable" @click.stop.prevent="emit('readBook')">
                     (читать)
                 </div>
 
