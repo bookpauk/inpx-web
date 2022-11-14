@@ -24,14 +24,14 @@
                         <div class="q-mr-xs">
                             Коллекция
                         </div>
-                        <div class="clickable" @click="showCollectionInfo">
+                        <div class="clickable" @click.stop.prevent="showCollectionInfo">
                             {{ collection }}
                         </div>
                     </div>
 
                     <div class="col"></div>
 
-                    <DivBtn class="q-ml-md text-white bg-secondary" :size="30" :icon-size="24" icon="la la-question" round @click="showSearchHelp">
+                    <DivBtn class="q-ml-md text-white bg-secondary" :size="30" :icon-size="24" icon="la la-question" round @click.stop.prevent="showSearchHelp">
                         <template #tooltip>
                             <q-tooltip :delay="1500" anchor="bottom middle" content-style="font-size: 80%" max-width="400px">
                                 Памятка
@@ -39,7 +39,7 @@
                         </template>
                     </DivBtn>
 
-                    <DivBtn class="q-ml-sm text-white bg-secondary" :size="30" :icon-size="24" :imt="1" icon="la la-cog" round @click="settingsDialogVisible = true">
+                    <DivBtn class="q-ml-sm text-white bg-secondary" :size="30" :icon-size="24" :imt="1" icon="la la-cog" round @click.stop.prevent="settingsDialogVisible = true">
                         <template #tooltip>
                             <q-tooltip :delay="1500" anchor="bottom middle" content-style="font-size: 80%" max-width="400px">
                                 Настройки
@@ -51,7 +51,7 @@
                     <DivBtn
                         class="text-grey-5 bg-yellow-1 q-mt-xs" :size="34" :icon-size="24" round
                         :icon="(extendedParams ? 'la la-angle-double-up' : 'la la-angle-double-down')"
-                        @click="extendedParams = !extendedParams"
+                        @click.stop.prevent="extendedParams = !extendedParams"
                     >
                         <template #tooltip>
                             <q-tooltip :delay="1500" anchor="bottom middle" content-style="font-size: 80%" max-width="400px">
@@ -90,7 +90,7 @@
                     <q-input
                         v-model="search.lang" :maxlength="inputMaxLength" :debounce="inputDebounce"
                         class="q-mt-xs" :bg-color="inputBgColor()" input-style="cursor: pointer" style="width: 90px;" label="Язык" stack-label outlined dense clearable readonly
-                        @click="selectLang"
+                        @click.stop.prevent="selectLang"
                     >
                         <template v-if="search.lang" #append>
                             <q-icon name="la la-times-circle" class="q-field__focusable-action" @click.stop.prevent="search.lang = ''" />
@@ -104,7 +104,7 @@
                     <DivBtn
                         class="text-grey-8 bg-yellow-1 q-mt-xs" :size="34" :icon-size="24" round
                         icon="la la-level-up-alt"
-                        @click="cloneSearch"
+                        @click.stop.prevent="cloneSearch"
                     >
                         <template #tooltip>
                             <q-tooltip :delay="1500" anchor="bottom middle" content-style="font-size: 80%" max-width="400px">
@@ -119,7 +119,7 @@
                     <q-input
                         v-model="genreNames" :maxlength="inputMaxLength" :debounce="inputDebounce"
                         class="q-mt-xs" :bg-color="inputBgColor()" input-style="cursor: pointer" style="width: 200px;" label="Жанр" stack-label outlined dense clearable readonly
-                        @click="selectGenre"
+                        @click.stop.prevent="selectGenre"
                     >
                         <template v-if="genreNames" #append>
                             <q-icon name="la la-times-circle" class="q-field__focusable-action" @click.stop.prevent="search.genre = ''" />
@@ -151,7 +151,7 @@
                         </template>
 
                         <template #option="scope">
-                            <q-item v-bind="scope.itemProps" @click="dateSelectItemClick(scope.opt.value)">
+                            <q-item v-bind="scope.itemProps" @click.stop.prevent="dateSelectItemClick(scope.opt.value)">
                                 <q-item-section>
                                     <q-item-label>
                                         {{ scope.opt.label }}
@@ -165,7 +165,7 @@
                     <q-input
                         v-model="librateNames" :maxlength="inputMaxLength" :debounce="inputDebounce"
                         class="q-mt-xs" :bg-color="inputBgColor()" input-style="cursor: pointer" style="width: 90px;" label="Оценка" stack-label outlined dense clearable readonly
-                        @click="selectLibRate"
+                        @click.stop.prevent="selectLibRate"
                     >
                         <template v-if="librateNames" #append>
                             <q-icon name="la la-times-circle" class="q-field__focusable-action" @click.stop.prevent="search.librate = ''" />
@@ -176,7 +176,7 @@
                         </q-tooltip>
                     </q-input>
                 </div>
-                <div v-show="!extendedParams && extendedParamsMessage" class="row q-mx-md items-center clickable" @click="extendedParams = true">
+                <div v-show="!extendedParams && extendedParamsMessage" class="row q-mx-md items-center clickable" @click.stop.prevent="extendedParams = true">
                     +{{ extendedParamsMessage }}
                 </div>
             </div>
@@ -204,7 +204,7 @@
             </div>
 
             <div class="row justify-center">
-                <div class="q-mb-lg q-px-sm q-py-xs bg-cyan-2 clickable2" style="border: 1px solid #aaaaaa; border-radius: 6px; white-space: nowrap;" @click="openReleasePage">
+                <div class="q-mb-lg q-px-sm q-py-xs bg-cyan-2 clickable2" style="border: 1px solid #aaaaaa; border-radius: 6px; white-space: nowrap;" @click.stop.prevent="openReleasePage">
                     {{ projectName }}
                 </div>
             </div>
@@ -240,7 +240,7 @@
             </div>
 
             <template #footer>
-                <q-btn class="q-px-md q-ml-sm" color="primary" dense no-caps @click="settingsDialogVisible = false">
+                <q-btn class="q-px-md q-ml-sm" color="primary" dense no-caps @click.stop.prevent="settingsDialogVisible = false">
                     OK
                 </q-btn>
             </template>
