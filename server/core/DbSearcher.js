@@ -320,7 +320,7 @@ class DbSearcher {
             await this.fillBookIdMap('series');
             await this.fillBookIdMap('title');
         } catch (e) {
-            //
+            throw new Error(`DbSearcher.fillBookIdMapAll error: ${e.message}`)
         }
     }
 
