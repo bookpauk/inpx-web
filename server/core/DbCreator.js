@@ -459,7 +459,6 @@ class DbCreator {
         const config = this.config;
 
         const to = `${from}_book`;
-        const toId = `${from}_id`;
 
         await db.open({table: from});
         await db.create({table: to});
@@ -548,7 +547,7 @@ class DbCreator {
                 await saveChunk(chunk);
 
                 processed += chunk.length;
-                callback({progress: 0.5*processed/fromLength});
+                callback({progress: 0.9*processed/fromLength});
             } else
                 break;
 
@@ -562,24 +561,18 @@ class DbCreator {
         await db.close({table: to});
         await db.close({table: from});
 
-        await db.create({table: toId});
-
-        const chunkSize = 50000;
-        let idRows = [];
-        let proc = 0;
+        const idMap = {arr: [], map: []};
         for (const [id, value] of bookId2RecId) {
-            idRows.push({id, value});
-            if (idRows.length >= chunkSize) {
-                await db.insert({table: toId, rows: idRows});
-                idRows = [];
-
-                proc += chunkSize;
-                callback({progress: 0.5 + 0.5*proc/bookId2RecId.size});
+            if (value.length > 1) {
+                idMap.map.push([id, value]);
+                idMap.arr[id] = 0;
+            } else {
+                idMap.arr[id] = value[0];
             }
         }
-        if (idRows.length)
-            await db.insert({table: toId, rows: idRows});
-        await db.close({table: toId});
+
+        callback({progress: 1});
+        await fs.writeFile(`${this.config.dataDir}/db/${from}_id.map`, JSON.stringify(idMap));
 
         bookId2RecId = null;
         utils.freeMemory();

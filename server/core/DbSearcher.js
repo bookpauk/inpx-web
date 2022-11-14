@@ -1,3 +1,4 @@
+const fs = require('fs-extra');
 //const _ = require('lodash');
 const LockQueue = require('./LockQueue');
 const utils = require('./utils');
@@ -299,29 +300,13 @@ class DbSearcher {
 
         await this.lock.get();
         try {
-            const db = this.db;
-            const map = new Map();
-            const table = `${from}_id`;
+            const data = await fs.readFile(`${this.config.dataDir}/db/${from}_id.map`, 'utf-8');
 
-            await db.open({table});
-            let rows = await db.select({table});
-            await db.close({table});
+            const idMap = JSON.parse(data);
+            idMap.arr = new Uint32Array(idMap.arr);
+            idMap.map = new Map(idMap.map);
 
-            for (const row of rows) {
-                if (!row.value.length)
-                    continue;
-
-                if (row.value.length > 1)
-                    map.set(row.id, row.value);
-                else
-                    map.set(row.id, row.value[0]);
-            }
-
-            this.bookIdMap[from] = map;
-
-            rows = null;
-            await db.freeMemory();
-            utils.freeMemory();
+            this.bookIdMap[from] = idMap;
 
             return this.bookIdMap[from];
         } finally {
@@ -330,15 +315,21 @@ class DbSearcher {
     }
 
     async fillBookIdMapAll() {
-        await this.fillBookIdMap('author');
-        await this.fillBookIdMap('series');
-        await this.fillBookIdMap('title');
+        try {
+            await this.fillBookIdMap('author');
+            await this.fillBookIdMap('series');
+            await this.fillBookIdMap('title');
+        } catch (e) {
+            //
+        }
     }
 
     async filterTableIds(tableIds, from, query) {
         let result = tableIds;
 
-        //т.к. авторы у книги идут списком, то дополнительно фильтруем
+        //т.к. авторы у книги идут списком (т.е. одна книга относиться сразу к нескольким авторам),
+        //то в выборку по bookId могут попасть авторы, которые отсутствуют в критерии query.author,
+        //поэтому дополнительно фильтруем
         if (from == 'author' && query.author && query.author !== '*') {
             const key = `filter-ids-author-${query.author}`;
             let authorIds = await this.getCached(key);
@@ -381,24 +372,25 @@ class DbSearcher {
                 await this.putCached(bookKey, bookIds);
             }
 
+            //id книг (bookIds) нашли, теперь надо их смаппировать в id таблицы from (авторов, серий, названий)
             if (bookIds) {
                 const tableIdsSet = new Set();
-                const bookIdMap = await this.fillBookIdMap(from);
+                const idMap = await this.fillBookIdMap(from);
                 let proc = 0;
                 let nextProc = 0;
                 for (const bookId of bookIds) {
-                    const tableIdValue = bookIdMap.get(bookId);
-                    if (!tableIdValue)
-                        continue;
-
-                    if (Array.isArray(tableIdValue)) {
-                        for (const tableId of tableIdValue) {
-                            tableIdsSet.add(tableId);
-                            proc++;
-                        }
-                    } else {
-                        tableIdsSet.add(tableIdValue);
+                    const tableId = idMap.arr[bookId];
+                    if (tableId) {
+                        tableIdsSet.add(tableId);
                         proc++;
+                    } else {
+                        const tableIdArr = idMap.map.get(bookId);
+                        if (tableIdArr) {
+                            for (const tableId of tableIdArr) {
+                                tableIdsSet.add(tableId);
+                                proc++;
+                            }
+                        }
                     }
 
                     //прерываемся иногда, чтобы не блокировать Event Loop
@@ -409,7 +401,7 @@ class DbSearcher {
                 }
 
                 tableIds = Array.from(tableIdsSet);
-            } else {
+            } else {//bookIds пустой - критерии не заданы, значит берем все id из from
                 const rows = await db.select({
                     table: from,
                     rawResult: true,
@@ -419,8 +411,11 @@ class DbSearcher {
                 tableIds = rows[0].rawResult;
             }
 
+            //т.к. авторы у книги идут списком, то дополнительно фильтруем
             tableIds = await this.filterTableIds(tableIds, from, query);
 
+            //сортируем по id
+            //порядок id соответствует ASC-сортировке по строковому значению из from (имя автора, назание серии, название книги)
             tableIds.sort((a, b) => a - b);
 
             await this.putCached(tableKey, tableIds);
