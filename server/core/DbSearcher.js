@@ -78,7 +78,7 @@ class DbSearcher {
                             result.add(bookId);
                     }
 
-                    return Array.from(result);
+                    return new Uint32Array(result);
                 `
             });
 
@@ -152,7 +152,7 @@ class DbSearcher {
                                 result.add(bookId);
                         }
 
-                        return Array.from(result);
+                        return new Uint32Array(result);
                     `
                 });
 
@@ -188,7 +188,7 @@ class DbSearcher {
                                 result.add(bookId);
                         }
 
-                        return Array.from(result);
+                        return new Uint32Array(result);
                     `
                 });
 
@@ -253,7 +253,7 @@ class DbSearcher {
                                 result.add(bookId);
                         }
 
-                        return Array.from(result);
+                        return new Uint32Array(result);
                     `
                 });
 
@@ -286,7 +286,7 @@ class DbSearcher {
                 inter = newInter;
             }
 
-            return Array.from(inter);
+            return new Uint32Array(inter);
         } else if (idsArr.length == 1) {            
             return idsArr[0];
         } else {
@@ -324,12 +324,11 @@ class DbSearcher {
         }
     }
 
-    async filterTableIds(tableIds, from, query) {
-        let result = tableIds;
-
+    async tableIdsFilter(from, query) {
         //т.к. авторы у книги идут списком (т.е. одна книга относиться сразу к нескольким авторам),
         //то в выборку по bookId могут попасть авторы, которые отсутствуют в критерии query.author,
         //поэтому дополнительно фильтруем
+        let result = null;
         if (from == 'author' && query.author && query.author !== '*') {
             const key = `filter-ids-author-${query.author}`;
             let authorIds = await this.getCached(key);
@@ -338,7 +337,7 @@ class DbSearcher {
                 const rows = await this.db.select({
                     table: 'author',
                     rawResult: true,
-                    where: `return Array.from(${this.getWhere(query.author)})`
+                    where: `return new Uint32Array(${this.getWhere(query.author)})`
                 });
 
                 authorIds = rows[0].rawResult;
@@ -346,12 +345,7 @@ class DbSearcher {
                 await this.putCached(key, authorIds);
             }
 
-            //пересечение tableIds и authorIds
-            result = [];
-            const authorIdsSet = new Set(authorIds);
-            for (const id of tableIds)
-                if (authorIdsSet.has(id))
-                    result.push(id);
+            result = new Set(authorIds);
         }
 
         return result;
@@ -374,6 +368,9 @@ class DbSearcher {
 
             //id книг (bookIds) нашли, теперь надо их смаппировать в id таблицы from (авторов, серий, названий)
             if (bookIds) {
+                //т.к. авторы у книги идут списком, то дополнительно фильтруем
+                const filter = await this.tableIdsFilter(from, query);
+
                 const tableIdsSet = new Set();
                 const idMap = await this.fillBookIdMap(from);
                 let proc = 0;
@@ -381,13 +378,15 @@ class DbSearcher {
                 for (const bookId of bookIds) {
                     const tableId = idMap.arr[bookId];
                     if (tableId) {
-                        tableIdsSet.add(tableId);
+                        if (!filter || filter.has(tableId))
+                            tableIdsSet.add(tableId);
                         proc++;
                     } else {
                         const tableIdArr = idMap.map.get(bookId);
                         if (tableIdArr) {
                             for (const tableId of tableIdArr) {
-                                tableIdsSet.add(tableId);
+                            if (!filter || filter.has(tableId))
+                                    tableIdsSet.add(tableId);
                                 proc++;
                             }
                         }
@@ -410,9 +409,6 @@ class DbSearcher {
 
                 tableIds = rows[0].rawResult;
             }
-
-            //т.к. авторы у книги идут списком, то дополнительно фильтруем
-            tableIds = await this.filterTableIds(tableIds, from, query);
 
             //сортируем по id
             //порядок id соответствует ASC-сортировке по строковому значению из from (имя автора, назание серии, название книги)
