@@ -399,12 +399,12 @@ class DbSearcher {
                     }
                 }
 
-                tableIds = Array.from(tableIdsSet);
+                tableIds = new Uint32Array(tableIdsSet);
             } else {//bookIds пустой - критерии не заданы, значит берем все id из from
                 const rows = await db.select({
                     table: from,
                     rawResult: true,
-                    where: `return Array.from(@all())`
+                    where: `return new Uint32Array(@all())`
                 });
 
                 tableIds = rows[0].rawResult;
@@ -500,11 +500,13 @@ class DbSearcher {
             limit = (limit > maxLimit ? maxLimit : limit);
             const offset = (query.offset ? query.offset : 0);
 
+            const slice = ids.slice(offset, offset + limit);
+            
             //выборка найденных значений
             const found = await db.select({
                 table: from,
                 map: `(r) => ({id: r.id, ${from}: r.name, bookCount: r.bookCount, bookDelCount: r.bookDelCount})`,
-                where: `@@id(${db.esc(ids.slice(offset, offset + limit))})`
+                where: `@@id(${db.esc(Array.from(slice))})`
             });
 
             //для title восстановим books
