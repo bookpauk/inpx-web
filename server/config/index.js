@@ -11,6 +11,8 @@ const propsToSave = [
     'dbCacheSize',
     'maxFilesDirSize',
     'queryCacheEnabled',
+    'queryCacheMemSize',
+    'queryCacheDiskSize',
     'cacheCleanInterval',
     'inpxCheckInterval',
     'lowMemoryMode',

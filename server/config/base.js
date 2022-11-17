@@ -22,6 +22,8 @@ module.exports = {
     maxPayloadSize: 500,//in MB
     maxFilesDirSize: 1024*1024*1024,//1Gb
     queryCacheEnabled: true,
+    queryCacheMemSize: 50,
+    queryCacheDiskSize: 500,
     cacheCleanInterval: 60,//minutes
     inpxCheckInterval: 60,//minutes
     lowMemoryMode: false,

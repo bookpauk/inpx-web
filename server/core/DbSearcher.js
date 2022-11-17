@@ -3,7 +3,6 @@ const fs = require('fs-extra');
 const LockQueue = require('./LockQueue');
 const utils = require('./utils');
 
-const maxMemCacheSize = 100;
 const maxLimit = 1000;
 
 const emptyFieldValue = '?';
@@ -15,6 +14,11 @@ const enruArr = (ruAlphabet + enAlphabet).split('');
 class DbSearcher {
     constructor(config, db) {
         this.config = config;
+        this.queryCacheMemSize = this.config.queryCacheMemSize;
+        this.queryCacheDiskSize = this.config.queryCacheDiskSize;
+        this.queryCacheEnabled = this.config.queryCacheEnabled
+            && (this.queryCacheMemSize > 0 || this.queryCacheDiskSize > 0);
+
         this.db = db;
 
         this.lock = new LockQueue();
@@ -501,7 +505,7 @@ class DbSearcher {
             const offset = (query.offset ? query.offset : 0);
 
             const slice = ids.slice(offset, offset + limit);
-            
+
             //выборка найденных значений
             const found = await db.select({
                 table: from,
@@ -594,7 +598,7 @@ class DbSearcher {
     }
 
     async getCached(key) {
-        if (!this.config.queryCacheEnabled)
+        if (!this.queryCacheEnabled)
             return null;
 
         let result = null;
@@ -602,13 +606,13 @@ class DbSearcher {
         const db = this.db;
         const memCache = this.memCache;
 
-        if (memCache.has(key)) {//есть в недавних
+        if (this.queryCacheMemSize > 0 && memCache.has(key)) {//есть в недавних
             result = memCache.get(key);
 
             //изменим порядок ключей, для последующей правильной чистки старых
             memCache.delete(key);
             memCache.set(key, result);
-        } else {//смотрим в таблице
+        } else if (this.queryCacheDiskSize > 0) {//смотрим в таблице
             const rows = await db.select({table: 'query_cache', where: `@@id(${db.esc(key)})`});
 
             if (rows.length) {//нашли в кеше
@@ -619,13 +623,17 @@ class DbSearcher {
                 });
 
                 result = rows[0].value;
-                memCache.set(key, result);
 
-                if (memCache.size > maxMemCacheSize) {
-                    //удаляем самый старый ключ-значение
-                    for (const k of memCache.keys()) {
-                        memCache.delete(k);
-                        break;
+                //заполняем кеш в памяти
+                if (this.queryCacheMemSize > 0) {
+                    memCache.set(key, result);
+
+                    if (memCache.size > this.queryCacheMemSize) {
+                        //удаляем самый старый ключ-значение
+                        for (const k of memCache.keys()) {
+                            memCache.delete(k);
+                            break;
+                        }
                     }
                 }
             }
@@ -635,40 +643,44 @@ class DbSearcher {
     }
 
     async putCached(key, value) {
-        if (!this.config.queryCacheEnabled)
+        if (!this.queryCacheEnabled)
             return;
 
         const db = this.db;
 
-        const memCache = this.memCache;
-        memCache.set(key, value);
+        if (this.queryCacheMemSize > 0) {
+            const memCache = this.memCache;
+            memCache.set(key, value);
 
-        if (memCache.size > maxMemCacheSize) {
-            //удаляем самый старый ключ-значение
-            for (const k of memCache.keys()) {
-                memCache.delete(k);
-                break;
+            if (memCache.size > this.queryCacheMemSize) {
+                //удаляем самый старый ключ-значение
+                for (const k of memCache.keys()) {
+                    memCache.delete(k);
+                    break;
+                }
             }
         }
 
-        //кладем в таблицу асинхронно
-        (async() => {
-            try {
-                await db.insert({
-                    table: 'query_cache',
-                    replace: true,
-                    rows: [{id: key, value}],
-                });
+        if (this.queryCacheDiskSize > 0) {
+            //кладем в таблицу асинхронно
+            (async() => {
+                try {
+                    await db.insert({
+                        table: 'query_cache',
+                        replace: true,
+                        rows: [{id: key, value}],
+                    });
 
-                await db.insert({
-                    table: 'query_time',
-                    replace: true,
-                    rows: [{id: key, time: Date.now()}],
-                });
-            } catch(e) {
-                console.error(`putCached: ${e.message}`);
-            }
-        })();
+                    await db.insert({
+                        table: 'query_time',
+                        replace: true,
+                        rows: [{id: key, time: Date.now()}],
+                    });
+                } catch(e) {
+                    console.error(`putCached: ${e.message}`);
+                }
+            })();
+        }
     }
 
     async periodicCleanCache() {
@@ -678,21 +690,50 @@ class DbSearcher {
             return;
 
         try {
+            if (!this.queryCacheEnabled || this.queryCacheDiskSize <= 0)
+                return;
+
             const db = this.db;
 
-            const oldThres = Date.now() - cleanInterval;
+            let rows = await db.select({table: 'query_time', count: true});
+            const delCount = rows[0].count - this.queryCacheDiskSize;
+
+            if (delCount < 1)
+                return;
 
             //выберем всех кандидатов на удаление
-            const rows = await db.select({
+            //находим delCount минимальных по time
+            rows = await db.select({
                 table: 'query_time',
+                rawResult: true,
                 where: `
-                    @@iter(@all(), (r) => (r.time < ${db.esc(oldThres)}));
+                    const res = Array(${db.esc(delCount)}).fill({time: Date.now()});
+
+                    @unsafeIter(@all(), (r) => {
+                        if (r.time >= res[${db.esc(delCount - 1)}].time)
+                            return false;
+
+                        let ins = {id: r.id, time: r.time};
+
+                        for (let i = 0; i < res.length; i++) {
+                            if (!res[i].id || ins.time < res[i].time) {
+                                const t = res[i];
+                                res[i] = ins;
+                                ins = t;
+                            }
+
+                            if (!ins.id)
+                                break;
+                        }
+                        
+                        return false;
+                    });
+
+                    return res.filter(r => r.id).map(r => r.id);
                 `
             });
 
-            const ids = [];
-            for (const row of rows)
-                ids.push(row.id);
+            const ids = rows[0].rawResult;
 
             //удаляем
             await db.delete({table: 'query_cache', where: `@@id(${db.esc(ids)})`});
