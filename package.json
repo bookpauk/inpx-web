@@ -38,6 +38,7 @@
     "html-webpack-plugin": "^5.5.0",
     "mini-css-extract-plugin": "^2.6.1",
     "pkg": "^5.8.0",
+    "showdown": "^2.1.0",
     "terser-webpack-plugin": "^5.3.3",
     "vue-eslint-parser": "^9.0.3",
     "vue-loader": "^17.0.0",
