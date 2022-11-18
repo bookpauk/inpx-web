@@ -469,13 +469,13 @@ class WebWorker {
             const bookFile = `${this.config.filesDir}/${hash}`;
             const bookFileInfo = `${bookFile}.i.json`;
 
+            let rows = await db.select({table: 'book', where: `@@hash('_uid', ${db.esc(bookUid)})`});
+            if (!rows.length)
+                throw new Error('404 Файл не найден');
+            const book = rows[0];
+
             const restoreBookInfo = async(info) => {
                 const result = {};
-
-                let rows = await db.select({table: 'book', where: `@@hash('_uid', ${db.esc(bookUid)})`});
-                if (!rows.length)
-                    throw new Error('404 Файл не найден');
-                const book = rows[0];
 
                 result.book = book;
                 result.cover = '';
@@ -493,7 +493,8 @@ class WebWorker {
                     }
                 }
 
-                Object.assign(info ,result);
+                Object.assign(info, result);
+
                 await fs.writeFile(bookFileInfo, JSON.stringify(info));
 
                 if (this.config.branch === 'development') {
@@ -513,7 +514,7 @@ class WebWorker {
                 if (tmpInfo.cover)
                     coverFile = `${this.config.publicFilesDir}${tmpInfo.cover}`;
 
-                if (coverFile && !await fs.pathExists(coverFile)) {
+                if (book.id != tmpInfo.book.id || (coverFile && !await fs.pathExists(coverFile))) {
                     await restoreBookInfo(bookInfo);
                 } else {
                     bookInfo = tmpInfo;
