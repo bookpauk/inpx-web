@@ -7,7 +7,7 @@ class BasePage {
 
         this.webWorker = new WebWorker(config);
         this.rootTag = 'feed';
-        this.opdsRoot = '/opds';
+        this.opdsRoot = config.opdsRoot;
     }
 
     makeEntry(entry = {}) {
@@ -23,6 +23,14 @@ class BasePage {
         return Object.assign(result, entry);
     }
 
+    myEntry() {
+        return this.makeEntry({
+            id: this.id,
+            title: this.title, 
+            link: this.navLink({rel: 'subsection', href: `/${this.id}`}),
+        });
+    }
+
     makeLink(attrs) {
         return {'*ATTRS': attrs};
     }
@@ -35,6 +43,13 @@ class BasePage {
         });
     }
 
+    baseLinks() {
+        return [
+            this.navLink({rel: 'start'}),
+            this.navLink({rel: 'self', href: (this.id ? `/${this.id}` : '')}),
+        ];
+    }
+
     makeBody(content) {
         const base = this.makeEntry({id: this.id, title: this.title});
         base['*ATTRS'] = {
@@ -43,9 +58,8 @@ class BasePage {
             'xmlns:opds': 'http://opds-spec.org/2010/catalog',
         };
 
-        base.link = [
-            this.navLink({rel: 'start'}),
-        ];
+        if (!content.link)
+            base.link = this.baseLinks();
 
         const xml = new XmlParser();
         const xmlObject = {};        

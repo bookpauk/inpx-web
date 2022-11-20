@@ -1,18 +1,27 @@
-const path = require('path');
-
 const RootPage = require('./RootPage');
+const AuthorPage = require('./AuthorPage');
 
 module.exports = function(app, config) {
-    const root = new RootPage(config);
+    const opdsRoot = '/opds';
+    config.opdsRoot = opdsRoot;
 
-    const pages = new Map([
-        ['opds', root]
-    ]);
+    const root = new RootPage(config);
+    const author = new AuthorPage(config);
+
+    const routes = [
+        ['', root],
+        ['/root', root],
+        ['/author', author],
+    ];
+
+    const pages = new Map();
+    for (const r of routes) {
+        pages.set(`${opdsRoot}${r[0]}`, r[1]);
+    }
 
     const opds = async(req, res, next) => {
         try {
-            const pageName = path.basename(req.path);
-            const page = pages.get(pageName);
+            const page = pages.get(req.path);
 
             if (page) {
                 res.set('Content-Type', 'application/atom+xml; charset=utf-8');
@@ -29,6 +38,6 @@ module.exports = function(app, config) {
         }
     };
 
-    app.get(['/opds', '/opds/*'], opds);
+    app.get([opdsRoot, `${opdsRoot}/*`], opds);
 };
 

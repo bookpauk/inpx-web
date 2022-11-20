@@ -1,4 +1,5 @@
 const BasePage = require('./BasePage');
+const AuthorPage = require('./AuthorPage');
 
 class RootPage extends BasePage {
     constructor(config) {
@@ -6,6 +7,8 @@ class RootPage extends BasePage {
 
         this.id = 'root';
         this.title = '';
+
+        this.authorPage = new AuthorPage(config);
     }
 
     async body() {
@@ -20,17 +23,8 @@ class RootPage extends BasePage {
                 this.title = 'Неизвестная коллекция';
         }
 
-        result.link = [
-            this.navLink({rel: 'start'}),
-            this.navLink({rel: 'self'}),
-        ];
-
         result.entry = [
-            this.makeEntry({
-                id: 'author',
-                title: 'Авторы', 
-                link: this.navLink({rel: 'subsection', href: '/author'}),
-            }),
+            this.authorPage.myEntry(),
         ];
 
         return this.makeBody(result);
