@@ -5,7 +5,6 @@ const express = require('express');
 const http = require('http');
 const WebSocket = require ('ws');
 
-const opds = require('./core/opds');
 const utils = require('./core/utils');
 
 const ayncExit = new (require('./core/AsyncExit'))();
@@ -155,6 +154,7 @@ async function main() {
     if (devModule)
         devModule.logQueries(app);
 
+    const opds = require('./core/opds');
     opds(app, config);
     initStatic(app, config);
     
