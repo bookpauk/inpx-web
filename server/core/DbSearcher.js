@@ -534,28 +534,105 @@ class DbSearcher {
         }
     }
 
-    async getAuthorBookList(authorId) {
+    async opdsQuery(from, query) {
         if (this.closed)
             throw new Error('DbSearcher closed');
 
-        if (!authorId)
+        if (!['author', 'series', 'title'].includes(from))
+            throw new Error(`Unknown value for param 'from'`);
+
+        this.searchFlag++;
+
+        try {
+            const db = this.db;
+
+            const queryKey = this.queryKey(query);
+            const opdsKey = `${from}-opds-${queryKey}`;
+            let result = await this.getCached(opdsKey);
+
+            if (result === null) {
+                const ids = await this.selectTableIds(from, query);
+
+                const totalFound = ids.length;
+                const depth = query.depth || 1;
+
+                //группировка по name длиной depth
+                const found = await db.select({
+                    table: from,
+                    rawResult: true,
+                    where: `
+                        const depth = ${db.esc(depth)};
+                        const group = new Map();
+
+                        const ids = ${db.esc(Array.from(ids))};
+                        for (const id of ids) {
+                            const row = @unsafeRow(id);
+                            const s = row.name.substring(0, depth);
+                            let g = group.get(s);
+                            if (!g) {
+                                g = {id: row.id, name: s, count: 0};
+                                group.set(s, g);
+                            }
+                            g.count++;
+                        }
+
+                        const result = Array.from(group.values());
+                        result.sort((a, b) => a.name.localeCompare(b.name));
+
+                        return result;
+                    `
+                });
+
+                result = {found: found[0].rawResult, totalFound};
+                
+                await this.putCached(opdsKey, result);
+            }
+
+            return result;
+        } finally {
+            this.searchFlag--;
+        }
+    }
+
+    async getAuthorBookList(authorId, author) {
+        if (this.closed)
+            throw new Error('DbSearcher closed');
+
+        if (!authorId && !author)
             return {author: '', books: ''};
 
         this.searchFlag++;
 
         try {
-            //выборка книг автора по authorId
-            const rows = await this.restoreBooks('author', [authorId])
+            const db = this.db;
 
-            let author = '';
+            if (!authorId) {                
+                //восстановим authorId
+                authorId = 0;
+                author = author.toLowerCase();
+
+                const rows = await db.select({
+                    table: 'author',
+                    rawResult: true,
+                    where: `return Array.from(@dirtyIndexLR('value', ${db.esc(author)}, ${db.esc(author)}))`
+                });
+
+                if (rows.length && rows[0].rawResult.length)
+                    authorId = rows[0].rawResult[0];
+            }
+
+            //выборка книг автора по authorId
+            const rows = await this.restoreBooks('author', [authorId]);
+
+            let authorName = '';
             let books = '';
 
             if (rows.length) {
-                author = rows[0].name;
+                authorName = rows[0].name;
                 books = rows[0].books;
             }
 
-            return {author, books: (books && books.length ? JSON.stringify(books) : '')};
+            return {author: authorName, books: (books && books.length ? JSON.stringify(books) : '')};
         } finally {
             this.searchFlag--;
         }

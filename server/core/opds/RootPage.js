@@ -13,10 +13,9 @@ class RootPage extends BasePage {
 
     async body() {
         const result = {};
-        const ww = this.webWorker;
 
         if (!this.title) {
-            const dbConfig = await ww.dbConfig();
+            const dbConfig = await this.webWorker.dbConfig();
             const collection = dbConfig.inpxInfo.collection.split('\n');
             this.title = collection[0].trim();
             if (!this.title)

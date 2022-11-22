@@ -267,10 +267,16 @@ class WebWorker {
         return result;
     }
 
-    async getAuthorBookList(authorId) {
+    async opdsQuery(from, query) {
         this.checkMyState();
 
-        return await this.dbSearcher.getAuthorBookList(authorId);
+        return await this.dbSearcher.opdsQuery(from, query);
+    }
+
+    async getAuthorBookList(authorId, author) {
+        this.checkMyState();
+
+        return await this.dbSearcher.getAuthorBookList(authorId, author);
     }
 
     async getSeriesBookList(series) {
