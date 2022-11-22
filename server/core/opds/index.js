@@ -1,5 +1,6 @@
 const RootPage = require('./RootPage');
 const AuthorPage = require('./AuthorPage');
+const BookPage = require('./BookPage');
 
 module.exports = function(app, config) {
     const opdsRoot = '/opds';
@@ -7,11 +8,13 @@ module.exports = function(app, config) {
 
     const root = new RootPage(config);
     const author = new AuthorPage(config);
+    const book = new BookPage(config);
 
     const routes = [
         ['', root],
         ['/root', root],
         ['/author', author],
+        ['/book', book],
     ];
 
     const pages = new Map();
@@ -35,6 +38,9 @@ module.exports = function(app, config) {
             }
         } catch (e) {
             res.status(500).send({error: e.message});
+            if (config.branch == 'development') {
+                console.error({error: e.message, url: req.originalUrl});
+            }
         }
     };
 
