@@ -70,7 +70,6 @@ class AuthorPage extends BasePage {
             series: req.query.series || '',
             genre: req.query.genre || '',
             del: 0,
-            limit: 100,
             
             all: req.query.all || '',
             depth: 0,

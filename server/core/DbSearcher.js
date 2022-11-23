@@ -546,15 +546,15 @@ class DbSearcher {
         try {
             const db = this.db;
 
+            const depth = query.depth || 1;
             const queryKey = this.queryKey(query);
-            const opdsKey = `${from}-opds-${queryKey}`;
+            const opdsKey = `${from}-opds-d${depth}-${queryKey}`;
             let result = await this.getCached(opdsKey);
 
             if (result === null) {
                 const ids = await this.selectTableIds(from, query);
 
                 const totalFound = ids.length;
-                const depth = query.depth || 1;
 
                 //группировка по name длиной depth
                 const found = await db.select({

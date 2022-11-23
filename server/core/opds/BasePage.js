@@ -138,7 +138,7 @@ class BasePage {
         return result;
     }
 
-    async opdsQuery(from, query, otherTitle = '[Другие]') {
+    async opdsQuery(from, query, otherTitle = '[Другие]', prevLen = 0) {
         const queryRes = await this.webWorker.opdsQuery(from, query);
         let count = 0;
         for (const row of queryRes.found)
@@ -146,21 +146,30 @@ class BasePage {
 
         const others = [];
         let result = [];
-        if (count <= query.limit) {
-            result = await this.search(from, query);
+        if (count <= 50) {
+            //конец навигации
+            return await this.search(from, query);
         } else {
             const names = new Set();
+            let len = 0;
             for (const row of queryRes.found) {
                 const name = row.name.toUpperCase();
+                const lowName = row.name.toLowerCase();
+                len += name.length;
+
+                if (lowName == query[from]) {
+                    //конец навигации, результат содержит запрос
+                    return await this.search(from, query);
+                }
 
                 if (!names.has(name)) {
                     const rec = {
                         id: row.id,
                         title: name.replace(/ /g, spaceChar),
-                        q: encodeURIComponent(row.name.toLowerCase()),
+                        q: encodeURIComponent(lowName),
                         count: row.count,
                     };
-                    if (query.depth > 1 || enru.has(row.name[0].toLowerCase())) {
+                    if (query.depth > 1 || enru.has(lowName[0])) {
                         result.push(rec);
                     } else {
                         others.push(rec);
@@ -168,15 +177,12 @@ class BasePage {
                     names.add(name);
                 }
             }
-        }
 
-        if (query.depth > 1 && result.length == 1 && query[from]) {
-            const newQuery = _.cloneDeep(query);
-            newQuery[from] = decodeURIComponent(result[0].q);
-
-            if (newQuery[from].length >= query.depth) {
-                newQuery.depth = newQuery[from].length + 1;
-                return await this.opdsQuery(from, newQuery);
+            if (query[from] && query.depth > 1 && result.length < 20 && len > prevLen) {
+                //рекурсия, с увеличением глубины, для облегчения навигации
+                const newQuery = _.cloneDeep(query);
+                newQuery.depth++;
+                return await this.opdsQuery(from, newQuery, otherTitle, len);
             }
         }
 
