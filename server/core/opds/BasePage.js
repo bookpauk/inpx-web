@@ -45,6 +45,7 @@ class BasePage {
     }
 
     makeLink(attrs) {
+        attrs.href = he.escape(attrs.href);
         return {'*ATTRS': attrs};
     }
 

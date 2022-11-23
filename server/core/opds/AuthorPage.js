@@ -139,7 +139,7 @@ class AuthorPage extends BasePage {
                             })
                         );
                     } else {
-                        const title = b.book.title || 'Без названия';
+                        const title = `${b.book.title || 'Без названия'} (${b.book.ext})`;
                         entry.push(
                             this.makeEntry({
                                 id: b.book._uid,
