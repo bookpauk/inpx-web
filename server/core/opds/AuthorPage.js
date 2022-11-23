@@ -94,7 +94,7 @@ class AuthorPage extends BasePage {
                         this.makeEntry({
                             id: book._uid,
                             title,
-                            link: this.navLink({href: `/book?uid=${encodeURIComponent(book._uid)}`}),
+                            link: this.acqLink({href: `/book?uid=${encodeURIComponent(book._uid)}`}),
                         })
                     );
                 }
@@ -124,7 +124,7 @@ class AuthorPage extends BasePage {
                             this.makeEntry({
                                 id: b.book._uid,
                                 title,
-                                link: this.navLink({href: `/book?uid=${encodeURIComponent(b.book._uid)}`}),
+                                link: this.acqLink({href: `/book?uid=${encodeURIComponent(b.book._uid)}`}),
                             })
                         );
                     }
@@ -146,7 +146,7 @@ class AuthorPage extends BasePage {
         }
 
         result.entry = entry;
-        return this.makeBody(result);
+        return this.makeBody(result, req);
     }
 }
 

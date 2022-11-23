@@ -50,28 +50,36 @@ class BasePage {
 
     navLink(attrs) {
         return this.makeLink({
-            href: this.opdsRoot + (attrs.href || ''),
+            href: (attrs.hrefAsIs ? attrs.href : `${this.opdsRoot}${attrs.href || ''}`),
             rel: attrs.rel || 'subsection',
-            type: 'application/atom+xml; profile=opds-catalog; kind=navigation',
+            type: 'application/atom+xml;profile=opds-catalog;kind=navigation',
         });
     }
 
     acqLink(attrs) {
+        return this.makeLink({
+            href: this.opdsRoot + (attrs.href || ''),
+            rel: attrs.rel || 'subsection',
+            type: 'application/atom+xml;profile=opds-catalog;kind=acquisition',
+        });
+    }
+
+    downLink(attrs) {
         if (!attrs.href)
-            throw new Error('acqLink: no href');
+            throw new Error('downLink: no href');
         if (!attrs.type)
-            throw new Error('acqLink: no type');
+            throw new Error('downLink: no type');
 
         return this.makeLink({
             href: attrs.href,
-            rel: 'http://opds-spec.org/acquisition/open-access',
+            rel: 'http://opds-spec.org/acquisition',
             type: attrs.type,
         });
     }
 
     imgLink(attrs) {
         if (!attrs.href)
-            throw new Error('acqLink: no href');
+            throw new Error('imgLink: no href');
 
         return this.makeLink({
             href: attrs.href,
@@ -80,14 +88,14 @@ class BasePage {
         });
     }
 
-    baseLinks() {
+    baseLinks(req) {
         return [
             this.navLink({rel: 'start'}),
-            this.navLink({rel: 'self', href: (this.id ? `/${this.id}` : '')}),
+            this.navLink({rel: 'self', href: req.originalUrl, hrefAsIs: true}),
         ];
     }
 
-    makeBody(content) {
+    makeBody(content, req) {
         const base = this.makeEntry({id: this.id, title: this.title});
         base['*ATTRS'] = {
             'xmlns': 'http://www.w3.org/2005/Atom',
@@ -96,7 +104,7 @@ class BasePage {
         };
 
         if (!content.link)
-            base.link = this.baseLinks();
+            base.link = this.baseLinks(req);
 
         const xml = new XmlParser();
         const xmlObject = {};        

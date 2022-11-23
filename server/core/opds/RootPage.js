@@ -11,7 +11,7 @@ class RootPage extends BasePage {
         this.authorPage = new AuthorPage(config);
     }
 
-    async body() {
+    async body(req) {
         const result = {};
 
         if (!this.title) {
@@ -26,7 +26,7 @@ class RootPage extends BasePage {
             this.authorPage.myEntry(),
         ];
 
-        return this.makeBody(result);
+        return this.makeBody(result, req);
     }
 }
 
