@@ -68,6 +68,7 @@ class AuthorPage extends BasePage {
         const query = {
             author: req.query.author || '',
             series: req.query.series || '',
+            all: req.query.all || '',
             depth: 0,
             del: 0,
             limit: 100
@@ -84,17 +85,35 @@ class AuthorPage extends BasePage {
         if (query.series) {
             //книги по серии
             const bookList = await this.webWorker.getSeriesBookList(query.series);
+            
             if (bookList.books) {
                 let books = JSON.parse(bookList.books);
-                books = this.sortSeriesBooks(this.filterBooks(books, query));
+                const filtered = (query.all ? books : this.filterBooks(books, query));
+                const sorted = this.sortSeriesBooks(filtered);
 
-                for (const book of books) {
-                    const title = `${book.serno ? `${book.serno}. `: ''}${book.title || 'Без названия'}`;
+                for (const book of sorted) {
+                    let title = `${book.serno ? `${book.serno}. `: ''}${book.title || 'Без названия'}`;
+                    if (query.all) {
+                        title = `${this.bookAuthor(book.author)} "${title}"`;
+                    }
+
                     entry.push(
                         this.makeEntry({
                             id: book._uid,
                             title,
                             link: this.acqLink({href: `/book?uid=${encodeURIComponent(book._uid)}`}),
+                        })
+                    );
+                }
+
+                if (books.length > filtered.length) {
+                    entry.push(
+                        this.makeEntry({
+                            id: 'all_series_books',
+                            title: 'Все книги серии',
+                            link: this.navLink({
+                                href: `/${this.id}?author=${encodeURIComponent(query.author)}` +
+                                    `&series=${encodeURIComponent(query.series)}&all=1`}),
                         })
                     );
                 }
