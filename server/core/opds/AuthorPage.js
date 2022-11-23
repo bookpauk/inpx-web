@@ -68,10 +68,12 @@ class AuthorPage extends BasePage {
         const query = {
             author: req.query.author || '',
             series: req.query.series || '',
+            genre: req.query.genre || '',
+            del: 0,
+            limit: 100,
+            
             all: req.query.all || '',
             depth: 0,
-            del: 0,
-            limit: 100
         };
         query.depth = query.author.length + 1;
 
@@ -91,6 +93,18 @@ class AuthorPage extends BasePage {
                 const filtered = (query.all ? books : this.filterBooks(books, query));
                 const sorted = this.sortSeriesBooks(filtered);
 
+                if (books.length > filtered.length) {
+                    entry.push(
+                        this.makeEntry({
+                            id: 'all_series_books',
+                            title: '[Все книги серии]',
+                            link: this.navLink({
+                                href: `/${this.id}?author=${encodeURIComponent(query.author)}` +
+                                    `&series=${encodeURIComponent(query.series)}&all=1`}),
+                        })
+                    );
+                }
+
                 for (const book of sorted) {
                     let title = `${book.serno ? `${book.serno}. `: ''}${book.title || 'Без названия'}`;
                     if (query.all) {
@@ -103,18 +117,6 @@ class AuthorPage extends BasePage {
                             id: book._uid,
                             title,
                             link: this.acqLink({href: `/book?uid=${encodeURIComponent(book._uid)}`}),
-                        })
-                    );
-                }
-
-                if (books.length > filtered.length) {
-                    entry.push(
-                        this.makeEntry({
-                            id: 'all_series_books',
-                            title: 'Все книги серии',
-                            link: this.navLink({
-                                href: `/${this.id}?author=${encodeURIComponent(query.author)}` +
-                                    `&series=${encodeURIComponent(query.series)}&all=1`}),
                         })
                     );
                 }
@@ -135,7 +137,7 @@ class AuthorPage extends BasePage {
                                 title: `Серия: ${b.book.series}`,
                                 link: this.navLink({
                                     href: `/${this.id}?author=${encodeURIComponent(query.author)}` +
-                                        `&series=${encodeURIComponent(b.book.series)}`}),
+                                        `&series=${encodeURIComponent(b.book.series)}&genre=${encodeURIComponent(query.genre)}`}),
                             })
                         );
                     } else {
@@ -151,15 +153,25 @@ class AuthorPage extends BasePage {
                 }
             }
         } else {
-            //поиск по каталогу
-            const queryRes = await this.opdsQuery('author', query, 'Остальные авторы');
+            if (query.depth == 1 && !query.genre && !query.others) {
+                entry.push(
+                    this.makeEntry({
+                        id: 'select_genre',
+                        title: '[Выбрать жанр]',
+                        link: this.navLink({href: `/genre?from=${this.id}`}),
+                    })
+                );
+            }
+
+            //навигация по каталогу
+            const queryRes = await this.opdsQuery('author', query, '[Остальные авторы]');
 
             for (const rec of queryRes) {                
                 entry.push(
                     this.makeEntry({
                         id: rec.id,
                         title: this.bookAuthor(rec.title),//${(query.depth > 1 && rec.count ? ` (${rec.count})` : '')}
-                        link: this.navLink({href: `/${this.id}?author=${rec.q}`}),
+                        link: this.navLink({href: `/${this.id}?author=${rec.q}&genre=${encodeURIComponent(query.genre)}`}),
                     })
                 );
             }

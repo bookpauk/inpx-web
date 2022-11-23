@@ -138,7 +138,7 @@ class BasePage {
         return result;
     }
 
-    async opdsQuery(from, query, otherTitle = 'Другие') {
+    async opdsQuery(from, query, otherTitle = '[Другие]') {
         const queryRes = await this.webWorker.opdsQuery(from, query);
         let count = 0;
         for (const row of queryRes.found)
@@ -302,9 +302,12 @@ class BasePage {
             result = {
                 genreTree: res.genreTree,
                 genreMap: new Map(),
+                genreSection: new Map(),
             };
 
             for (const section of result.genreTree) {
+                result.genreSection.set(section.name, section.value);
+
                 for (const g of section.value)
                     result.genreMap.set(g.value, g.name);
             }
