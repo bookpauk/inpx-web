@@ -152,7 +152,7 @@ class AuthorPage extends BasePage {
             }
         } else {
             //поиск по каталогу
-            const queryRes = await this.opdsQuery('author', query);
+            const queryRes = await this.opdsQuery('author', query, 'Остальные авторы');
 
             for (const rec of queryRes) {                
                 entry.push(

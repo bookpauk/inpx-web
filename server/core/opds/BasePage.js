@@ -138,7 +138,7 @@ class BasePage {
         return result;
     }
 
-    async opdsQuery(from, query) {
+    async opdsQuery(from, query, otherTitle = 'Другие') {
         const queryRes = await this.webWorker.opdsQuery(from, query);
         let count = 0;
         for (const row of queryRes.found)
@@ -181,7 +181,7 @@ class BasePage {
         }
 
         if (!query.others && others.length)
-            result.push({id: 'other', title: 'Все остальные', q: '___others'});
+            result.unshift({id: 'other', title: otherTitle, q: '___others'});
 
         return (!query.others ? result : others);
     }
