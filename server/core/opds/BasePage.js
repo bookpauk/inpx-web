@@ -58,7 +58,7 @@ class BasePage {
 
     acqLink(attrs) {
         return this.makeLink({
-            href: this.opdsRoot + (attrs.href || ''),
+            href: (attrs.hrefAsIs ? attrs.href : `${this.opdsRoot}${attrs.href || ''}`),
             rel: attrs.rel || 'subsection',
             type: 'application/atom+xml;profile=opds-catalog;kind=acquisition',
         });
@@ -143,41 +143,43 @@ class BasePage {
         for (const row of queryRes.found)
             count += row.count;
 
-        if (count <= query.limit)
-            return await this.search(from, query);
-
-        const result = [];
         const others = [];
-        const names = new Set();
-        for (const row of queryRes.found) {
-            const name = row.name.toUpperCase();
+        let result = [];
+        if (count <= query.limit) {
+            result = await this.search(from, query);
+        } else {
+            const names = new Set();
+            for (const row of queryRes.found) {
+                const name = row.name.toUpperCase();
 
-            if (!names.has(name)) {
-                const rec = {
-                    id: row.id,
-                    title: name.replace(/ /g, spaceChar),
-                    q: encodeURIComponent(row.name.toLowerCase()),
-                    count: row.count,
-                };
-                if (query.depth > 1 || enru.has(row.name[0].toLowerCase())) {
-                    result.push(rec);
-                } else {
-                    others.push(rec);
+                if (!names.has(name)) {
+                    const rec = {
+                        id: row.id,
+                        title: name.replace(/ /g, spaceChar),
+                        q: encodeURIComponent(row.name.toLowerCase()),
+                        count: row.count,
+                    };
+                    if (query.depth > 1 || enru.has(row.name[0].toLowerCase())) {
+                        result.push(rec);
+                    } else {
+                        others.push(rec);
+                    }
+                    names.add(name);
                 }
-                names.add(name);
             }
         }
 
         if (query.depth > 1 && result.length == 1 && query[from]) {
             const newQuery = _.cloneDeep(query);
             newQuery[from] = decodeURIComponent(result[0].q);
+
             if (newQuery[from].length >= query.depth) {
                 newQuery.depth = newQuery[from].length + 1;
                 return await this.opdsQuery(from, newQuery);
             }
         }
 
-        if (!query.others && query.depth == 1)
+        if (!query.others && others.length)
             result.push({id: 'other', title: 'Все остальные', q: '___others'});
 
         return (!query.others ? result : others);
@@ -291,6 +293,28 @@ class BasePage {
         });
     }
 
+    async getGenres() {
+        let result;
+        if (!this.genres) {
+            const res = await this.webWorker.getGenreTree();
+
+            result = {
+                genreTree: res.genreTree,
+                genreMap: new Map(),
+            };
+
+            for (const section of result.genreTree) {
+                for (const g of section.value)
+                    result.genreMap.set(g.value, g.name);
+            }
+
+            this.genres = result;
+        } else {
+            result = this.genres;
+        }
+
+        return result;
+    }
 }
 
 module.exports = BasePage;

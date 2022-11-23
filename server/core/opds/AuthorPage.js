@@ -85,7 +85,7 @@ class AuthorPage extends BasePage {
         if (query.series) {
             //книги по серии
             const bookList = await this.webWorker.getSeriesBookList(query.series);
-            
+
             if (bookList.books) {
                 let books = JSON.parse(bookList.books);
                 const filtered = (query.all ? books : this.filterBooks(books, query));
@@ -96,6 +96,7 @@ class AuthorPage extends BasePage {
                     if (query.all) {
                         title = `${this.bookAuthor(book.author)} "${title}"`;
                     }
+                    title += ` (${book.ext})`;
 
                     entry.push(
                         this.makeEntry({
