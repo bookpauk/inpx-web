@@ -11,6 +11,8 @@ const propsToSave = [
     'dbCacheSize',
     'maxFilesDirSize',
     'queryCacheEnabled',
+    'queryCacheMemSize',
+    'queryCacheDiskSize',
     'cacheCleanInterval',
     'inpxCheckInterval',
     'lowMemoryMode',
@@ -18,6 +20,7 @@ const propsToSave = [
     'allowRemoteLib',
     'remoteLib',
     'server',
+    'opds',
 ];
 
 let instance = null;

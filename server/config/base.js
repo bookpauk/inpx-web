@@ -16,12 +16,14 @@ module.exports = {
 
     //поправить в случае, если были критические изменения в DbCreator или InpxParser
     //иначе будет рассинхронизация между сервером и клиентом на уровне БД
-    dbVersion: '7',
+    dbVersion: '8',
     dbCacheSize: 5,
 
     maxPayloadSize: 500,//in MB
     maxFilesDirSize: 1024*1024*1024,//1Gb
     queryCacheEnabled: true,
+    queryCacheMemSize: 50,
+    queryCacheDiskSize: 500,
     cacheCleanInterval: 60,//minutes
     inpxCheckInterval: 60,//minutes
     lowMemoryMode: false,
@@ -42,6 +44,12 @@ module.exports = {
     server: {
         host: '0.0.0.0',
         port: '22380',
+    },
+    //opds: false,
+    opds: {
+        enabled: true,
+        user: '',
+        password: '',
     },
 };
 

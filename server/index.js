@@ -154,6 +154,8 @@ async function main() {
     if (devModule)
         devModule.logQueries(app);
 
+    const opds = require('./core/opds');
+    opds(app, config);
     initStatic(app, config);
     
     const { WebSocketController } = require('./controllers');

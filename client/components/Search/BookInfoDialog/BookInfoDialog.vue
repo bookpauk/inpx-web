@@ -174,7 +174,6 @@ class BookInfoDialog {
             {name: 'fileInfo', label: 'Информация о файле', value: [
                 {name: 'folder', label: 'Папка'},
                 {name: 'file', label: 'Файл'},
-                {name: 'ext', label: 'Тип'},
                 {name: 'size', label: 'Размер'},
                 {name: 'date', label: 'Добавлен'},
                 {name: 'del', label: 'Удален'},
@@ -193,7 +192,10 @@ class BookInfoDialog {
             ]},
         ];
 
-        const valueToString = (value, nodePath) => {//eslint-disable-line no-unused-vars
+        const valueToString = (value, nodePath, b) => {//eslint-disable-line no-unused-vars
+            if (nodePath == 'fileInfo/file')
+                return `${value}.${b.ext}`;
+
             if (nodePath == 'fileInfo/size')
                 return `${this.formatSize(value)} (${value.toString().replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1 ')} Bytes)`;
 
@@ -230,7 +232,7 @@ class BookInfoDialog {
                 const subItemOut = {
                     name: subItem.name,
                     label: subItem.label,
-                    value: valueToString(book[subItem.name], `${item.name}/${subItem.name}`)
+                    value: valueToString(book[subItem.name], `${item.name}/${subItem.name}`, book)
                 };
                 if (subItemOut.value)
                     itemOut.value.push(subItemOut);

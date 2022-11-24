@@ -1,8 +1,8 @@
+const fs = require('fs-extra');
 //const _ = require('lodash');
 const LockQueue = require('./LockQueue');
 const utils = require('./utils');
 
-const maxMemCacheSize = 100;
 const maxLimit = 1000;
 
 const emptyFieldValue = '?';
@@ -14,6 +14,11 @@ const enruArr = (ruAlphabet + enAlphabet).split('');
 class DbSearcher {
     constructor(config, db) {
         this.config = config;
+        this.queryCacheMemSize = this.config.queryCacheMemSize;
+        this.queryCacheDiskSize = this.config.queryCacheDiskSize;
+        this.queryCacheEnabled = this.config.queryCacheEnabled
+            && (this.queryCacheMemSize > 0 || this.queryCacheDiskSize > 0);
+
         this.db = db;
 
         this.lock = new LockQueue();
@@ -77,7 +82,7 @@ class DbSearcher {
                             result.add(bookId);
                     }
 
-                    return Array.from(result);
+                    return new Uint32Array(result);
                 `
             });
 
@@ -151,7 +156,7 @@ class DbSearcher {
                                 result.add(bookId);
                         }
 
-                        return Array.from(result);
+                        return new Uint32Array(result);
                     `
                 });
 
@@ -187,7 +192,7 @@ class DbSearcher {
                                 result.add(bookId);
                         }
 
-                        return Array.from(result);
+                        return new Uint32Array(result);
                     `
                 });
 
@@ -252,7 +257,7 @@ class DbSearcher {
                                 result.add(bookId);
                         }
 
-                        return Array.from(result);
+                        return new Uint32Array(result);
                     `
                 });
 
@@ -285,7 +290,7 @@ class DbSearcher {
                 inter = newInter;
             }
 
-            return Array.from(inter);
+            return new Uint32Array(inter);
         } else if (idsArr.length == 1) {            
             return idsArr[0];
         } else {
@@ -299,29 +304,13 @@ class DbSearcher {
 
         await this.lock.get();
         try {
-            const db = this.db;
-            const map = new Map();
-            const table = `${from}_id`;
+            const data = await fs.readFile(`${this.config.dataDir}/db/${from}_id.map`, 'utf-8');
 
-            await db.open({table});
-            let rows = await db.select({table});
-            await db.close({table});
+            const idMap = JSON.parse(data);
+            idMap.arr = new Uint32Array(idMap.arr);
+            idMap.map = new Map(idMap.map);
 
-            for (const row of rows) {
-                if (!row.value.length)
-                    continue;
-
-                if (row.value.length > 1)
-                    map.set(row.id, row.value);
-                else
-                    map.set(row.id, row.value[0]);
-            }
-
-            this.bookIdMap[from] = map;
-
-            rows = null;
-            await db.freeMemory();
-            utils.freeMemory();
+            this.bookIdMap[from] = idMap;
 
             return this.bookIdMap[from];
         } finally {
@@ -330,15 +319,20 @@ class DbSearcher {
     }
 
     async fillBookIdMapAll() {
-        await this.fillBookIdMap('author');
-        await this.fillBookIdMap('series');
-        await this.fillBookIdMap('title');
+        try {
+            await this.fillBookIdMap('author');
+            await this.fillBookIdMap('series');
+            await this.fillBookIdMap('title');
+        } catch (e) {
+            throw new Error(`DbSearcher.fillBookIdMapAll error: ${e.message}`)
+        }
     }
 
-    async filterTableIds(tableIds, from, query) {
-        let result = tableIds;
-
-        //т.к. авторы у книги идут списком, то дополнительно фильтруем
+    async tableIdsFilter(from, query) {
+        //т.к. авторы у книги идут списком (т.е. одна книга относиться сразу к нескольким авторам),
+        //то в выборку по bookId могут попасть авторы, которые отсутствуют в критерии query.author,
+        //поэтому дополнительно фильтруем
+        let result = null;
         if (from == 'author' && query.author && query.author !== '*') {
             const key = `filter-ids-author-${query.author}`;
             let authorIds = await this.getCached(key);
@@ -347,7 +341,7 @@ class DbSearcher {
                 const rows = await this.db.select({
                     table: 'author',
                     rawResult: true,
-                    where: `return Array.from(${this.getWhere(query.author)})`
+                    where: `return new Uint32Array(${this.getWhere(query.author)})`
                 });
 
                 authorIds = rows[0].rawResult;
@@ -355,12 +349,7 @@ class DbSearcher {
                 await this.putCached(key, authorIds);
             }
 
-            //пересечение tableIds и authorIds
-            result = [];
-            const authorIdsSet = new Set(authorIds);
-            for (const id of tableIds)
-                if (authorIdsSet.has(id))
-                    result.push(id);
+            result = new Set(authorIds);
         }
 
         return result;
@@ -381,24 +370,30 @@ class DbSearcher {
                 await this.putCached(bookKey, bookIds);
             }
 
+            //id книг (bookIds) нашли, теперь надо их смаппировать в id таблицы from (авторов, серий, названий)
             if (bookIds) {
+                //т.к. авторы у книги идут списком, то дополнительно фильтруем
+                const filter = await this.tableIdsFilter(from, query);
+
                 const tableIdsSet = new Set();
-                const bookIdMap = await this.fillBookIdMap(from);
+                const idMap = await this.fillBookIdMap(from);
                 let proc = 0;
                 let nextProc = 0;
                 for (const bookId of bookIds) {
-                    const tableIdValue = bookIdMap.get(bookId);
-                    if (!tableIdValue)
-                        continue;
-
-                    if (Array.isArray(tableIdValue)) {
-                        for (const tableId of tableIdValue) {
+                    const tableId = idMap.arr[bookId];
+                    if (tableId) {
+                        if (!filter || filter.has(tableId))
                             tableIdsSet.add(tableId);
-                            proc++;
-                        }
-                    } else {
-                        tableIdsSet.add(tableIdValue);
                         proc++;
+                    } else {
+                        const tableIdArr = idMap.map.get(bookId);
+                        if (tableIdArr) {
+                            for (const tableId of tableIdArr) {
+                            if (!filter || filter.has(tableId))
+                                    tableIdsSet.add(tableId);
+                                proc++;
+                            }
+                        }
                     }
 
                     //прерываемся иногда, чтобы не блокировать Event Loop
@@ -408,19 +403,19 @@ class DbSearcher {
                     }
                 }
 
-                tableIds = Array.from(tableIdsSet);
-            } else {
+                tableIds = new Uint32Array(tableIdsSet);
+            } else {//bookIds пустой - критерии не заданы, значит берем все id из from
                 const rows = await db.select({
                     table: from,
                     rawResult: true,
-                    where: `return Array.from(@all())`
+                    where: `return new Uint32Array(@all())`
                 });
 
                 tableIds = rows[0].rawResult;
             }
 
-            tableIds = await this.filterTableIds(tableIds, from, query);
-
+            //сортируем по id
+            //порядок id соответствует ASC-сортировке по строковому значению из from (имя автора, назание серии, название книги)
             tableIds.sort((a, b) => a - b);
 
             await this.putCached(tableKey, tableIds);
@@ -509,11 +504,13 @@ class DbSearcher {
             limit = (limit > maxLimit ? maxLimit : limit);
             const offset = (query.offset ? query.offset : 0);
 
+            const slice = ids.slice(offset, offset + limit);
+
             //выборка найденных значений
             const found = await db.select({
                 table: from,
                 map: `(r) => ({id: r.id, ${from}: r.name, bookCount: r.bookCount, bookDelCount: r.bookDelCount})`,
-                where: `@@id(${db.esc(ids.slice(offset, offset + limit))})`
+                where: `@@id(${db.esc(Array.from(slice))})`
             });
 
             //для title восстановим books
@@ -537,28 +534,105 @@ class DbSearcher {
         }
     }
 
-    async getAuthorBookList(authorId) {
+    async opdsQuery(from, query) {
         if (this.closed)
             throw new Error('DbSearcher closed');
 
-        if (!authorId)
+        if (!['author', 'series', 'title'].includes(from))
+            throw new Error(`Unknown value for param 'from'`);
+
+        this.searchFlag++;
+
+        try {
+            const db = this.db;
+
+            const depth = query.depth || 1;
+            const queryKey = this.queryKey(query);
+            const opdsKey = `${from}-opds-d${depth}-${queryKey}`;
+            let result = await this.getCached(opdsKey);
+
+            if (result === null) {
+                const ids = await this.selectTableIds(from, query);
+
+                const totalFound = ids.length;
+
+                //группировка по name длиной depth
+                const found = await db.select({
+                    table: from,
+                    rawResult: true,
+                    where: `
+                        const depth = ${db.esc(depth)};
+                        const group = new Map();
+
+                        const ids = ${db.esc(Array.from(ids))};
+                        for (const id of ids) {
+                            const row = @unsafeRow(id);
+                            const s = row.value.substring(0, depth);
+                            let g = group.get(s);
+                            if (!g) {
+                                g = {id: row.id, name: row.name, value: s, count: 0};
+                                group.set(s, g);
+                            }
+                            g.count++;
+                        }
+
+                        const result = Array.from(group.values());
+                        result.sort((a, b) => a.value.localeCompare(b.value));
+
+                        return result;
+                    `
+                });
+
+                result = {found: found[0].rawResult, totalFound};
+                
+                await this.putCached(opdsKey, result);
+            }
+
+            return result;
+        } finally {
+            this.searchFlag--;
+        }
+    }
+
+    async getAuthorBookList(authorId, author) {
+        if (this.closed)
+            throw new Error('DbSearcher closed');
+
+        if (!authorId && !author)
             return {author: '', books: ''};
 
         this.searchFlag++;
 
         try {
-            //выборка книг автора по authorId
-            const rows = await this.restoreBooks('author', [authorId])
+            const db = this.db;
 
-            let author = '';
+            if (!authorId) {                
+                //восстановим authorId
+                authorId = 0;
+                author = author.toLowerCase();
+
+                const rows = await db.select({
+                    table: 'author',
+                    rawResult: true,
+                    where: `return Array.from(@dirtyIndexLR('value', ${db.esc(author)}, ${db.esc(author)}))`
+                });
+
+                if (rows.length && rows[0].rawResult.length)
+                    authorId = rows[0].rawResult[0];
+            }
+
+            //выборка книг автора по authorId
+            const rows = await this.restoreBooks('author', [authorId]);
+
+            let authorName = '';
             let books = '';
 
             if (rows.length) {
-                author = rows[0].name;
+                authorName = rows[0].name;
                 books = rows[0].books;
             }
 
-            return {author, books: (books && books.length ? JSON.stringify(books) : '')};
+            return {author: authorName, books: (books && books.length ? JSON.stringify(books) : '')};
         } finally {
             this.searchFlag--;
         }
@@ -601,7 +675,7 @@ class DbSearcher {
     }
 
     async getCached(key) {
-        if (!this.config.queryCacheEnabled)
+        if (!this.queryCacheEnabled)
             return null;
 
         let result = null;
@@ -609,13 +683,13 @@ class DbSearcher {
         const db = this.db;
         const memCache = this.memCache;
 
-        if (memCache.has(key)) {//есть в недавних
+        if (this.queryCacheMemSize > 0 && memCache.has(key)) {//есть в недавних
             result = memCache.get(key);
 
             //изменим порядок ключей, для последующей правильной чистки старых
             memCache.delete(key);
             memCache.set(key, result);
-        } else {//смотрим в таблице
+        } else if (this.queryCacheDiskSize > 0) {//смотрим в таблице
             const rows = await db.select({table: 'query_cache', where: `@@id(${db.esc(key)})`});
 
             if (rows.length) {//нашли в кеше
@@ -626,13 +700,17 @@ class DbSearcher {
                 });
 
                 result = rows[0].value;
-                memCache.set(key, result);
 
-                if (memCache.size > maxMemCacheSize) {
-                    //удаляем самый старый ключ-значение
-                    for (const k of memCache.keys()) {
-                        memCache.delete(k);
-                        break;
+                //заполняем кеш в памяти
+                if (this.queryCacheMemSize > 0) {
+                    memCache.set(key, result);
+
+                    if (memCache.size > this.queryCacheMemSize) {
+                        //удаляем самый старый ключ-значение
+                        for (const k of memCache.keys()) {
+                            memCache.delete(k);
+                            break;
+                        }
                     }
                 }
             }
@@ -642,40 +720,44 @@ class DbSearcher {
     }
 
     async putCached(key, value) {
-        if (!this.config.queryCacheEnabled)
+        if (!this.queryCacheEnabled)
             return;
 
         const db = this.db;
 
-        const memCache = this.memCache;
-        memCache.set(key, value);
+        if (this.queryCacheMemSize > 0) {
+            const memCache = this.memCache;
+            memCache.set(key, value);
 
-        if (memCache.size > maxMemCacheSize) {
-            //удаляем самый старый ключ-значение
-            for (const k of memCache.keys()) {
-                memCache.delete(k);
-                break;
+            if (memCache.size > this.queryCacheMemSize) {
+                //удаляем самый старый ключ-значение
+                for (const k of memCache.keys()) {
+                    memCache.delete(k);
+                    break;
+                }
             }
         }
 
-        //кладем в таблицу асинхронно
-        (async() => {
-            try {
-                await db.insert({
-                    table: 'query_cache',
-                    replace: true,
-                    rows: [{id: key, value}],
-                });
+        if (this.queryCacheDiskSize > 0) {
+            //кладем в таблицу асинхронно
+            (async() => {
+                try {
+                    await db.insert({
+                        table: 'query_cache',
+                        replace: true,
+                        rows: [{id: key, value}],
+                    });
 
-                await db.insert({
-                    table: 'query_time',
-                    replace: true,
-                    rows: [{id: key, time: Date.now()}],
-                });
-            } catch(e) {
-                console.error(`putCached: ${e.message}`);
-            }
-        })();
+                    await db.insert({
+                        table: 'query_time',
+                        replace: true,
+                        rows: [{id: key, time: Date.now()}],
+                    });
+                } catch(e) {
+                    console.error(`putCached: ${e.message}`);
+                }
+            })();
+        }
     }
 
     async periodicCleanCache() {
@@ -685,21 +767,37 @@ class DbSearcher {
             return;
 
         try {
+            if (!this.queryCacheEnabled || this.queryCacheDiskSize <= 0)
+                return;
+
             const db = this.db;
 
-            const oldThres = Date.now() - cleanInterval;
+            let rows = await db.select({table: 'query_time', count: true});
+            const delCount = rows[0].count - this.queryCacheDiskSize;
 
-            //выберем всех кандидатов на удаление
-            const rows = await db.select({
+            if (delCount < 1)
+                return;
+
+            //выберем delCount кандидатов на удаление
+            rows = await db.select({
                 table: 'query_time',
+                rawResult: true,
                 where: `
-                    @@iter(@all(), (r) => (r.time < ${db.esc(oldThres)}));
+                    const delCount = ${delCount};
+                    const rows = [];
+
+                    @unsafeIter(@all(), (r) => {
+                        rows.push(r);
+                        return false;
+                    });
+
+                    rows.sort((a, b) => a.time - b.time);
+
+                    return rows.slice(0, delCount).map(r => r.id);
                 `
             });
 
-            const ids = [];
-            for (const row of rows)
-                ids.push(row.id);
+            const ids = rows[0].rawResult;
 
             //удаляем
             await db.delete({table: 'query_cache', where: `@@id(${db.esc(ids)})`});
