@@ -20,6 +20,7 @@ const propsToSave = [
     'allowRemoteLib',
     'remoteLib',
     'server',
+    'opds',
 ];
 
 let instance = null;

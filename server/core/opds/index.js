@@ -1,3 +1,5 @@
+const basicAuth = require('express-basic-auth');
+
 const RootPage = require('./RootPage');
 const AuthorPage = require('./AuthorPage');
 const SeriesPage = require('./SeriesPage');
@@ -9,6 +11,9 @@ const OpensearchPage = require('./OpensearchPage');
 const SearchPage = require('./SearchPage');
 
 module.exports = function(app, config) {
+    if (!config.opds || !config.opds.enabled)
+        return;
+    
     const opdsRoot = '/opds';
     config.opdsRoot = opdsRoot;
 
@@ -62,6 +67,16 @@ module.exports = function(app, config) {
         }
     };
 
-    app.get([opdsRoot, `${opdsRoot}/*`], opds);
+    const opdsPaths = [opdsRoot, `${opdsRoot}/*`];
+    if (config.opds.password) {
+        if (!config.opds.user)
+            throw new Error('User must not be empty if password set');
+
+        app.use(opdsPaths, basicAuth({
+            users: {[config.opds.user]: config.opds.password},
+            challenge: true,
+        }));
+    }
+    app.get(opdsPaths, opds);
 };
 

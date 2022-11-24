@@ -45,5 +45,11 @@ module.exports = {
         host: '0.0.0.0',
         port: '22380',
     },
+    //opds: false,
+    opds: {
+        enabled: true,
+        user: '',
+        password: '',
+    },
 };
 
