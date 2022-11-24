@@ -1,6 +1,7 @@
 const BasePage = require('./BasePage');
 const AuthorPage = require('./AuthorPage');
 const SeriesPage = require('./SeriesPage');
+const TitlePage = require('./TitlePage');
 
 class RootPage extends BasePage {
     constructor(config) {
@@ -11,6 +12,7 @@ class RootPage extends BasePage {
 
         this.authorPage = new AuthorPage(config);
         this.seriesPage = new SeriesPage(config);
+        this.titlePage = new TitlePage(config);
     }
 
     async body(req) {
@@ -27,6 +29,7 @@ class RootPage extends BasePage {
         result.entry = [
             this.authorPage.myEntry(),
             this.seriesPage.myEntry(),
+            this.titlePage.myEntry(),
         ];
 
         return this.makeBody(result, req);
