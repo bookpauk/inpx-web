@@ -22,6 +22,7 @@ async function main() {
         await fs.emptyDir(outDir);
         await makeRelease('win');
         await makeRelease('linux');
+        await makeRelease('macos');
     } catch(e) {
         console.error(e);
         process.exit(1);
