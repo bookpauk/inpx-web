@@ -150,35 +150,33 @@ class BasePage {
             //конец навигации
             return await this.search(from, query);
         } else {
-            const names = new Set();
             let len = 0;
             for (const row of queryRes.found) {
-                const name = row.name.toUpperCase();
-                const lowName = row.name.toLowerCase();
-                len += name.length;
+                const value = row.value;
+                len += value.length;
 
-                if (lowName == query[from]) {
-                    //конец навигации, результат содержит запрос
-                    return await this.search(from, query);
-                }
-
-                if (!names.has(name)) {
-                    const rec = {
+                let rec;
+                if (row.count == 1) {
+                    rec = {
                         id: row.id,
-                        title: name.replace(/ /g, spaceChar),
-                        q: encodeURIComponent(lowName),
-                        count: row.count,
+                        title: row.name,
+                        q: `=${encodeURIComponent(row.name)}`,
                     };
-                    if (query.depth > 1 || enru.has(lowName[0])) {
-                        result.push(rec);
-                    } else {
-                        others.push(rec);
-                    }
-                    names.add(name);
+                } else {
+                    rec = {
+                        id: row.id,
+                        title: `${value.toUpperCase().replace(/ /g, spaceChar)}~`,
+                        q: encodeURIComponent(value),
+                    };
+                }
+                if (query.depth > 1 || enru.has(value[0])) {
+                    result.push(rec);
+                } else {
+                    others.push(rec);
                 }
             }
 
-            if (query[from] && query.depth > 1 && result.length < 20 && len > prevLen) {
+            if (query[from] && query.depth > 1 && result.length < 10 && len > prevLen) {
                 //рекурсия, с увеличением глубины, для облегчения навигации
                 const newQuery = _.cloneDeep(query);
                 newQuery.depth++;

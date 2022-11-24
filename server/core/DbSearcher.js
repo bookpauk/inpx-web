@@ -567,17 +567,17 @@ class DbSearcher {
                         const ids = ${db.esc(Array.from(ids))};
                         for (const id of ids) {
                             const row = @unsafeRow(id);
-                            const s = row.name.substring(0, depth);
+                            const s = row.value.substring(0, depth);
                             let g = group.get(s);
                             if (!g) {
-                                g = {id: row.id, name: s, count: 0};
+                                g = {id: row.id, name: row.name, value: s, count: 0};
                                 group.set(s, g);
                             }
                             g.count++;
                         }
 
                         const result = Array.from(group.values());
-                        result.sort((a, b) => a.name.localeCompare(b.name));
+                        result.sort((a, b) => a.value.localeCompare(b.value));
 
                         return result;
                     `
@@ -778,7 +778,7 @@ class DbSearcher {
             if (delCount < 1)
                 return;
 
-            //выберем всех кандидатов на удаление
+            //выберем delCount кандидатов на удаление
             rows = await db.select({
                 table: 'query_time',
                 rawResult: true,
