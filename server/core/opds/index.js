@@ -1,5 +1,6 @@
 const RootPage = require('./RootPage');
 const AuthorPage = require('./AuthorPage');
+const SeriesPage = require('./SeriesPage');
 const GenrePage = require('./GenrePage');
 const BookPage = require('./BookPage');
 
@@ -9,6 +10,7 @@ module.exports = function(app, config) {
 
     const root = new RootPage(config);
     const author = new AuthorPage(config);
+    const series = new SeriesPage(config);
     const genre = new GenrePage(config);
     const book = new BookPage(config);
 
@@ -16,6 +18,7 @@ module.exports = function(app, config) {
         ['', root],
         ['/root', root],
         ['/author', author],
+        ['/series', series],
         ['/genre', genre],
         ['/book', book],
     ];

@@ -8,15 +8,6 @@ class AuthorPage extends BasePage {
         this.title = 'Авторы';
     }
 
-    bookAuthor(author) {
-        if (author) {
-            let a = author.split(',');
-            return a.slice(0, 3).join(', ') + (a.length > 3 ? ' и др.' : '');
-        }
-
-        return '';
-    }
-
     sortBooks(bookList) {
         //схлопывание серий
         const books = [];
@@ -175,7 +166,7 @@ class AuthorPage extends BasePage {
                 entry.push(
                     this.makeEntry({
                         id: rec.id,
-                        title: this.bookAuthor(rec.title),//${(query.depth > 1 && rec.count ? ` (${rec.count})` : '')}
+                        title: this.bookAuthor(rec.title),
                         link: this.navLink({href: `/${this.id}?author=${rec.q}&genre=${encodeURIComponent(query.genre)}`}),
                     })
                 );

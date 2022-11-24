@@ -298,6 +298,15 @@ class BasePage {
         });
     }
 
+    bookAuthor(author) {
+        if (author) {
+            let a = author.split(',');
+            return a.slice(0, 3).join(', ') + (a.length > 3 ? ' и др.' : '');
+        }
+
+        return '';
+    }
+
     async getGenres() {
         let result;
         if (!this.genres) {
