@@ -779,34 +779,21 @@ class DbSearcher {
                 return;
 
             //выберем всех кандидатов на удаление
-            //находим delCount минимальных по time
             rows = await db.select({
                 table: 'query_time',
                 rawResult: true,
                 where: `
-                    const res = Array(${db.esc(delCount)}).fill({time: Date.now()});
+                    const delCount = ${delCount};
+                    const rows = [];
 
                     @unsafeIter(@all(), (r) => {
-                        if (r.time >= res[${db.esc(delCount - 1)}].time)
-                            return false;
-
-                        let ins = {id: r.id, time: r.time};
-
-                        for (let i = 0; i < res.length; i++) {
-                            if (!res[i].id || ins.time < res[i].time) {
-                                const t = res[i];
-                                res[i] = ins;
-                                ins = t;
-                            }
-
-                            if (!ins.id)
-                                break;
-                        }
-                        
+                        rows.push(r);
                         return false;
                     });
 
-                    return res.filter(r => r.id).map(r => r.id);
+                    rows.sort((a, b) => a.time - b.time);
+
+                    return rows.slice(0, delCount).map(r => r.id);
                 `
             });
 
