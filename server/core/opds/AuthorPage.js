@@ -89,10 +89,11 @@ class AuthorPage extends BasePage {
 
             if (bookList.books) {
                 let books = JSON.parse(bookList.books);
-                const filtered = (query.all ? books : this.filterBooks(books, query));
+                const booksAll = this.filterBooks(books, {del: 0});
+                const filtered = (query.all ? booksAll : this.filterBooks(books, query));
                 const sorted = this.sortSeriesBooks(filtered);
 
-                if (books.length > filtered.length) {
+                if (booksAll.length > filtered.length) {
                     entry.push(
                         this.makeEntry({
                             id: 'all_series_books',
@@ -105,18 +106,23 @@ class AuthorPage extends BasePage {
                 }
 
                 for (const book of sorted) {
-                    let title = `${book.serno ? `${book.serno}. `: ''}${book.title || 'Без названия'}`;
+                    const title = `${book.serno ? `${book.serno}. `: ''}${book.title || 'Без названия'} (${book.ext})`;
+
+                    const e = {
+                        id: book._uid,
+                        title,
+                        link: this.acqLink({href: `/book?uid=${encodeURIComponent(book._uid)}`}),
+                    };
+
                     if (query.all) {
-                        title = `${this.bookAuthor(book.author)} "${title}"`;
+                        e.content = {
+                            '*ATTRS': {type: 'text'},
+                            '*TEXT': this.bookAuthor(book.author),
+                        }
                     }
-                    title += ` (${book.ext})`;
 
                     entry.push(
-                        this.makeEntry({
-                            id: book._uid,
-                            title,
-                            link: this.acqLink({href: `/book?uid=${encodeURIComponent(book._uid)}`}),
-                        })
+                        this.makeEntry(e)
                     );
                 }
             }
