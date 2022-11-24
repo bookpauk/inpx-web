@@ -5,6 +5,8 @@ const TitlePage = require('./TitlePage');
 const GenrePage = require('./GenrePage');
 const BookPage = require('./BookPage');
 
+const OpensearchPage = require('./OpensearchPage');
+
 module.exports = function(app, config) {
     const opdsRoot = '/opds';
     config.opdsRoot = opdsRoot;
@@ -16,6 +18,8 @@ module.exports = function(app, config) {
     const genre = new GenrePage(config);
     const book = new BookPage(config);
 
+    const opensearch = new OpensearchPage(config);
+
     const routes = [
         ['', root],
         ['/root', root],
@@ -24,6 +28,8 @@ module.exports = function(app, config) {
         ['/title', title],
         ['/genre', genre],
         ['/book', book],
+
+        ['/opensearch', opensearch],
     ];
 
     const pages = new Map();

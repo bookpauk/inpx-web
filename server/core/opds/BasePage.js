@@ -89,11 +89,21 @@ class BasePage {
         });
     }
 
-    baseLinks(req) {
-        return [
+    baseLinks(req, selfAcq = false) {
+        const result = [
+            this.makeLink({href: `${this.opdsRoot}/opensearch`, rel: 'search', type: 'application/opensearchdescription+xml'}),
+            this.makeLink({href: `${this.opdsRoot}/search?term={searchTerms}`, rel: 'search', type: 'application/atom+xml'}),
+
             this.navLink({rel: 'start'}),
-            this.navLink({rel: 'self', href: req.originalUrl, hrefAsIs: true}),
         ];
+        
+        if (selfAcq) {
+            result.push(this.acqLink({rel: 'self', href: req.originalUrl, hrefAsIs: true}));
+        } else {
+            result.push(this.navLink({rel: 'self', href: req.originalUrl, hrefAsIs: true}));
+        }
+
+        return result;
     }
 
     makeBody(content, req) {

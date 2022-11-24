@@ -119,10 +119,7 @@ class BookPage extends BasePage {
     async body(req) {
         const result = {};
 
-        result.link = [
-            this.navLink({rel: 'start'}),
-            this.acqLink({rel: 'self', href: req.originalUrl, hrefAsIs: true}),
-        ];
+        result.link = this.baseLinks(req, true);
 
         const bookUid = req.query.uid;
         const entry = [];
