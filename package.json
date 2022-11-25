@@ -1,6 +1,6 @@
 {
   "name": "inpx-web",
-  "version": "1.3.0",
+  "version": "1.3.1",
   "author": "Book Pauk <bookpauk@gmail.com>",
   "license": "CC0-1.0",
   "repository": "bookpauk/inpx-web",
@@ -60,7 +60,7 @@
     "fs-extra": "^10.1.0",
     "he": "^1.2.0",
     "iconv-lite": "^0.6.3",
-    "jembadb": "^5.1.3",
+    "jembadb": "^5.1.4",
     "localforage": "^1.10.0",
     "lodash": "^4.17.21",
     "minimist": "^1.2.6",
