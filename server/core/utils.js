@@ -12,7 +12,7 @@ function processLoop() {
 }
 
 function versionText(config) {
-    return `${config.name} v${config.version}, Node.js ${process.version}`;
+    return `${config.name} v${config.version}, Node.js ${process.version}, ${process.platform}`;
 }
 
 async function findFiles(callback, dir, recursive = true) {
