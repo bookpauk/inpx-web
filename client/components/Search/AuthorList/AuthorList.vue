@@ -196,8 +196,6 @@ class AuthorList extends BaseList {
         let count = book.seriesBooks.length;
         result = `${count}`;
         if (book.allBooksLoaded) {
-            if (book.showAllBooks)
-                result = `${book.allBooksLoaded.length}`;
             result += `/${book.allBooksLoaded.length}`;
         }
 
