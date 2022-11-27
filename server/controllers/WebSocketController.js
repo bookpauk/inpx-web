@@ -170,6 +170,7 @@ class WebSocketController {
     async getConfig(req, ws) {
         const config = _.pick(this.config, this.config.webConfigParams);
         config.dbConfig = await this.webWorker.dbConfig();
+        config.freeAccess = this.freeAccess;
 
         this.send(config, req, ws);
     }

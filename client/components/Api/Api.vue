@@ -262,6 +262,11 @@ class Api {
     async getConfig() {
         return await this.request({action: 'get-config'});
     }
+
+    async logout() {
+        await this.request({action: 'logout'});
+        await this.request({action: 'test'});
+    }
 }
 
 export default vueComponent(Api);

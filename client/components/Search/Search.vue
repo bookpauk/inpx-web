@@ -46,6 +46,14 @@
                             </q-tooltip>
                         </template>
                     </DivBtn>
+
+                    <DivBtn v-if="!config.freeAccess" class="q-ml-sm text-white bg-secondary" :size="30" :icon-size="24" :imt="1" icon="la la-sign-out-alt" round @click.stop.prevent="logout">
+                        <template #tooltip>
+                            <q-tooltip :delay="1500" anchor="bottom middle" content-style="font-size: 80%" max-width="400px">
+                                Выход
+                            </q-tooltip>
+                        </template>
+                    </DivBtn>
                 </div>
                 <div class="row q-mx-md q-mb-xs items-center">
                     <DivBtn
@@ -978,6 +986,10 @@ class Search {
 
     cloneSearch() {
         window.open(window.location.href, '_blank');
+    }
+
+    async logout() {
+        await this.api.logout();
     }
 }
 
