@@ -47,28 +47,22 @@ class WebAccess {
             }
         }
 
-        //проверим, можно ли загружать токены из таблицы access
+        await db.create({table: 'access', quietIfExists: true});
+        //проверим, нужно ли обнулить таблицу access
         const pass = utils.getBufHash(this.config.accessPassword, 'sha256', 'hex');
         await db.create({table: 'config', quietIfExists: true});
         let rows = await db.select({table: 'config', where: `@@id('pass')`});
 
-        let loadMap = false;
-        if (rows.length && rows[0].value === pass) {
-            //пароль не сменился в конфиге, можно загружать токены
-            loadMap = true;
-        } else {
+        if (!rows.length || rows[0].value !== pass) {
+            //пароль сменился в конфиге, обнуляем токены
+            await db.truncate({table: 'access'});
             await db.insert({table: 'config', replace: true, rows: [{id: 'pass', value: pass}]});
         }
 
-        await db.create({table: 'access', quietIfExists: true});
-
-        if (loadMap) {
-            //загрузим токены сессий
-            rows = await db.select({table: 'access'});
-
-            for (const row of rows)
-                this.accessMap.set(row.id, row.value);
-        }
+        //загрузим токены сессий
+        rows = await db.select({table: 'access'});
+        for (const row of rows)
+            this.accessMap.set(row.id, row.value);
 
         this.db = db;
     }
@@ -99,7 +93,7 @@ class WebAccess {
         }
     }
 
-    hasAccess(accessToken) {
+    async hasAccess(accessToken) {
         if (this.freeAccess)
             return true;
 
@@ -111,6 +105,8 @@ class WebAccess {
                 accessRec.used++;
                 accessRec.time = now;
                 accessRec.saved = false;
+                if (accessRec.used === 1)
+                    await this.saveAccess(accessToken);
                 return true;
             }
         }

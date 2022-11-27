@@ -109,10 +109,6 @@ class Api {
         }
     }
 
-    get config() {
-        return this.$store.state.config;
-    }
-
     get settings() {
         return this.$store.state.settings;
     }

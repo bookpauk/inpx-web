@@ -435,6 +435,8 @@ class Search {
 
     mounted() {
         (async() => {
+            await this.api.updateConfig();
+
             //для встраивания в liberama
             window.addEventListener('message', (event) => {
                 if (!_.isObject(event.data) || event.data.from != 'ExternalLibs')

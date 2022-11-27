@@ -68,7 +68,7 @@ class WebSocketController {
             this.send({_rok: 1}, req, ws);
 
             //access
-            if (!this.webAccess.hasAccess(req.accessToken)) {
+            if (!await this.webAccess.hasAccess(req.accessToken)) {
                 await utils.sleep(500);
                 const salt = this.webAccess.newToken();
                 this.send({error: 'need_access_token', salt}, req, ws);
