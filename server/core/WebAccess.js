@@ -1,6 +1,7 @@
 const { JembaDbThread } = require('jembadb');
 const utils = require('../core/utils');
 const log = new (require('../core/AppLogger'))().log;//singleton
+const asyncExit = new (require('./AsyncExit'))();
 
 const cleanPeriod = 1*60*1000;//1 минута
 const cleanUnusedTokenTimeout = 5*60*1000;//5 минут
@@ -12,6 +13,8 @@ class WebAccess {
         this.freeAccess = (config.accessPassword === '');
         this.accessTimeout = config.accessTimeout*60*1000;
         this.accessMap = new Map();
+
+        asyncExit.add(this.closeDb.bind(this));
 
         setTimeout(() => { this.periodicClean(); }, cleanPeriod);
     }
@@ -65,6 +68,13 @@ class WebAccess {
             this.accessMap.set(row.id, row.value);
 
         this.db = db;
+    }
+
+    async closeDb() {
+        if (this.db) {
+            await this.db.unlock();
+            this.db = null;
+        }
     }
 
     async periodicClean() {
