@@ -25,7 +25,7 @@
 
                 <div class="q-ml-sm text-bold" style="color: #555">
                     {{ getBookCount(item) }}
-                </div>                    
+                </div>
             </div>
 
             <div v-if="item.bookLoading" class="book-row row items-center">
@@ -53,6 +53,10 @@
 
                             <div class="clickable2 q-ml-xs q-py-sm text-bold" @click="selectSeries(book.series)">
                                 Серия: {{ book.series }}
+                            </div>
+
+                            <div class="q-ml-sm text-bold" style="color: #555">
+                                {{ getSeriesBookCount(book) }}
                             </div>
                         </div>
 
@@ -180,6 +184,20 @@ class AuthorList extends BaseList {
             result = `${count}/${item.count}`;
         } else 
             result = `#/${item.count}`;
+
+        return `(${result})`;
+    }
+
+    getSeriesBookCount(book) {
+        let result = '';
+        if (!this.showCounts || book.type != 'series')
+            return result;
+
+        let count = book.seriesBooks.length;
+        result = `${count}`;
+        if (book.allBooksLoaded) {
+            result += `/${book.allBooksLoaded.length}`;
+        }
 
         return `(${result})`;
     }

@@ -60,10 +60,21 @@ const componentOptions = {
         settings() {
             this.loadSettings();
         },
+        modelValue(newValue) {
+            this.accessGranted = newValue;
+        },
+        accessGranted(newValue) {
+            this.$emit('update:modelValue', newValue);
+        }
     },
 };
 class Api {
     _options = componentOptions;
+    _props = {
+        modelValue: Boolean,
+    };
+    accessGranted = false;
+
     busyDialogVisible = false;
     mainMessage = '';
     jobMessage = '';
@@ -98,10 +109,6 @@ class Api {
         }
     }
 
-    get config() {
-        return this.$store.state.config;
-    }
-
     get settings() {
         return this.$store.state.settings;
     }
@@ -123,7 +130,13 @@ class Api {
             });
 
             if (result && result.value) {
-                const accessToken = utils.toHex(cryptoUtils.sha256(result.value));
+                //получим свежую соль
+                const response = await wsc.message(await wsc.send({}), 10);
+                let salt = '';
+                if (response && response.error == 'need_access_token' && response.salt)
+                    salt = response.salt;
+
+                const accessToken = utils.toHex(cryptoUtils.sha256(result.value + salt));
                 this.commit('setSettings', {accessToken});
             }
         } finally {
@@ -192,10 +205,13 @@ class Api {
                 const response = await wsc.message(await wsc.send(params), timeoutSecs);
 
                 if (response && response.error == 'need_access_token') {
+                    this.accessGranted = false;
                     await this.showPasswordDialog();
                 } else if (response && response.error == 'server_busy') {
+                    this.accessGranted = true;
                     await this.showBusyDialog();
                 } else {
+                    this.accessGranted = true;
                     if (response.error) {
                         throw new Error(response.error);
                     }
@@ -241,6 +257,11 @@ class Api {
 
     async getConfig() {
         return await this.request({action: 'get-config'});
+    }
+
+    async logout() {
+        await this.request({action: 'logout'});
+        await this.request({action: 'test'});
     }
 }
 

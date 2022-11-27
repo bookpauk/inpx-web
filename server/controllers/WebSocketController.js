@@ -10,12 +10,11 @@ const cleanPeriod = 1*60*1000;//1 минута
 const closeSocketOnIdle = 5*60*1000;//5 минут
 
 class WebSocketController {
-    constructor(wss, config) {
+    constructor(wss, webAccess, config) {
         this.config = config;
         this.isDevelopment = (config.branch == 'development');
-        this.accessToken = '';
-        if (config.accessPassword)
-            this.accessToken = utils.getBufHash(config.accessPassword, 'sha256', 'hex');
+
+        this.webAccess = webAccess;
 
         this.workerState = new WorkerState();
         this.webWorker = new WebWorker(config);
@@ -32,19 +31,25 @@ class WebSocketController {
             });
         });
 
-        setTimeout(() => { this.periodicClean(); }, cleanPeriod);
+        this.periodicClean();//no await
     }
 
-    periodicClean() {
-        try {
-            const now = Date.now();
-            this.wss.clients.forEach((ws) => {
-                if (!ws.lastActivity || now - ws.lastActivity > closeSocketOnIdle - 50) {
-                    ws.terminate();
-                }
-            });
-        } finally {
-            setTimeout(() => { this.periodicClean(); }, cleanPeriod);
+    async periodicClean() {
+        while (1) {//eslint-disable-line no-constant-condition
+            try {
+                const now = Date.now();
+
+                //почистим ws-клиентов
+                this.wss.clients.forEach((ws) => {
+                    if (!ws.lastActivity || now - ws.lastActivity > closeSocketOnIdle - 50) {
+                        ws.terminate();
+                    }
+                });
+            } catch(e) {
+                log(LM_ERR, `WebSocketController.periodicClean error: ${e.message}`);
+            }
+            
+            await utils.sleep(cleanPeriod);
         }
     }
 
@@ -62,14 +67,20 @@ class WebSocketController {
             //pong for WebSocketConnection
             this.send({_rok: 1}, req, ws);
 
-            if (this.accessToken && req.accessToken !== this.accessToken) {
-                await utils.sleep(1000);
-                throw new Error('need_access_token');
+            //access
+            if (!await this.webAccess.hasAccess(req.accessToken)) {
+                await utils.sleep(500);
+                const salt = this.webAccess.newToken();
+                this.send({error: 'need_access_token', salt}, req, ws);
+                return;
             }
 
+            //api
             switch (req.action) {
                 case 'test':
                     await this.test(req, ws); break;
+                case 'logout':
+                    await this.logout(req, ws); break;
                 case 'get-config':
                     await this.getConfig(req, ws); break;
                 case 'get-worker-state':
@@ -120,9 +131,15 @@ class WebSocketController {
         this.send({message: `${this.config.name} project is awesome`}, req, ws);
     }
 
+    async logout(req, ws) {
+        await this.webAccess.deleteAccess(req.accessToken);
+        this.send({success: true}, req, ws);
+    }
+
     async getConfig(req, ws) {
         const config = _.pick(this.config, this.config.webConfigParams);
         config.dbConfig = await this.webWorker.dbConfig();
+        config.freeAccess = this.webAccess.freeAccess;
 
         this.send(config, req, ws);
     }
