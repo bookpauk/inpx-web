@@ -11,7 +11,7 @@ const DbSearcher = require('./DbSearcher');
 const InpxHashCreator = require('./InpxHashCreator');
 const RemoteLib = require('./RemoteLib');//singleton
 
-const ayncExit = new (require('./AsyncExit'))();
+const asyncExit = new (require('./AsyncExit'))();
 const log = new (require('./AppLogger'))().log;//singleton
 const utils = require('./utils');
 const genreTree = require('./genres');
@@ -53,7 +53,7 @@ class WebWorker {
             this.db = null;
             this.dbSearcher = null;
 
-            ayncExit.add(this.closeDb.bind(this));
+            asyncExit.add(this.closeDb.bind(this));
 
             this.loadOrCreateDb();//no await
             this.periodicLogServerStats();//no await
@@ -221,7 +221,7 @@ class WebWorker {
             this.logServerStats();
         } catch (e) {
             log(LM_FATAL, e.message);            
-            ayncExit.exit(1);
+            asyncExit.exit(1);
         }
     }
 
@@ -628,7 +628,7 @@ class WebWorker {
             }
         } catch (e) {
             log(LM_FATAL, e.message);
-            ayncExit.exit(1);
+            asyncExit.exit(1);
         }
     }
 
