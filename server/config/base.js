@@ -11,6 +11,7 @@ module.exports = {
     execDir,
 
     accessPassword: '',
+    accessTimeout: 0,
     bookReadLink: '',
     loggingEnabled: true,
 

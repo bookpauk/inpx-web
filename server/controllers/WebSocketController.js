@@ -6,16 +6,18 @@ const WebWorker = require('../core/WebWorker');//singleton
 const log = new (require('../core/AppLogger'))().log;//singleton
 const utils = require('../core/utils');
 
-const cleanPeriod = 1*60*1000;//1 минута
+const cleanPeriod = 1*60*1000;//1 минута, не менять!
+const cleanUnusedTokenTimeout = 5*60*1000;//5 минут
 const closeSocketOnIdle = 5*60*1000;//5 минут
 
 class WebSocketController {
     constructor(wss, config) {
         this.config = config;
         this.isDevelopment = (config.branch == 'development');
-        this.accessToken = '';
-        if (config.accessPassword)
-            this.accessToken = utils.getBufHash(config.accessPassword, 'sha256', 'hex');
+
+        this.freeAccess = (config.accessPassword === '');
+        this.accessTimeout = config.accessTimeout*60*1000;
+        this.accessMap = new Map();
 
         this.workerState = new WorkerState();
         this.webWorker = new WebWorker(config);
@@ -38,6 +40,19 @@ class WebSocketController {
     periodicClean() {
         try {
             const now = Date.now();
+
+            //почистим accessMap
+            if (!this.freeAccess) {
+                for (const [accessToken, accessRec] of this.accessMap) {
+                    if (   !(accessRec.used > 0 || now - accessRec.time < cleanUnusedTokenTimeout)
+                        || !(this.accessTimeout === 0 || now - accessRec.time < this.accessTimeout)
+                        ) {
+                        this.accessMap.delete(accessToken);
+                    }
+                }
+            }
+
+            //почистим ws-клиентов
             this.wss.clients.forEach((ws) => {
                 if (!ws.lastActivity || now - ws.lastActivity > closeSocketOnIdle - 50) {
                     ws.terminate();
@@ -46,6 +61,24 @@ class WebSocketController {
         } finally {
             setTimeout(() => { this.periodicClean(); }, cleanPeriod);
         }
+    }
+
+    hasAccess(accessToken) {
+        if (this.freeAccess)
+            return true;
+
+        const accessRec = this.accessMap.get(accessToken);
+        if (accessRec) {
+            const now = Date.now();
+
+            if (this.accessTimeout === 0 || now - accessRec.time < this.accessTimeout) {
+                accessRec.used++;
+                accessRec.time = now;
+                return true;
+            }
+        }
+
+        return false;
     }
 
     async onMessage(ws, message) {
@@ -62,14 +95,23 @@ class WebSocketController {
             //pong for WebSocketConnection
             this.send({_rok: 1}, req, ws);
 
-            if (this.accessToken && req.accessToken !== this.accessToken) {
-                await utils.sleep(1000);
-                throw new Error('need_access_token');
+            //access
+            if (!this.hasAccess(req.accessToken)) {
+                await utils.sleep(500);
+                const salt = utils.randomHexString(32);
+                const accessToken = utils.getBufHash(this.config.accessPassword + salt, 'sha256', 'hex');
+                this.accessMap.set(accessToken, {time: Date.now(), used: 0});
+
+                this.send({error: 'need_access_token', salt}, req, ws);
+                return;
             }
 
+            //api
             switch (req.action) {
                 case 'test':
                     await this.test(req, ws); break;
+                case 'logout':
+                    await this.logout(req, ws); break;
                 case 'get-config':
                     await this.getConfig(req, ws); break;
                 case 'get-worker-state':
@@ -118,6 +160,11 @@ class WebSocketController {
     //Actions ------------------------------------------------------------------
     async test(req, ws) {
         this.send({message: `${this.config.name} project is awesome`}, req, ws);
+    }
+
+    async logout(req, ws) {
+        this.accessMap.delete(req.accessToken);
+        this.send({success: true}, req, ws);
     }
 
     async getConfig(req, ws) {

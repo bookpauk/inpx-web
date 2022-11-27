@@ -1,10 +1,10 @@
 <template>
     <div class="fit row">
-        <Api ref="api" />
+        <Api ref="api" v-model="accessGranted" />
         <Notify ref="notify" />
         <StdDialog ref="stdDialog" />
 
-        <router-view v-slot="{ Component }">
+        <router-view v-if="accessGranted" v-slot="{ Component }">
             <keep-alive>
                 <component :is="Component" class="col" />
             </keep-alive>
@@ -37,6 +37,7 @@ const componentOptions = {
 };
 class App {
     _options = componentOptions;
+    accessGranted = false;
 
     created() {
         this.commit = this.$store.commit;
