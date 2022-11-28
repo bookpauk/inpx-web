@@ -8,6 +8,8 @@ const abStore = localForage.createInstance({
     name: 'authorBooksStorage'
 });
 
+const storageVersion = '1';
+
 class AuthorBooksStorage {
     constructor() {
     }
@@ -17,6 +19,8 @@ class AuthorBooksStorage {
     }
 
     async setData(key, data) {
+        key += storageVersion;
+
         if (typeof data !== 'string')
             throw new Error('AuthorBooksStorage: data must be a string');
 
@@ -25,6 +29,8 @@ class AuthorBooksStorage {
     }
 
     async getData(key) {
+        key += storageVersion;
+
         const item = await abStore.getItem(key);
         
         //обновим addTime
@@ -34,9 +40,9 @@ class AuthorBooksStorage {
         return item;
     }
 
-    async removeData(key) {
-        await abStore.removeItem(key);
-        await abStore.removeItem(`addTime-${key}`);
+    async _removeData(fullKey) {
+        await abStore.removeItem(fullKey);
+        await abStore.removeItem(`addTime-${fullKey}`);
     }
 
     async cleanStorage() {
@@ -62,7 +68,7 @@ class AuthorBooksStorage {
             }
 
             if (size > maxDataSize && toDel) {
-                await this.removeData(toDel);
+                await this._removeData(toDel);
             } else {
                 break;
             }

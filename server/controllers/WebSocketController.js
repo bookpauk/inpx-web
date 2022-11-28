@@ -89,6 +89,8 @@ class WebSocketController {
                     await this.search(req, ws); break;
                 case 'get-author-book-list':
                     await this.getAuthorBookList(req, ws); break;
+                case 'get-author-series-list':
+                    await this.getAuthorSeriesList(req, ws); break;
                 case 'get-series-book-list':
                     await this.getSeriesBookList(req, ws); break;
                 case 'get-genre-tree':
@@ -165,6 +167,12 @@ class WebSocketController {
 
     async getAuthorBookList(req, ws) {
         const result = await this.webWorker.getAuthorBookList(req.authorId);
+
+        this.send(result, req, ws);
+    }
+
+    async getAuthorSeriesList(req, ws) {
+        const result = await this.webWorker.getAuthorSeriesList(req.authorId);
 
         this.send(result, req, ws);
     }

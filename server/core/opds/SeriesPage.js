@@ -44,7 +44,7 @@ class SeriesPage extends BasePage {
             const bookList = await this.webWorker.getSeriesBookList(query.series.substring(1));
 
             if (bookList.books) {
-                let books = JSON.parse(bookList.books);
+                let books = bookList.books;
                 const booksAll = this.filterBooks(books, {del: 0});
                 const filtered = (query.all ? booksAll : this.filterBooks(books, query));
                 const sorted = this.sortSeriesBooks(filtered);

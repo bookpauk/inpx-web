@@ -16,8 +16,6 @@ class RemoteLib {
             this.config = config;
 
             this.wsc = new WebSocketConnection(config.remoteLib.url, 10, 30, {rejectUnauthorized: false});
-            if (config.remoteLib.accessPassword)
-                this.accessToken = utils.getBufHash(config.remoteLib.accessPassword, 'sha256', 'hex');
 
             this.remoteHost = config.remoteLib.url.replace(/^ws:\/\//, 'http://').replace(/^wss:\/\//, 'https://');
 
@@ -31,7 +29,7 @@ class RemoteLib {
         return instance;
     }
 
-    async wsRequest(query) {
+    async wsRequest(query, recurse = false) {
         if (this.accessToken)
             query.accessToken = this.accessToken;
 
@@ -39,6 +37,11 @@ class RemoteLib {
             await this.wsc.send(query),
             120
         );
+
+        if (!recurse && response && response.error == 'need_access_token' && this.config.remoteLib.accessPassword) {
+            this.accessToken = utils.getBufHash(this.config.remoteLib.accessPassword + response.salt, 'sha256', 'hex');
+            return await this.wsRequest(query, true);
+        }
 
         if (response.error)
             throw new Error(response.error);

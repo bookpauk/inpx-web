@@ -239,6 +239,10 @@ class Api {
         return await this.request({action: 'get-author-book-list', authorId});
     }
 
+    async getAuthorSeriesList(authorId) {
+        return await this.request({action: 'get-author-series-list', authorId});
+    }
+
     async getSeriesBookList(series) {
         return await this.request({action: 'get-series-book-list', series});
     }
@@ -261,6 +265,7 @@ class Api {
 
     async logout() {
         await this.request({action: 'logout'});
+        this.accessGranted = false;
         await this.request({action: 'test'});
     }
 }

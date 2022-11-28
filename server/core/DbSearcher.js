@@ -599,7 +599,7 @@ class DbSearcher {
             throw new Error('DbSearcher closed');
 
         if (!authorId && !author)
-            return {author: '', books: ''};
+            return {author: '', books: []};
 
         this.searchFlag++;
 
@@ -625,14 +625,60 @@ class DbSearcher {
             const rows = await this.restoreBooks('author', [authorId]);
 
             let authorName = '';
-            let books = '';
+            let books = [];
 
             if (rows.length) {
                 authorName = rows[0].name;
                 books = rows[0].books;
             }
 
-            return {author: authorName, books: (books && books.length ? JSON.stringify(books) : '')};
+            return {author: authorName, books};
+        } finally {
+            this.searchFlag--;
+        }
+    }
+
+    async getAuthorSeriesList(authorId) {
+        if (this.closed)
+            throw new Error('DbSearcher closed');
+
+        if (!authorId)
+            return {author: '', series: []};
+
+        this.searchFlag++;
+
+        try {
+            const db = this.db;
+
+            //выборка книг автора по authorId
+            const bookList = await this.getAuthorBookList(authorId);
+            const books = bookList.books;
+            const seriesSet = new Set();
+            for (const book of books) {
+                if (book.series)
+                    seriesSet.add(book.series.toLowerCase());
+            }
+
+            let series = [];
+            if (seriesSet.size) {
+                //выборка серий по названиям
+                series = await db.select({
+                    table: 'series',
+                    map: `(r) => ({id: r.id, series: r.name, bookCount: r.bookCount, bookDelCount: r.bookDelCount})`,
+                    where: `
+                        const seriesArr = ${db.esc(Array.from(seriesSet))};
+                        const ids = new Set();
+                        for (const value of seriesArr) {
+                            for (const id of @dirtyIndexLR('value', value, value))
+                                ids.add(id);
+                        }
+
+                        return ids;
+                    `
+                });
+            }
+
+            return {author: bookList.author, series};
         } finally {
             this.searchFlag--;
         }
@@ -643,7 +689,7 @@ class DbSearcher {
             throw new Error('DbSearcher closed');
 
         if (!series)
-            return {books: ''};
+            return {books: []};
 
         this.searchFlag++;
 
@@ -659,7 +705,7 @@ class DbSearcher {
                 where: `return Array.from(@dirtyIndexLR('value', ${db.esc(series)}, ${db.esc(series)}))`
             });
 
-            let books;
+            let books = [];
             if (rows.length && rows[0].rawResult.length) {
                 //выборка книг серии
                 const bookRows = await this.restoreBooks('series', [rows[0].rawResult[0]])
@@ -668,7 +714,7 @@ class DbSearcher {
                     books = bookRows[0].books;
             }
 
-            return {books: (books && books.length ? JSON.stringify(books) : '')};
+            return {books};
         } finally {
             this.searchFlag--;
         }

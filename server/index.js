@@ -158,8 +158,7 @@ async function main() {
     opds(app, config);
     initStatic(app, config);
     
-    const WebAccess = require('./core/WebAccess');
-    const webAccess = new WebAccess(config);
+    const webAccess = new (require('./core/WebAccess'))(config);
     await webAccess.init();
 
     const { WebSocketController } = require('./controllers');
