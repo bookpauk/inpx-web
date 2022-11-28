@@ -261,6 +261,7 @@ class Api {
 
     async logout() {
         await this.request({action: 'logout'});
+        this.accessGranted = false;
         await this.request({action: 'test'});
     }
 }
