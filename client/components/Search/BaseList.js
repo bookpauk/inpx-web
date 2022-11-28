@@ -253,7 +253,7 @@ export default class BaseList {
                 result = await this.api.getAuthorBookList(authorId);
             }
 
-            return (result.books ? JSON.parse(result.books) : []);
+            return result.books;
         } catch (e) {
             this.$root.stdDialog.alert(e.message, 'Ошибка');
         }
@@ -276,7 +276,7 @@ export default class BaseList {
                 result = await this.api.getSeriesBookList(series);
             }
 
-            return (result.books ? JSON.parse(result.books) : []);
+            return result.books;
         } catch (e) {
             this.$root.stdDialog.alert(e.message, 'Ошибка');
         }

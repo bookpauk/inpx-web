@@ -79,7 +79,7 @@ class AuthorPage extends BasePage {
             const bookList = await this.webWorker.getSeriesBookList(query.series);
 
             if (bookList.books) {
-                let books = JSON.parse(bookList.books);
+                let books = bookList.books;
                 const booksAll = this.filterBooks(books, {del: 0});
                 const filtered = (query.all ? booksAll : this.filterBooks(books, query));
                 const sorted = this.sortSeriesBooks(filtered);
@@ -122,7 +122,7 @@ class AuthorPage extends BasePage {
             const bookList = await this.webWorker.getAuthorBookList(0, query.author.substring(1));
 
             if (bookList.books) {
-                let books = JSON.parse(bookList.books);
+                let books = bookList.books;
                 books = this.sortBooks(this.filterBooks(books, query));
 
                 for (const b of books) {
