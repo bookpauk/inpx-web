@@ -56,7 +56,7 @@
                             </div>
 
                             <div class="q-ml-sm text-bold" style="color: #555">
-                                {{ getSeriesBookCount(book) }}
+                                {{ getSeriesBookCount(item, book) }}
                             </div>
                         </div>
 
@@ -188,15 +188,17 @@ class AuthorList extends BaseList {
         return `(${result})`;
     }
 
-    getSeriesBookCount(book) {
+    getSeriesBookCount(item, book) {
         let result = '';
         if (!this.showCounts || book.type != 'series')
             return result;
 
         let count = book.seriesBooks.length;
         result = `${count}`;
-        if (book.allBooksLoaded) {
-            result += `/${book.allBooksLoaded.length}`;
+        if (item.seriesLoaded) {
+            const rec = item.seriesLoaded[book.series];
+            const totalCount = (this.showDeleted ? rec.bookCount + rec.bookDelCount : rec.bookCount);
+            result += `/${totalCount}`;
         }
 
         return `(${result})`;
@@ -225,6 +227,19 @@ class AuthorList extends BaseList {
                 this.setSetting('expandedAuthor', expanded);
             }
         }
+    }
+
+    async getAuthorSeries(item) {
+        if (item.seriesLoaded)
+            return;
+
+        const series = await this.loadAuthorSeries(item.key);
+        const loaded = {};
+        for (const s of series) {
+            loaded[s.series] = {bookCount: s.bookCount, bookDelCount: s.bookDelCount};
+        }
+
+        item.seriesLoaded = loaded;
     }
 
     async getAuthorBooks(item) {
@@ -328,6 +343,7 @@ class AuthorList extends BaseList {
             }
 
             item.booksLoaded = books;
+            this.getAuthorSeries(item);//no await
             this.showMore(item);
 
             await this.$nextTick();
@@ -360,6 +376,7 @@ class AuthorList extends BaseList {
                 name: rec.author.replace(/,/g, ', '),
                 count,
                 booksLoaded: false,
+                seriesLoaded: false,
                 books: false,
                 bookLoading: false,
                 showMore: false,

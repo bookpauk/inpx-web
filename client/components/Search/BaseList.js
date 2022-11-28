@@ -259,6 +259,29 @@ export default class BaseList {
         }
     }
 
+    async loadAuthorSeries(authorId) {
+        try {
+            let result;
+
+            if (this.abCacheEnabled) {
+                const key = `author-${authorId}-series-${this.list.inpxHash}`;
+                const data = await authorBooksStorage.getData(key);
+                if (data) {
+                    result = JSON.parse(data);
+                } else {
+                    result = await this.api.getAuthorSeriesList(authorId);
+                    await authorBooksStorage.setData(key, JSON.stringify(result));
+                }
+            } else {
+                result = await this.api.getAuthorSeriesList(authorId);
+            }
+
+            return result.series;
+        } catch (e) {
+            this.$root.stdDialog.alert(e.message, 'Ошибка');
+        }
+    }
+
     async loadSeriesBooks(series) {
         try {
             let result;
