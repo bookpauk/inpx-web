@@ -74,7 +74,8 @@ const componentOptions = {
             this.checkErrorAndEmit(true);
         },
         modelValue(newValue) {
-            this.filteredValue = newValue;
+            if (this.ready)//исправление бага TypeError: Cannot read properties of null (reading 'emitsOptions')
+                this.filteredValue = newValue;
         },
         min() {
             this.checkErrorAndEmit();
@@ -102,7 +103,8 @@ class NumInput {
     filteredValue = 0;
     error = false;
 
-    created() {
+    mounted() {
+        this.ready = true;
         this.filteredValue = this.modelValue;
     }
 
