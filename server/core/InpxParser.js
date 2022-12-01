@@ -9,23 +9,23 @@ const versionInfo = 'version.info';
 
 const defaultStructure = 'AUTHOR;GENRE;TITLE;SERIES;SERNO;FILE;SIZE;LIBID;DEL;EXT;DATE;LANG;LIBRATE;KEYWORDS';
 //'AUTHOR;GENRE;TITLE;SERIES;SERNO;FILE;SIZE;LIBID;DEL;EXT;DATE;INSNO;FOLDER;LANG;LIBRATE;KEYWORDS;'
-const defaultRecStruct = {
-  author: 'S',
-  genre: 'S',
-  title: 'S',
-  series: 'S',
-  serno: 'N',
-  file: 'S',
-  size: 'N',
-  libid: 'S',
-  del: 'N',
-  ext: 'S',
-  date: 'S',
-  insno: 'N',
-  folder: 'S',
-  lang: 'S',
-  librate: 'N',
-  keywords: 'S',
+const recStructType = {
+    author: 'S',
+    genre: 'S',
+    title: 'S',
+    series: 'S',
+    serno: 'N',
+    file: 'S',
+    size: 'N',
+    libid: 'S',
+    del: 'N',
+    ext: 'S',
+    date: 'S',
+    insno: 'N',
+    folder: 'S',
+    lang: 'S',
+    librate: 'N',
+    keywords: 'S',
 }
 
 class InpxParser {
@@ -45,13 +45,16 @@ class InpxParser {
     }
 
     getRecStruct(structure) {
-        const result = {};
-        for (const field of structure)
-            if (utils.hasProp(defaultRecStruct, field))
-                result[field] = defaultRecStruct[field];
-
+        const result = [];
+        let struct = structure;
         //folder есть всегда
-        result['folder'] = defaultRecStruct['folder'];
+        if (!struct.includes('folder'))
+            struct = struct.concat(['folder']);
+
+        for (const field of struct) {
+            if (utils.hasProp(recStructType, field))
+                result.push({field, type: recStructType[field]});
+        }
 
         return result;
     }

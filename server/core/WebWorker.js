@@ -210,6 +210,7 @@ class WebWorker {
 
             //поисковый движок
             this.dbSearcher = new DbSearcher(config, db);
+            await this.dbSearcher.init();
 
             //stuff
             db.wwCache = {};            
