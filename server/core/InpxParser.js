@@ -1,12 +1,32 @@
 const path = require('path');
 const crypto = require('crypto');
 const ZipReader = require('./ZipReader');
+const utils = require('./utils');
 
 const collectionInfo = 'collection.info';
 const structureInfo = 'structure.info';
 const versionInfo = 'version.info';
 
 const defaultStructure = 'AUTHOR;GENRE;TITLE;SERIES;SERNO;FILE;SIZE;LIBID;DEL;EXT;DATE;LANG;LIBRATE;KEYWORDS';
+//'AUTHOR;GENRE;TITLE;SERIES;SERNO;FILE;SIZE;LIBID;DEL;EXT;DATE;INSNO;FOLDER;LANG;LIBRATE;KEYWORDS;'
+const defaultRecStruct = {
+  author: 'S',
+  genre: 'S',
+  title: 'S',
+  series: 'S',
+  serno: 'N',
+  file: 'S',
+  size: 'N',
+  libid: 'S',
+  del: 'N',
+  ext: 'S',
+  date: 'S',
+  insno: 'N',
+  folder: 'S',
+  lang: 'S',
+  librate: 'N',
+  keywords: 'S',
+}
 
 class InpxParser {
     constructor() {
@@ -21,6 +41,18 @@ class InpxParser {
         } catch (e) {
             //quiet
         }
+        return result;
+    }
+
+    getRecStruct(structure) {
+        const result = {};
+        for (const field of structure)
+            if (utils.hasProp(defaultRecStruct, field))
+                result[field] = defaultRecStruct[field];
+
+        //folder есть всегда
+        result['folder'] = defaultRecStruct['folder'];
+
         return result;
     }
 
@@ -64,6 +96,8 @@ class InpxParser {
             if (!info.structure)
                 info.structure = defaultStructure;
             const structure = info.structure.toLowerCase().split(';');
+
+            info.recStruct = this.getRecStruct(structure);
 
             //парсим inp-файлы
             this.chunk = [];

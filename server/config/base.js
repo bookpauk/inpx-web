@@ -12,6 +12,7 @@ module.exports = {
 
     accessPassword: '',
     accessTimeout: 0,
+    extendedSearch: true,
     bookReadLink: '',
     loggingEnabled: true,
 
@@ -30,7 +31,7 @@ module.exports = {
     lowMemoryMode: false,
     fullOptimization: false,
 
-    webConfigParams: ['name', 'version', 'branch', 'bookReadLink', 'dbVersion'],
+    webConfigParams: ['name', 'version', 'branch', 'bookReadLink', 'dbVersion', 'extendedSearch'],
 
     allowRemoteLib: false,
     remoteLib: false,
