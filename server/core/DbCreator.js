@@ -446,8 +446,11 @@ class DbCreator {
             table: 'config'
         });
 
+        const inpxInfo = (inpxFilter && inpxFilter.info ? inpxFilter.info : parser.info);
+        inpxInfo.structure = parser.info.structure;
+        
         await db.insert({table: 'config', rows: [
-            {id: 'inpxInfo', value: (inpxFilter && inpxFilter.info ? inpxFilter.info : parser.info)},
+            {id: 'inpxInfo', value: inpxInfo},
             {id: 'stats', value: stats},
             {id: 'inpxHash', value: await inpxHashCreator.getHash()},
         ]});

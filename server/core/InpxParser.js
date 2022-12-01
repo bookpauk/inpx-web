@@ -61,11 +61,9 @@ class InpxParser {
             info.version = await this.safeExtractToString(zipReader, versionInfo);
 
             //структура
-            let inpxStructure = info.structure;
-            if (!inpxStructure)
-                inpxStructure = defaultStructure;
-            inpxStructure = inpxStructure.toLowerCase();
-            const structure = inpxStructure.split(';');
+            if (!info.structure)
+                info.structure = defaultStructure;
+            const structure = info.structure.toLowerCase().split(';');
 
             //парсим inp-файлы
             this.chunk = [];
