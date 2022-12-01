@@ -200,7 +200,6 @@ Options:
 {
   "info": {
     "collection": "Новое название коллекции",
-    "structure": "",
     "version": "1.0.0"
   },
   "filter": "(r) => r.del == 0",
