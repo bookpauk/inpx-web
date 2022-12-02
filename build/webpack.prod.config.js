@@ -18,9 +18,8 @@ fs.emptyDirSync(publicDir);
 module.exports = merge(baseWpConfig, {
     mode: 'production',
     output: {
-        path: `${publicDir}/app`,
+        path: `${publicDir}${baseWpConfig.output.publicPath}`,
         filename: 'bundle.[contenthash].js',
-        clean: true
     },
     module: {
         rules: [
