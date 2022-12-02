@@ -283,7 +283,7 @@ class Fb2Parser extends XmlParser {
         };
 
         for (const [tag, s] of Object.entries(substs)) {
-            const r = new RegExp(`${tag}`, 'g');
+            const r = new RegExp(tag, 'g');
             xmlString = xmlString.replace(r, s);
         }
 
