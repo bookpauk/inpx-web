@@ -446,10 +446,13 @@ class DbCreator {
             table: 'config'
         });
 
-        const inpxInfo = (inpxFilter && inpxFilter.info ? inpxFilter.info : parser.info);
-        inpxInfo.structure = parser.info.structure;
-        if (!inpxInfo.version)
-            inpxInfo.version = parser.info.version;
+        const inpxInfo = parser.info;
+        if (inpxFilter && inpxFilter.info) {
+            if (inpxFilter.info.collection)
+                inpxInfo.collection = inpxFilter.info.collection;
+            if (inpxFilter.info.version)
+                inpxInfo.version = inpxFilter.info.version;
+        }
 
         await db.insert({table: 'config', rows: [
             {id: 'inpxInfo', value: inpxInfo},
