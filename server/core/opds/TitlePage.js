@@ -65,14 +65,21 @@ class TitlePage extends BasePage {
             //навигация по каталогу
             const queryRes = await this.opdsQuery('title', query, '[Остальные названия]');
 
-            for (const rec of queryRes) {                
-                entry.push(
-                    this.makeEntry({
-                        id: rec.id,
-                        title: rec.title,
-                        link: this.navLink({href: `/${this.id}?title=${rec.q}&genre=${encodeURIComponent(query.genre)}`}),
-                    })
-                );
+            for (const rec of queryRes) {
+                const e = {
+                    id: rec.id,
+                    title: rec.title,
+                    link: this.navLink({href: `/${this.id}?title=${rec.q}&genre=${encodeURIComponent(query.genre)}`}),
+                };
+
+                if (rec.count) {
+                    e.content = {
+                        '*ATTRS': {type: 'text'},
+                        '*TEXT': `${rec.count} названий`,
+                    };
+                }
+
+                entry.push(this.makeEntry(e));
             }
         }
 

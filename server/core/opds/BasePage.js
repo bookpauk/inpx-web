@@ -177,6 +177,7 @@ class BasePage {
                         id: row.id,
                         title: `${value.toUpperCase().replace(/ /g, spaceChar)}~`,
                         q: encodeURIComponent(value),
+                        count: row.count,
                     };
                 }
                 if (query.depth > 1 || enru.has(value[0])) {

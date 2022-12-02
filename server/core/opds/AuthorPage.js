@@ -162,14 +162,21 @@ class AuthorPage extends BasePage {
             //навигация по каталогу
             const queryRes = await this.opdsQuery('author', query, '[Остальные авторы]');
 
-            for (const rec of queryRes) {                
-                entry.push(
-                    this.makeEntry({
-                        id: rec.id,
-                        title: this.bookAuthor(rec.title),
-                        link: this.navLink({href: `/${this.id}?author=${rec.q}&genre=${encodeURIComponent(query.genre)}`}),
-                    })
-                );
+            for (const rec of queryRes) {
+                const e = {
+                    id: rec.id,
+                    title: this.bookAuthor(rec.title),
+                    link: this.navLink({href: `/${this.id}?author=${rec.q}&genre=${encodeURIComponent(query.genre)}`}),
+                };
+
+                if (rec.count) {
+                    e.content = {
+                        '*ATTRS': {type: 'text'},
+                        '*TEXT': `${rec.count} авторов`,
+                    };
+                }
+
+                entry.push(this.makeEntry(e));
             }
         }
 

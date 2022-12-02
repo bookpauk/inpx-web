@@ -95,14 +95,21 @@ class SeriesPage extends BasePage {
             //навигация по каталогу
             const queryRes = await this.opdsQuery('series', query, '[Остальные серии]');
 
-            for (const rec of queryRes) {                
-                entry.push(
-                    this.makeEntry({
-                        id: rec.id,
-                        title: rec.title,
-                        link: this.navLink({href: `/${this.id}?series=${rec.q}&genre=${encodeURIComponent(query.genre)}`}),
-                    })
-                );
+            for (const rec of queryRes) {
+                const e = {
+                    id: rec.id,
+                    title: (rec.count ? rec.title : `Серия: ${rec.title}`),
+                    link: this.navLink({href: `/${this.id}?series=${rec.q}&genre=${encodeURIComponent(query.genre)}`}),
+                };
+
+                if (rec.count) {
+                    e.content = {
+                        '*ATTRS': {type: 'text'},
+                        '*TEXT': `${rec.count} серий`,
+                    };
+                }
+
+                entry.push(this.makeEntry(e));
             }
         }
 
