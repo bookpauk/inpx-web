@@ -185,17 +185,14 @@ function initStatic(app, config) {
     filesPathStatic = `/book`;
     filesDir = `${config.publicFilesDir}${config.filesPathStatic}`;
     */
-    const filesPath = `${config.filesPathStatic}/`;
     //загрузка или восстановление файлов в /files, при необходимости
-    app.use(async(req, res, next) => {
-        if ((req.method !== 'GET' && req.method !== 'HEAD') ||
-            !(req.path.indexOf(filesPath) === 0)
-            ) {
+    app.use(config.filesPathStatic, async(req, res, next) => {
+        if (req.method !== 'GET' && req.method !== 'HEAD') {
             return next();
         }
 
         if (path.extname(req.path) == '') {
-            const bookFile = `${config.publicFilesDir}${req.path}`;
+            const bookFile = `${config.filesDir}${req.path}`;
             const bookFileDesc = `${bookFile}.d.json`;
 
             let downFileName = '';
@@ -216,8 +213,19 @@ function initStatic(app, config) {
                 log(LM_ERR, e.message);
             }
 
-            if (downFileName)
+            if (downFileName) {
                 res.downFileName = downFileName;
+
+                if (!req.acceptsEncodings('gzip')) {
+                    //не принимает gzip, тогда распакуем
+                    const rawFile = `${bookFile}.raw`;
+                    if (!await fs.pathExists(rawFile))
+                        await utils.gunzipFile(bookFile, rawFile);
+
+                    req.url += '.raw';
+                    res.rawFile = true;
+                }
+            }
         }
 
         return next();
@@ -227,7 +235,9 @@ function initStatic(app, config) {
     app.use(config.filesPathStatic, express.static(config.filesDir, {
         setHeaders: (res) => {
             if (res.downFileName) {
-                res.set('Content-Encoding', 'gzip');
+                if (!res.rawFile)
+                    res.set('Content-Encoding', 'gzip');
+
                 res.set('Content-Disposition', `inline; filename*=UTF-8''${encodeURIComponent(res.downFileName)}`);
             }
         },
