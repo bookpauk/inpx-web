@@ -44,16 +44,16 @@ module.exports = {
     */
 
     server: {
-        root: '',
         host: '0.0.0.0',
         port: '22380',
+        root: '',
     },
     //opds: false,
     opds: {
         enabled: true,
-        root: '/opds',
         user: '',
         password: '',
+        root: '/opds',
     },
 };
 
