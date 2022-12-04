@@ -50,7 +50,7 @@ async function init() {
     config.logDir = `${config.dataDir}/log`;
     config.publicDir = `${config.dataDir}/public`;
     config.publicFilesDir = `${config.dataDir}/public-files`;
-    config.rootPathStatic = `/root`;
+    config.rootPathStatic = config.server.root || '';
     config.bookPathStatic = `${config.rootPathStatic}/book`;
     config.bookDir = `${config.publicFilesDir}/book`;
 

@@ -14,7 +14,7 @@ module.exports = function(app, config) {
     if (!config.opds || !config.opds.enabled)
         return;
     
-    const opdsRoot = '/opds';
+    const opdsRoot = config.opds.root || '/opds';
     config.opdsRoot = opdsRoot;
 
     const root = new RootPage(config);
