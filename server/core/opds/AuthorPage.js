@@ -105,21 +105,16 @@ class AuthorPage extends BasePage {
                 for (const book of sorted) {
                     const title = `${book.serno ? `${book.serno}. `: ''}${book.title || 'Без названия'} (${book.ext})`;
 
-                    const e = {
-                        id: book._uid,
-                        title,
-                        link: this.acqLink({href: `/book?uid=${encodeURIComponent(book._uid)}`}),
-                    };
-
-                    if (query.all) {
-                        e.content = {
-                            '*ATTRS': {type: 'text'},
-                            '*TEXT': this.bookAuthor(book.author),
-                        }
-                    }
-
                     entry.push(
-                        this.makeEntry(e)
+                        this.makeEntry({
+                            id: book._uid,
+                            title,
+                            link: this.acqLink({href: `/book?uid=${encodeURIComponent(book._uid)}`}),
+                            content: {
+                                '*ATTRS': {type: 'text'},
+                                '*TEXT': this.bookAuthor(book.author),
+                            },
+                        })
                     );
                 }
             }
@@ -153,6 +148,10 @@ class AuthorPage extends BasePage {
                                 id: b.book._uid,
                                 title,
                                 link: this.acqLink({href: `/book?uid=${encodeURIComponent(b.book._uid)}`}),
+                                content: {
+                                    '*ATTRS': {type: 'text'},
+                                    '*TEXT': this.bookAuthor(b.book.author),
+                                },
                             })
                         );
                     }
