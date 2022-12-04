@@ -51,7 +51,7 @@ module.exports = {
     //opds: false,
     opds: {
         enabled: true,
-        root: '',
+        root: '/opds',
         user: '',
         password: '',
     },
