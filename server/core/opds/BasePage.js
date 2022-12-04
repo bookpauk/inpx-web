@@ -196,7 +196,7 @@ class BasePage {
         }
 
         if (!query.others && others.length)
-            result.unshift({id: 'other', title: otherTitle, q: '___others'});
+            result.unshift({id: 'other', title: otherTitle, q: '___others', count: others.length});
 
         return (!query.others ? result : others);
     }

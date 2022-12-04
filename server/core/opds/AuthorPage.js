@@ -1,4 +1,5 @@
 const BasePage = require('./BasePage');
+const utils = require('../utils');
 
 class AuthorPage extends BasePage {
     constructor(config) {
@@ -172,7 +173,7 @@ class AuthorPage extends BasePage {
                 if (rec.count) {
                     e.content = {
                         '*ATTRS': {type: 'text'},
-                        '*TEXT': `${rec.count} авторов`,
+                        '*TEXT': `${rec.count} автор${utils.wordEnding(rec.count, 0)}`,
                     };
                 }
 
