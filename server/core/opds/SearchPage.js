@@ -68,7 +68,7 @@ class SearchPage extends BasePage {
                     link: this.navLink({href: `/${this.id}?type=author&term=${encodeURIComponent(query.term)}`}),
                     content: {
                         '*ATTRS': {type: 'text'},
-                        '*TEXT': `Поиск по авторам книг`,
+                        '*TEXT': `Искать по именам авторов`,
                     },
                 }),
                 this.makeEntry({
@@ -77,7 +77,7 @@ class SearchPage extends BasePage {
                     link: this.navLink({href: `/${this.id}?type=series&term=${encodeURIComponent(query.term)}`}),
                     content: {
                         '*ATTRS': {type: 'text'},
-                        '*TEXT': `Поиск по сериям книг`,
+                        '*TEXT': `Искать по названиям серий`,
                     },
                 }),
                 this.makeEntry({
@@ -86,7 +86,7 @@ class SearchPage extends BasePage {
                     link: this.navLink({href: `/${this.id}?type=title&term=${encodeURIComponent(query.term)}`}),
                     content: {
                         '*ATTRS': {type: 'text'},
-                        '*TEXT': `Поиск по названиям книг`,
+                        '*TEXT': `Искать по названиям книг`,
                     },
                 }),
             ]
