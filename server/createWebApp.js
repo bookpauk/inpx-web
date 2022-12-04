@@ -9,7 +9,7 @@ module.exports = async(config) => {
 
     if (await fs.pathExists(verFile)) {
         const curPublicVersion = await fs.readFile(verFile, 'utf8');
-        if (curPublicVersion == config.version)
+        if (curPublicVersion == config.version + config.rootPathStatic)
             return;
     }
 
@@ -26,6 +26,6 @@ module.exports = async(config) => {
         await zipReader.close();
     }
 
-    await fs.writeFile(verFile, config.version);
+    await fs.writeFile(verFile, config.version + config.rootPathStatic);
     await fs.remove(zipFile);
 };
