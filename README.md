@@ -142,15 +142,21 @@ Options:
     "remoteLib": false,
 
     // настройки веб-сервера
+    // парамертр root указывает путь для кореневой страницы inpx-web
+    // например для "root": "/library", веб-интерфейс будет доступен по адресу http://127.0.0.1:12380/library
+    // root необходим при настройке reverse-proxy и встраивании inpx-web в уже существующий сервер
     "server": {
+        "root": "",
         "host": "0.0.0.0",
         "port": "12380"
     },
 
     // настройки opds-сервера
     // user, password используются для Basic HTTP authentication
+    // параметр root задает путь для доступа к opds-серверу
     "opds": {
         "enabled": true,
+        "root": "/opds",
         "user": "",
         "password": ""
     }
