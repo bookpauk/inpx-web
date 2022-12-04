@@ -149,7 +149,7 @@ async function main() {
     if (branch == 'development') {
         const devFileName = './dev.js'; //require ignored by pkg -50Mb executable size
         devModule = require(devFileName);
-        //devModule.webpackDevMiddleware(app);
+        devModule.webpackDevMiddleware(app);
     }
 
     if (devModule)
