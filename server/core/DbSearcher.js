@@ -672,10 +672,11 @@ class DbSearcher {
                             const s = row.value.substring(0, depth);
                             let g = group.get(s);
                             if (!g) {
-                                g = {id: row.id, name: row.name, value: s, count: 0};
+                                g = {id: row.id, name: row.name, value: s, count: 0, bookCount: 0};
                                 group.set(s, g);
                             }
                             g.count++;
+                            g.bookCount += row.bookCount;
                         }
 
                         const result = Array.from(group.values());

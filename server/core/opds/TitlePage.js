@@ -73,10 +73,16 @@ class TitlePage extends BasePage {
                     link: this.navLink({href: `/${this.id}?title=${rec.q}&genre=${encodeURIComponent(query.genre)}`}),
                 };
 
-                if (rec.count) {
+                let countStr = '';
+                if (rec.count)
+                    countStr = `${rec.count} назван${utils.wordEnding(rec.count, 3)}${(query.genre ? ' (в выбранном жанре)' : '')}`;
+                if (!countStr && rec.bookCount && !query.genre)
+                    countStr = `${rec.bookCount} книг${utils.wordEnding(rec.bookCount, 8)}`;
+
+                if (countStr) {
                     e.content = {
                         '*ATTRS': {type: 'text'},
-                        '*TEXT': `${rec.count} назван${utils.wordEnding(rec.count, 3)}`,
+                        '*TEXT': countStr,
                     };
                 }
 

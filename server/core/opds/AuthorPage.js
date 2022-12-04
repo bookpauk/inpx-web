@@ -12,17 +12,22 @@ class AuthorPage extends BasePage {
     sortBooks(bookList) {
         //схлопывание серий
         const books = [];
-        const seriesSet = new Set();
+        const seriesMap = new Map();
         for (const book of bookList) {
             if (book.series) {
-                if (!seriesSet.has(book.series)) {
+                let seriesIndex = seriesMap.get(book.series);
+                if (seriesIndex === undefined) {
+                    seriesIndex = books.length;
                     books.push({
                         type: 'series',
-                        book
+                        book,
+                        bookCount: 0,
                     });
 
-                    seriesSet.add(book.series);
+                    seriesMap.set(book.series, seriesIndex);
                 }
+
+                books[seriesIndex].bookCount++;
             } else {
                 books.push({
                     type: 'book',
@@ -135,6 +140,10 @@ class AuthorPage extends BasePage {
                                 link: this.navLink({
                                     href: `/${this.id}?author=${encodeURIComponent(query.author)}` +
                                         `&series=${encodeURIComponent(b.book.series)}&genre=${encodeURIComponent(query.genre)}`}),
+                                content: {
+                                    '*ATTRS': {type: 'text'},
+                                    '*TEXT': `${b.bookCount} книг${utils.wordEnding(b.bookCount, 8)} по автору${(query.genre ? ' (в выбранном жанре)' : '')}`,
+                                },
                             })
                         );
                     } else {
@@ -170,10 +179,16 @@ class AuthorPage extends BasePage {
                     link: this.navLink({href: `/${this.id}?author=${rec.q}&genre=${encodeURIComponent(query.genre)}`}),
                 };
 
-                if (rec.count) {
+                let countStr = '';
+                if (rec.count)
+                    countStr = `${rec.count} автор${utils.wordEnding(rec.count, 0)}${(query.genre ? ' (в выбранном жанре)' : '')}`;
+                if (!countStr && rec.bookCount && !query.genre)
+                    countStr = `${rec.bookCount} книг${utils.wordEnding(rec.bookCount, 8)}`;
+
+                if (countStr) {
                     e.content = {
                         '*ATTRS': {type: 'text'},
-                        '*TEXT': `${rec.count} автор${utils.wordEnding(rec.count, 0)}`,
+                        '*TEXT': countStr,
                     };
                 }
 

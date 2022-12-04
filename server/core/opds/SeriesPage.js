@@ -103,10 +103,16 @@ class SeriesPage extends BasePage {
                     link: this.navLink({href: `/${this.id}?series=${rec.q}&genre=${encodeURIComponent(query.genre)}`}),
                 };
 
-                if (rec.count) {
+                let countStr = '';
+                if (rec.count)
+                    countStr = `${rec.count} сери${utils.wordEnding(rec.count, 1)}${(query.genre ? ' (в выбранном жанре)' : '')}`;
+                if (!countStr && rec.bookCount && !query.genre)
+                    countStr = `${rec.bookCount} книг${utils.wordEnding(rec.bookCount, 8)}`;
+
+                if (countStr) {
                     e.content = {
                         '*ATTRS': {type: 'text'},
-                        '*TEXT': `${rec.count} сери${utils.wordEnding(rec.count, 1)}`,
+                        '*TEXT': countStr,
                     };
                 }
 

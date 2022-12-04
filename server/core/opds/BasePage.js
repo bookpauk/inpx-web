@@ -140,6 +140,7 @@ class BasePage {
                 id: row.id,
                 title: (row[from] || 'Без автора'),
                 q: `=${encodeURIComponent(row[from])}`,
+                bookCount: row.bookCount,
             };
 
             result.push(rec);
@@ -171,6 +172,7 @@ class BasePage {
                         id: row.id,
                         title: row.name,
                         q: `=${encodeURIComponent(row.name)}`,
+                        bookCount: row.bookCount,
                     };
                 } else {
                     rec = {
