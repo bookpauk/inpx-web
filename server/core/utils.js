@@ -109,9 +109,10 @@ function gzipFile(inputFile, outputFile, level = 1) {
             .pipe(gzip).on('error', reject)
             .pipe(output).on('error', reject)
             .on('finish', (err) => {
-            if (err) reject(err);
-            else resolve();
-        });
+                if (err) reject(err);
+                else resolve();
+            }
+        );
     });
 }
 
@@ -125,9 +126,10 @@ function gunzipFile(inputFile, outputFile) {
             .pipe(gzip).on('error', reject)
             .pipe(output).on('error', reject)
             .on('finish', (err) => {
-            if (err) reject(err);
-            else resolve();
-        });
+                if (err) reject(err);
+                else resolve();
+            }
+        );
     });
 }
 
