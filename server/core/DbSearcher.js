@@ -571,6 +571,8 @@ class DbSearcher {
                         checks.push(filterBySearch(f.field, searchValue));
                     } if (f.type === 'N') {
                         searchValue = parseInt(searchValue, 10);
+                        if (isNaN(searchValue))
+                            throw new Error(`Wrong query param, ${f.field}=${searchValue}`);
                         checks.push(`row.${f.field} === ${searchValue}`);
                     }
                 }

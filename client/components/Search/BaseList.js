@@ -41,6 +41,7 @@ export default class BaseList {
     _props = {
         list: Object,
         search: Object,
+        extSearch: Object,
         genreMap: Object,
     };
     
@@ -68,6 +69,7 @@ export default class BaseList {
     tableData = [];
 
     created() {
+        this.isExtendedSearch = false;
         this.commit = this.$store.commit;
         this.api = this.$root.api;
 
@@ -516,7 +518,8 @@ export default class BaseList {
     }
 
     getQuery() {
-        let newQuery = _.cloneDeep(this.search);
+        const search = (this.isExtendedSearch ? this.extSearch : this.search);
+        let newQuery = _.cloneDeep(search);
         newQuery = newQuery.setDefaults(newQuery);
         delete newQuery.setDefaults;
 

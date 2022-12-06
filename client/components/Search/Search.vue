@@ -55,7 +55,7 @@
                         </template>
                     </DivBtn>
                 </div>
-                <div class="row q-mx-md q-mb-xs items-center">
+                <div v-show="!isExtendedSearch" class="row q-mx-md q-mb-xs items-center">
                     <DivBtn
                         class="text-grey-5 bg-yellow-1 q-mt-xs" :size="34" :icon-size="24" round
                         :icon="(extendedParams ? 'la la-angle-double-up' : 'la la-angle-double-down')"
@@ -121,7 +121,7 @@
                         </template>
                     </DivBtn>
                 </div>
-                <div v-show="extendedParams" class="row q-mx-md q-mb-xs items-center">
+                <div v-show="!isExtendedSearch && extendedParams" class="row q-mx-md q-mb-xs items-center">
                     <div style="width: 34px" />
                     <div class="q-mx-xs" />
                     <q-input
@@ -184,8 +184,38 @@
                         </q-tooltip>
                     </q-input>
                 </div>
-                <div v-show="!extendedParams && extendedParamsMessage" class="row q-mx-md items-center clickable" @click.stop.prevent="extendedParams = true">
+                <div v-show="!isExtendedSearch && !extendedParams && extendedParamsMessage" class="row q-mx-md items-center clickable" @click.stop.prevent="extendedParams = true">
                     +{{ extendedParamsMessage }}
+                </div>
+
+                <div v-show="isExtendedSearch" class="row q-mx-md q-mb-xs items-center">
+                    <q-input
+                        v-model="extSearchNames"
+                        class="col q-mt-xs" :bg-color="inputBgColor('extended')" input-style="cursor: pointer"
+                        style="min-width: 200px; max-width: 756px;" label="Расширенный поиск" stack-label outlined dense clearable readonly
+                        @click.stop.prevent="selectExtSearch"
+                    >
+                        <template v-if="extSearchNames" #append>
+                            <q-icon name="la la-times-circle" class="q-field__focusable-action" @click.stop.prevent="clearExtSearch" />
+                        </template>
+
+                        <q-tooltip v-if="extSearchNames && showTooltips" :delay="500" anchor="bottom middle" content-style="font-size: 80%" max-width="400px">
+                            {{ extSearchNames }}
+                        </q-tooltip>
+                    </q-input>
+
+                    <div class="q-mx-xs" />
+                    <DivBtn
+                        class="text-grey-8 bg-yellow-1 q-mt-xs" :size="34" :icon-size="24" round
+                        icon="la la-level-up-alt"
+                        @click.stop.prevent="cloneSearch"
+                    >
+                        <template #tooltip>
+                            <q-tooltip :delay="1500" anchor="bottom middle" content-style="font-size: 80%" max-width="400px">
+                                Клонировать поиск
+                            </q-tooltip>
+                        </template>
+                    </DivBtn>
                 </div>
             </div>
 
@@ -202,7 +232,7 @@
             <!-- Формирование списка ------------------------------------------------------------------------>
             <div v-if="selectedListComponent">
                 <div class="separator" />
-                <component :is="selectedListComponent" ref="list" :list="list" :search="search" :genre-map="genreMap" @list-event="listEvent" />
+                <component :is="selectedListComponent" ref="list" :list="list" :search="search" :ext-search="extSearch" :genre-map="genreMap" @list-event="listEvent" />
                 <div class="separator" />
             </div>
             <!-- Формирование списка конец ------------------------------------------------------------------>
@@ -224,6 +254,7 @@
         <SelectLibRateDialog v-model="selectLibRateDialogVisible" v-model:librate="search.librate" />
         <SelectDateDialog v-model="selectDateDialogVisible" v-model:date="search.date" />
         <BookInfoDialog v-model="bookInfoDialogVisible" :book-info="bookInfo" />
+        <SelectExtSearchDialog v-model="selectExtSearchDialogVisible" v-model:ext-search="extSearch" />        
     </div>
 </template>
 
@@ -234,6 +265,7 @@ import vueComponent from '../vueComponent.js';
 import AuthorList from './AuthorList/AuthorList.vue';
 import SeriesList from './SeriesList/SeriesList.vue';
 import TitleList from './TitleList/TitleList.vue';
+import ExtendedList from './ExtendedList/ExtendedList.vue';
 
 import PageScroller from './PageScroller/PageScroller.vue';
 import SettingsDialog from './SettingsDialog/SettingsDialog.vue';
@@ -242,6 +274,7 @@ import SelectLangDialog from './SelectLangDialog/SelectLangDialog.vue';
 import SelectLibRateDialog from './SelectLibRateDialog/SelectLibRateDialog.vue';
 import SelectDateDialog from './SelectDateDialog/SelectDateDialog.vue';
 import BookInfoDialog from './BookInfoDialog/BookInfoDialog.vue';
+import SelectExtSearchDialog from './SelectExtSearchDialog/SelectExtSearchDialog.vue';
 
 import authorBooksStorage from './authorBooksStorage';
 import DivBtn from '../share/DivBtn.vue';
@@ -252,11 +285,13 @@ import diffUtils from '../../share/diffUtils';
 
 import _ from 'lodash';
 
+const maxLimit = 1000;
+
 const route2component = {
     'author': {component: 'AuthorList', label: 'Авторы'},
     'series': {component: 'SeriesList', label: 'Серии'},
     'title': {component: 'TitleList', label: 'Книги'},
-    'extended': {component: 'TitleList', label: 'Расширенный поиск'},
+    'extended': {component: 'ExtendedList', label: 'Расширенный поиск'},
 };
 
 const componentOptions = {
@@ -264,6 +299,7 @@ const componentOptions = {
         AuthorList,
         SeriesList,
         TitleList,
+        ExtendedList,
         PageScroller,
         SettingsDialog,
         SelectGenreDialog,
@@ -271,6 +307,7 @@ const componentOptions = {
         SelectLibRateDialog,
         SelectDateDialog,
         BookInfoDialog,
+        SelectExtSearchDialog,
         Dialog,
         DivBtn
     },
@@ -293,6 +330,12 @@ const componentOptions = {
                 this.makeTitle();
                 this.updateRouteQueryFromSearch();
                 this.updateSearchDate(true);
+
+                //extSearch
+                if (this.isExtendedSearch) {
+                    this.extSearch.page = newValue.page;
+                    this.extSearch.limit = newValue.limit;
+                }
             },
             deep: true,
         },
@@ -363,6 +406,7 @@ class Search {
     selectLibRateDialogVisible = false;
     selectDateDialogVisible = false;
     bookInfoDialogVisible = false;
+    selectExtSearchDialogVisible = false;
 
     pageCount = 1;    
 
@@ -381,11 +425,21 @@ class Search {
                 lang: search.lang || '',
                 date: search.date || '',
                 librate: search.librate || '',
+
                 page: search.page || 1,
                 limit: search.limit || 50,
             });
         },
-    };
+    };    
+
+    extSearch = {
+        setDefaults(search) {
+            return Object.assign({}, search, {
+                page: search.page || 1,
+                limit: search.limit || 50,
+            });
+        },
+    };    
 
     searchDate = '';
     prevManualDate = '';
@@ -429,6 +483,7 @@ class Search {
         this.api = this.$root.api;
 
         this.search = this.search.setDefaults(this.search);
+        this.extSearch = this.extSearch.setDefaults(this.extSearch);
         this.search.lang = this.langDefault;
 
         this.loadSettings();
@@ -548,6 +603,14 @@ class Search {
         result.push(s.librate ? 'Оценка' : '');
 
         return result.filter(s => s).join(', ');
+    }
+
+    get isExtendedSearch() {
+        return this.selectedList === 'extended';
+    }
+
+    get extSearchNames() {
+        return '';
     }
 
     inputBgColor(inp) {
@@ -750,6 +813,14 @@ class Search {
         this.hideTooltip();
         this.selectLibRateDialogVisible = true;
     }
+
+    selectExtSearch() {
+        this.hideTooltip();
+        this.selectExtSearchDialogVisible = true;
+    }
+
+    clearExtSearch() {
+    }
     
     onScroll() {
         const curScrollTop = this.$refs.scroller.scrollTop;
@@ -862,22 +933,35 @@ class Search {
 
         const query = to.query;
 
-        this.search = this.search.setDefaults(
-            Object.assign({}, this.search, {
-                author: query.author,
-                series: query.series,
-                title: query.title,
-                genre: query.genre,
-                lang: (typeof(query.lang) == 'string' ? query.lang : this.langDefault),
-                date: query.date,
-                librate: query.librate,
-                page: parseInt(query.page, 10),
-                limit: parseInt(query.limit, 10) || this.search.limit,
-            })
-        );
+        if (!this.isExtendedSearch) {
+            this.search = this.search.setDefaults(
+                Object.assign({}, this.search, {
+                    author: query.author,
+                    series: query.series,
+                    title: query.title,
+                    genre: query.genre,
+                    lang: (typeof(query.lang) == 'string' ? query.lang : this.langDefault),
+                    date: query.date,
+                    librate: query.librate,
 
-        if (this.search.limit > 1000)
-            this.search.limit = 1000;
+                    page: parseInt(query.page, 10),
+                    limit: parseInt(query.limit, 10) || this.search.limit,
+                })
+            );
+
+            if (this.search.limit > maxLimit)
+                this.search.limit = maxLimit;
+        } else {
+            this.extSearch = this.extSearch.setDefaults(
+                Object.assign({}, this.extSearch, {
+                    page: parseInt(query.page, 10),
+                    limit: parseInt(query.limit, 10) || this.search.limit,
+                })
+            );
+
+            if (this.extSearch.limit > maxLimit)
+                this.extSearch.limit = maxLimit;
+        }
     }
 
     updateRouteQueryFromSearch() {
@@ -887,16 +971,24 @@ class Search {
         this.routeUpdating = true;
         try {
             const oldQuery = this.$route.query;
-            const cloned = _.cloneDeep(this.search);
+            let query = {};
 
-            delete cloned.setDefaults;
+            if (!this.isExtendedSearch) {                
+                const cloned = _.cloneDeep(this.search);
 
-            const query = _.pickBy(cloned);
+                delete cloned.setDefaults;
 
-            if (this.search.lang == this.langDefault) {
-                delete query.lang;
+                query = _.pickBy(cloned);
+
+                if (this.search.lang == this.langDefault) {
+                    delete query.lang;
+                } else {
+                    query.lang = this.search.lang;
+                }
             } else {
-                query.lang = this.search.lang;
+                const cloned = _.cloneDeep(this.extSearch);
+                delete cloned.setDefaults;
+                query = _.pickBy(cloned);
             }
 
             const diff = diffUtils.getObjDiff(oldQuery, query);
