@@ -11,6 +11,7 @@ const ruAlphabet = 'абвгдеёжзийклмнопрстуфхцчшщъыь
 const enAlphabet = 'abcdefghijklmnopqrstuvwxyz';
 const enruArr = (ruAlphabet + enAlphabet).split('');
 const enru = new Set(enruArr);
+const ruOnly = new Set(ruAlphabet.split(''));
 
 class BasePage {
     constructor(config) {        
@@ -162,6 +163,7 @@ class BasePage {
             return await this.search(from, query);
         } else {
             let len = 0;
+            const enResult = [];
             for (const row of queryRes.found) {
                 const value = row.value;
                 len += value.length;
@@ -182,12 +184,19 @@ class BasePage {
                         count: row.count,
                     };
                 }
-                if (query.depth > 1 || enru.has(value[0])) {
-                    result.push(rec);
+                if (query.depth > 1 || enru.has(value[0]) ) {
+                    //такой костыль из-за проблем с локалями в pkg
+                    //русский язык всегда идет первым!
+                    if (ruOnly.has(value[0]))
+                        result.push(rec)
+                    else
+                        enResult.push(rec);
                 } else {
                     others.push(rec);
                 }
             }
+
+            result = result.concat(enResult);
 
             if (query[from] && query.depth > 1 && result.length < 10 && len > prevLen) {
                 //рекурсия, с увеличением глубины, для облегчения навигации
