@@ -7,6 +7,7 @@ const state = {
         limit: 20,
         expandedAuthor: [],
         expandedSeries: [],
+        downloadAsZip: false,
         showCounts: true,
         showRates: true,
         showInfo: true,

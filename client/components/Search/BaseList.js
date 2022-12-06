@@ -1,3 +1,4 @@
+import axios from 'axios';
 import dayjs from 'dayjs';
 import _ from 'lodash';
 
@@ -50,6 +51,7 @@ export default class BaseList {
     expandedAuthor = [];
     expandedSeries = [];
 
+    downloadAsZip = false;
     showCounts = true;
     showRates = true;
     showGenres = true;    
@@ -81,6 +83,7 @@ export default class BaseList {
 
         this.expandedAuthor = _.cloneDeep(settings.expandedAuthor);
         this.expandedSeries = _.cloneDeep(settings.expandedSeries);
+        this.downloadAsZip = settings.downloadAsZip;
         this.showCounts = settings.showCounts;
         this.showRates = settings.showRates;
         this.showGenres = settings.showGenres;
@@ -133,13 +136,20 @@ export default class BaseList {
             const response = await this.api.getBookLink(book._uid);
             
             const link = response.link;
-            const href = `${window.location.origin}${link}`;
+            let href = `${window.location.origin}${link}`;
 
+            //downloadAsZip
+            if (this.downloadAsZip && (action == 'download' || action == 'copyLink')) {
+                href += '/zip';
+                //подожлем формирования zip-файла
+                await axios.head(href);
+            }
+
+            //action
             if (action == 'download') {
                 //скачивание
                 const d = this.$refs.download;
                 d.href = href;
-                d.download = response.downFileName;
 
                 d.click();
             } else if (action == 'copyLink') {
