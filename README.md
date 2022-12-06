@@ -287,6 +287,8 @@ sudo service nginx reload
 Сборка только в среде Linux.
 Необходима версия node.js не ниже 16.
 
+Для сборки linux-arm64 необходимо предварительно установить [QEMU](https://wiki.debian.org/QemuUserEmulation).
+
 ```sh
 git clone https://github.com/bookpauk/inpx-web
 cd inpx-web
