@@ -1,6 +1,6 @@
 const fs = require('fs-extra');
 const path = require('path');
-const JSZip = require('jszip');
+const yazl = require('yazl');
 
 const express = require('express');
 const utils = require('./core/utils');
@@ -8,21 +8,18 @@ const webAppDir = require('../build/appdir');
 
 const log = new (require('./core/AppLogger'))().log;//singleton
 
-function generateZip(zipFile, dataFile, data) {
+function generateZip(zipFile, dataFile, dataFileInZip) {
     return new Promise((resolve, reject) => {
-        const zip = new JSZip();
-        zip.file(dataFile, data)
-            .generateNodeStream({
-                streamFiles: true,
-                compression: 'DEFLATE',
-                compressionOptions: {level: 6},
-            }).on('error', reject)
+        const zip = new yazl.ZipFile();
+        zip.addFile(dataFile, dataFileInZip);
+        zip.outputStream
             .pipe(fs.createWriteStream(zipFile)).on('error', reject)
             .on('finish', (err) => {
                 if (err) reject(err);
                 else resolve();
             }
         );
+        zip.end();
     });
 }
 
@@ -67,10 +64,8 @@ module.exports = (app, config) => {
                         } else if (fileType === 'zip') {
                             //создаем zip-файл
                             bookFile += '.zip';
-                            if (!await fs.pathExists(bookFile)) {
-                                const data = await fs.readFile(rawFile);
-                                await generateZip(bookFile, downFileName, data);
-                            }
+                            if (!await fs.pathExists(bookFile))
+                                await generateZip(bookFile, rawFile, downFileName);
                             downFileName += '.zip';
                         } else {
                             throw new Error(`Unsupported file type: ${fileType}`);
