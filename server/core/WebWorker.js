@@ -268,6 +268,17 @@ class WebWorker {
         return result;
     }
 
+    async bookSearch(query) {
+        this.checkMyState();
+
+        const result = await this.dbSearcher.bookSearch(query);
+
+        const config = await this.dbConfig();
+        result.inpxHash = (config.inpxHash ? config.inpxHash : '');
+
+        return result;
+    }
+
     async opdsQuery(from, query) {
         this.checkMyState();
 

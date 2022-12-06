@@ -256,6 +256,7 @@ const route2component = {
     'author': {component: 'AuthorList', label: 'Авторы'},
     'series': {component: 'SeriesList', label: 'Серии'},
     'title': {component: 'TitleList', label: 'Книги'},
+    'extended': {component: 'TitleList', label: 'Расширенный поиск'},
 };
 
 const componentOptions = {
@@ -529,7 +530,13 @@ class Search {
     get listOptions() {
         const result = [];
         for (const [route, rec] of Object.entries(route2component))
-            result.push({label: rec.label, value: route});
+            if (route == 'extended') {
+                if (this.config.extendedSearch) {
+                    result.push({value: route, icon: 'la la-code', size: '10px'});
+                }
+            } else {
+                result.push({label: rec.label, value: route, icon: rec.icon});
+            }
         return result;
     }
 

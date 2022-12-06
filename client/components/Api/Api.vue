@@ -235,6 +235,10 @@ class Api {
         return await this.request({action: 'search', from, query}, 30);
     }
 
+    async bookSearch(query) {
+        return await this.request({action: 'bookSearch', query}, 30);
+    }
+
     async getAuthorBookList(authorId) {
         return await this.request({action: 'get-author-book-list', authorId});
     }
