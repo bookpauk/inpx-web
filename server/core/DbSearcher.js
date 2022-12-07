@@ -547,20 +547,22 @@ class DbSearcher {
         if (bookIds === null) {
             const db = this.db;
             const filterBySearch = (bookField, searchValue) => {
+                searchValue = searchValue.toLowerCase();
                 //особая обработка префиксов
                 if (searchValue[0] == '=') {
                     searchValue = searchValue.substring(1);
-                    return `(row.${bookField}.localeCompare(${db.esc(searchValue)}) === 0)`;
+                    return `(row.${bookField}.toLowerCase().localeCompare(${db.esc(searchValue)}) === 0)`;
                 } else if (searchValue[0] == '*') {
                     searchValue = searchValue.substring(1);
-                    return `(row.${bookField} && row.${bookField}.indexOf(${db.esc(searchValue)}) >= 0)`;
+                    return `(row.${bookField} && row.${bookField}.toLowerCase().indexOf(${db.esc(searchValue)}) >= 0)`;
                 } else if (searchValue[0] == '#') {
 
                     //searchValue = searchValue.substring(1);
                     //return !bookValue || (bookValue !== emptyFieldValue && !enru.has(bookValue[0]) && bookValue.indexOf(searchValue) >= 0);
                     return 'true';
                 } else {
-                    return `(row.${bookField}.localeCompare(${db.esc(searchValue)}) >= 0 && row.${bookField}.localeCompare(${db.esc(searchValue)} + ${db.esc(maxUtf8Char)}) <= 0)`;
+                    return `(row.${bookField}.toLowerCase().localeCompare(${db.esc(searchValue)}) >= 0 ` +
+                        `&& row.${bookField}.toLowerCase().localeCompare(${db.esc(searchValue)} + ${db.esc(maxUtf8Char)}) <= 0)`;
                 }
             };
 

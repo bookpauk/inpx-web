@@ -17,6 +17,7 @@
                         class="q-mt-xs" style="width: 150px;" :label="`(${f.type}) ${f.field}`"
                         :bg-color="bgColor[f.field] || 'white'"
                         stack-label outlined dense clearable
+                        @keypress="onKeyPress"
                     >
                         <q-tooltip v-if="search[f.field]" :delay="500" anchor="bottom middle" content-style="font-size: 80%" max-width="400px">
                             {{ search[f.field] }}
@@ -123,6 +124,11 @@ class SelectExtSearchDialog {
         }
 
         this.error = error.join('<br>');
+    }
+
+    onKeyPress(event) {
+        if (event.code == 'Enter')
+            this.apply();
     }
 
     apply() {
