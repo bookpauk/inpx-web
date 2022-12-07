@@ -8,13 +8,13 @@
             </div>
         </template>
 
-        <div ref="box" class="column q-mt-xs overflow-auto" style="max-width: 700px; padding: 0px 10px 10px 10px;">
+        <div ref="box" class="column q-mt-xs overflow-auto" style="max-width: 660px; padding: 0px 10px 10px 10px;">
             <div class="row">
                 <div v-for="f in recStruct" :key="f.field" class="row">
                     <div class="q-mx-xs" />
                     <q-input
                         v-model="search[f.field]" :maxlength="5000"
-                        class="q-mt-xs" style="width: 150px;" :label="`${f.field} (${f.type == 'N' ? 'число' : 'строка'})`"
+                        class="q-mt-xs" style="width: 150px;" :label="`(${f.type}) ${f.field}`"
                         :bg-color="bgColor[f.field] || 'white'"
                         stack-label outlined dense clearable
                     >
@@ -31,9 +31,6 @@
             <q-btn class="q-px-md q-ml-sm" color="primary" dense no-caps :disabled="error !== ''" @click="apply">
                 Применить
             </q-btn>
-            <q-btn class="q-px-md q-ml-sm" color="primary" dense no-caps @click="okClick">
-                Закрыть
-            </q-btn>
         </template>
     </Dialog>
 </template>
@@ -43,6 +40,7 @@
 import vueComponent from '../../vueComponent.js';
 
 import Dialog from '../../share/Dialog.vue';
+import _ from 'lodash';
 
 const componentOptions = {
     components: {
@@ -55,8 +53,11 @@ const componentOptions = {
         dialogVisible(newValue) {
             this.$emit('update:modelValue', newValue);
         },
-        extSearch(newValue) {
-            this.search = newValue;
+        extSearch: {
+            handler(newValue) {
+                this.search = _.cloneDeep(newValue);
+            },
+            deep: true,
         },
         search: {
             handler() {
@@ -98,7 +99,16 @@ class SelectExtSearchDialog {
 
     validate() {
         const validNumValue = (n) => {
-            return false;
+            const validChars = new Set('0123456789.'.split(''));
+            for (const c of n.split(''))
+                if (!validChars.has(c))
+                    return false;
+
+            const v = n.split('..');
+            if ( isNaN(parseInt(v[0] || '0', 10)) || isNaN(parseInt(v[1] || '0', 10)) )
+                return false;
+
+            return true;
         };
 
         let error = [];
@@ -115,13 +125,12 @@ class SelectExtSearchDialog {
         this.error = error.join('<br>');
     }
 
-    okClick() {
-        this.dialogVisible = false;
-    }
-
     apply() {
         this.validate();
-        this.dialogVisible = false;
+        if (!this.error) {
+            this.$emit('update:extSearch', _.cloneDeep(this.search));
+            this.dialogVisible = false;
+        }
     }
 }
 

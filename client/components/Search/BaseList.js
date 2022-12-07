@@ -21,13 +21,16 @@ const componentOptions = {
             this.loadSettings();
         },
         search: {
-            handler(newValue) {
-                this.limit = newValue.limit;
-
-                if (this.pageCount > 1)
-                    this.prevPage = this.search.page;
-
-                this.refresh();
+            handler() {
+                if (!this.isExtendedSearch)
+                    this.refresh();
+            },
+            deep: true,
+        },
+        extSearch: {
+            handler() {
+                if (this.isExtendedSearch)
+                    this.refresh();
             },
             deep: true,
         },
@@ -519,9 +522,8 @@ export default class BaseList {
 
     getQuery() {
         const search = (this.isExtendedSearch ? this.extSearch : this.search);
-        let newQuery = _.cloneDeep(search);
-        newQuery = newQuery.setDefaults(newQuery);
-        delete newQuery.setDefaults;
+        const newQuery = {};
+        search.setDefaults(newQuery, search);
 
         //дата
         if (newQuery.date) {
@@ -532,8 +534,8 @@ export default class BaseList {
         newQuery.offset = (newQuery.page - 1)*newQuery.limit;
 
         //del
-        if (!this.showDeleted)
-            newQuery.del = 0;
+        if (!newQuery.del && !this.showDeleted)
+            newQuery.del = '0';
 
         return newQuery;
     }

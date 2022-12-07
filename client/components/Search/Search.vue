@@ -339,6 +339,13 @@ const componentOptions = {
             },
             deep: true,
         },
+        extSearch: {
+            handler() {
+                this.makeTitle();
+                this.updateRouteQueryFromSearch();
+            },
+            deep: true,
+        },
         extendedParams(newValue) {
             this.setSetting('extendedParams', newValue);
         },
@@ -415,31 +422,8 @@ class Search {
     inputDebounce = 200;
 
     //search fields
-    search = {
-        setDefaults(search) {
-            return Object.assign({}, search, {
-                author: search.author || '',
-                series: search.series || '',
-                title: search.title || '',
-                genre: search.genre || '',
-                lang: search.lang || '',
-                date: search.date || '',
-                librate: search.librate || '',
-
-                page: search.page || 1,
-                limit: search.limit || 50,
-            });
-        },
-    };    
-
-    extSearch = {
-        setDefaults(search) {
-            return Object.assign({}, search, {
-                page: search.page || 1,
-                limit: search.limit || 50,
-            });
-        },
-    };    
+    search = {};
+    extSearch = {};
 
     searchDate = '';
     prevManualDate = '';
@@ -478,13 +462,22 @@ class Search {
         {label: 'выбрать даты', value: 'manual'},
     ];
 
+    generateDefaults(obj, fields) {
+        obj.setDefaults = (self, value = {}) => {
+            for (const f of fields)
+                self[f] = value[f] || '';
+
+            self.page = value.page || 1;
+            self.limit = value.limit || 50;
+        };
+    }
+
     created() {
         this.commit = this.$store.commit;
         this.api = this.$root.api;
 
-        this.search = this.search.setDefaults(this.search);
-        this.extSearch = this.extSearch.setDefaults(this.extSearch);
-        this.search.lang = this.langDefault;
+        this.generateDefaults(this.search, ['author', 'series', 'title', 'genre', 'lang', 'date', 'librate']);
+        this.search.setDefaults(this.search);
 
         this.loadSettings();
     }
@@ -492,6 +485,10 @@ class Search {
     mounted() {
         (async() => {
             await this.api.updateConfig();
+
+            this.generateDefaults(this.extSearch, this.recStruct.map(f => f.field));
+            this.extSearch.setDefaults(this.extSearch);
+            this.search.lang = this.langDefault;
 
             //для встраивания в liberama
             window.addEventListener('message', (event) => {
@@ -510,11 +507,11 @@ class Search {
                 this.$refs.authorInput.focus();
 
             this.updateListFromRoute(this.$route);
-            this.updateSearchFromRouteQuery(this.$route);
-
-            this.sendMessage({type: 'mes', data: 'hello-from-inpx-web'});
 
             this.ready = true;
+
+            this.sendMessage({type: 'mes', data: 'hello-from-inpx-web'});
+            this.updateSearchFromRouteQuery(this.$route);
         })();
     }
 
@@ -552,6 +549,13 @@ class Search {
 
     get config() {
         return this.$store.state.config;
+    }
+
+    get recStruct() {
+        if (this.config.dbConfig && this.config.dbConfig.inpxInfo.recStruct)
+            return this.config.dbConfig.inpxInfo.recStruct;
+        else
+            return [];
     }
 
     get settings() {
@@ -610,7 +614,12 @@ class Search {
     }
 
     get extSearchNames() {
-        return '';
+        let result = [];
+        for (const f of this.recStruct) {
+            if (this.extSearch[f.field])
+                result.push(`${f.field}=${this.extSearch[f.field]}`);
+        }
+        return result.join(', ');
     }
 
     inputBgColor(inp) {
@@ -820,6 +829,8 @@ class Search {
     }
 
     clearExtSearch() {
+        const self = this.extSearch;
+        self.setDefaults(self, {page: self.page, limit: self.limit});
     }
     
     onScroll() {
@@ -925,6 +936,8 @@ class Search {
     }
 
     updateSearchFromRouteQuery(to) {
+        if (!this.ready)
+            return;
         if (this.list.liberamaReady)
             this.sendCurrentUrl();
 
@@ -933,35 +946,34 @@ class Search {
 
         const query = to.query;
 
-        if (!this.isExtendedSearch) {
-            this.search = this.search.setDefaults(
-                Object.assign({}, this.search, {
-                    author: query.author,
-                    series: query.series,
-                    title: query.title,
-                    genre: query.genre,
-                    lang: (typeof(query.lang) == 'string' ? query.lang : this.langDefault),
-                    date: query.date,
-                    librate: query.librate,
+        this.search.setDefaults(this.search, {
+            author: query.author,
+            series: query.series,
+            title: query.title,
+            genre: query.genre,
+            lang: (typeof(query.lang) == 'string' ? query.lang : this.langDefault),
+            date: query.date,
+            librate: query.librate,
 
-                    page: parseInt(query.page, 10),
-                    limit: parseInt(query.limit, 10) || this.search.limit,
-                })
-            );
+            page: parseInt(query.page, 10),
+            limit: parseInt(query.limit, 10) || this.search.limit,
+        });
 
-            if (this.search.limit > maxLimit)
-                this.search.limit = maxLimit;
-        } else {
-            this.extSearch = this.extSearch.setDefaults(
-                Object.assign({}, this.extSearch, {
-                    page: parseInt(query.page, 10),
-                    limit: parseInt(query.limit, 10) || this.search.limit,
-                })
-            );
+        if (this.search.limit > maxLimit)
+            this.search.limit = maxLimit;
 
-            if (this.extSearch.limit > maxLimit)
-                this.extSearch.limit = maxLimit;
+        const queryExtSearch = {
+            page: this.search.page,
+            limit: this.search.limit,
+        };
+
+        for (const f of this.recStruct) {
+            const field = `ex_${f.field}`;
+            if (query[field])
+                queryExtSearch[f.field] = query[field];
         }
+
+        this.extSearch.setDefaults(this.extSearch, queryExtSearch);
     }
 
     updateRouteQueryFromSearch() {
@@ -973,22 +985,21 @@ class Search {
             const oldQuery = this.$route.query;
             let query = {};
 
-            if (!this.isExtendedSearch) {                
-                const cloned = _.cloneDeep(this.search);
+            const cloned = {};
+            this.search.setDefaults(cloned, this.search);
 
-                delete cloned.setDefaults;
+            query = _.pickBy(cloned);
 
-                query = _.pickBy(cloned);
-
-                if (this.search.lang == this.langDefault) {
-                    delete query.lang;
-                } else {
-                    query.lang = this.search.lang;
-                }
+            if (this.search.lang == this.langDefault) {
+                delete query.lang;
             } else {
-                const cloned = _.cloneDeep(this.extSearch);
-                delete cloned.setDefaults;
-                query = _.pickBy(cloned);
+                query.lang = this.search.lang;
+            }
+
+            for (const f of this.recStruct) {
+                const field = `ex_${f.field}`;
+                if (this.extSearch[f.field])
+                    query[field] = this.extSearch[f.field];
             }
 
             const diff = diffUtils.getObjDiff(oldQuery, query);

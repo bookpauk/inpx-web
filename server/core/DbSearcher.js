@@ -213,12 +213,13 @@ class DbSearcher {
         }
 
         //удаленные
-        if (query.del !== undefined) {
-            const key = `book-ids-del-${query.del}`;
+        if (query.del) {
+            const del = parseInt(query.del, 10) || 0;
+            const key = `book-ids-del-${del}`;
             let ids = await this.getCached(key);
 
             if (ids === null) {
-                ids = await tableBookIds('del', `@indexLR('value', ${db.esc(query.del)}, ${db.esc(query.del)})`);
+                ids = await tableBookIds('del', `@indexLR('value', ${db.esc(del)}, ${db.esc(del)})`);
 
                 await this.putCached(key, ids);
             }
@@ -559,7 +560,7 @@ class DbSearcher {
                     //return !bookValue || (bookValue !== emptyFieldValue && !enru.has(bookValue[0]) && bookValue.indexOf(searchValue) >= 0);
                     return 'true';
                 } else {
-                    return `(row.${bookField}.localeCompare(${db.esc(searchValue)}) >= 0 && row.${bookField}.localeCompare(${db.esc(searchValue)} + maxUtf8Char) <= 0)`;
+                    return `(row.${bookField}.localeCompare(${db.esc(searchValue)}) >= 0 && row.${bookField}.localeCompare(${db.esc(searchValue)} + ${db.esc(maxUtf8Char)}) <= 0)`;
                 }
             };
 
