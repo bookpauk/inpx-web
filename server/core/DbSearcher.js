@@ -539,7 +539,6 @@ class DbSearcher {
     }
 
     async bookSearchIds(query) {
-        const ids = await this.selectBookIds(query);
         const queryKey = this.queryKey(query);
         const bookKey = `book-search-ids-${queryKey}`;
         let bookIds = await this.getCached(bookKey);
@@ -550,17 +549,19 @@ class DbSearcher {
                 searchValue = searchValue.toLowerCase();
                 //особая обработка префиксов
                 if (searchValue[0] == '=') {
+
                     searchValue = searchValue.substring(1);
                     return `(row.${bookField}.toLowerCase().localeCompare(${db.esc(searchValue)}) === 0)`;
                 } else if (searchValue[0] == '*') {
+
                     searchValue = searchValue.substring(1);
                     return `(row.${bookField} && row.${bookField}.toLowerCase().indexOf(${db.esc(searchValue)}) >= 0)`;
                 } else if (searchValue[0] == '#') {
 
-                    //searchValue = searchValue.substring(1);
-                    //return !bookValue || (bookValue !== emptyFieldValue && !enru.has(bookValue[0]) && bookValue.indexOf(searchValue) >= 0);
-                    return 'true';
+                    searchValue = searchValue.substring(1);
+                    return `(row.${bookField} === '' || (!enru.has(row.${bookField}.toLowerCase()[0]) && row.${bookField}.toLowerCase().indexOf(${db.esc(searchValue)}) >= 0))`;
                 } else {
+
                     return `(row.${bookField}.toLowerCase().localeCompare(${db.esc(searchValue)}) >= 0 ` +
                         `&& row.${bookField}.toLowerCase().localeCompare(${db.esc(searchValue)} + ${db.esc(maxUtf8Char)}) <= 0)`;
                 }
@@ -573,10 +574,22 @@ class DbSearcher {
                     if (f.type === 'S') {
                         checks.push(filterBySearch(f.field, searchValue));
                     } if (f.type === 'N') {
-                        searchValue = parseInt(searchValue, 10);
-                        if (isNaN(searchValue))
-                            throw new Error(`Wrong query param, ${f.field}=${searchValue}`);
-                        checks.push(`row.${f.field} === ${searchValue}`);
+                        const v = searchValue.split('..');
+
+                        if (v.length == 1) {
+                            searchValue = parseInt(searchValue, 10);
+                            if (isNaN(searchValue))
+                                throw new Error(`Wrong query param, ${f.field}=${searchValue}`);
+
+                            checks.push(`row.${f.field} === ${searchValue}`);
+                        } else {
+                            const from = parseInt(v[0] || '0', 10);
+                            const to = parseInt(v[1] || '0', 10);
+                            if (isNaN(from) || isNaN(to))
+                                throw new Error(`Wrong query param, ${f.field}=${searchValue}`);
+
+                            checks.push(`row.${f.field} >= ${from} && row.${f.field} <= ${to}`);
+                        }
                     }
                 }
             }
@@ -585,17 +598,17 @@ class DbSearcher {
                 table: 'book',
                 rawResult: true,
                 where: `
-                    const ids = ${(ids ? db.esc(Array.from(ids)) : '@all()')};
+                    const enru = new Set(${db.esc(enruArr)});
 
                     const checkBook = (row) => {
                         return ${checks.join(' && ')};
                     };
 
-                    const result = new Set();
-                    for (const id of ids) {
+                    const result = [];
+                    for (const id of @all()) {
                         const row = @unsafeRow(id);
                         if (checkBook(row))
-                            result.add(row.id);
+                            result.push(row.id);
                     }
 
                     return new Uint32Array(result);
