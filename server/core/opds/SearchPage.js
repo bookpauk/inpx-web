@@ -31,10 +31,9 @@ class SearchPage extends BasePage {
                 const found = queryRes.found;
 
                 for (let i = 0; i < found.length; i++) {
-                    if (i >= limit)
-                        break;
-
                     const row = found[i];
+                    if (!row.bookCount)
+                        continue;
 
                     entry.push(
                         this.makeEntry({
