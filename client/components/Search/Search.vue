@@ -57,7 +57,7 @@
                 </div>
                 <div v-show="!isExtendedSearch" class="row q-mx-md q-mb-xs items-center">
                     <DivBtn
-                        class="text-grey-5 bg-yellow-1 q-mt-xs" :size="34" :icon-size="24" round
+                        class="text-grey-5 bg-yellow-1 q-mt-xs" :size="30" :icon-size="24" round
                         :icon="(extendedParams ? 'la la-angle-double-up' : 'la la-angle-double-down')"
                         @click.stop.prevent="extendedParams = !extendedParams"
                     >
@@ -110,7 +110,7 @@
                     </q-input>
                     <div class="q-mx-xs" />
                     <DivBtn
-                        class="text-grey-8 bg-yellow-1 q-mt-xs" :size="34" :icon-size="24" round
+                        class="text-grey-8 bg-yellow-1 q-mt-xs" :size="30" :icon-size="24" round
                         icon="la la-level-up-alt"
                         @click.stop.prevent="cloneSearch"
                     >
@@ -122,7 +122,7 @@
                     </DivBtn>
                 </div>
                 <div v-show="!isExtendedSearch && extendedParams" class="row q-mx-md q-mb-xs items-center">
-                    <div style="width: 34px" />
+                    <div style="width: 30px" />
                     <div class="q-mx-xs" />
                     <q-input
                         v-model="genreNames" :maxlength="inputMaxLength" :debounce="inputDebounce"
@@ -192,7 +192,7 @@
                     <q-input
                         v-model="extSearchNames"
                         class="col q-mt-xs" :bg-color="inputBgColor('extended')" input-style="cursor: pointer"
-                        style="min-width: 200px; max-width: 756px;" label="Расширенный поиск" stack-label outlined dense clearable readonly
+                        style="min-width: 200px; max-width: 752px;" label="Расширенный поиск" stack-label outlined dense clearable readonly
                         @click.stop.prevent="selectExtSearch"
                     >
                         <template v-if="extSearchNames" #append>
@@ -206,7 +206,7 @@
 
                     <div class="q-mx-xs" />
                     <DivBtn
-                        class="text-grey-8 bg-yellow-1 q-mt-xs" :size="34" :icon-size="24" round
+                        class="text-grey-8 bg-yellow-1 q-mt-xs" :size="30" :icon-size="24" round
                         icon="la la-level-up-alt"
                         @click.stop.prevent="cloneSearch"
                     >
@@ -693,8 +693,7 @@ class Search {
     }
 
     showSearchHelp() {
-        let info = '';  
-        info += `<div style="min-width: 250px" />`;
+        let info = `<div style="min-width: 250px" />`;
         info += `
 <p>
     Для раздела <b>Авторы</b>, работу поискового движка можно описать простой фразой: найти авторов по указанным критериям.
@@ -733,7 +732,7 @@ class Search {
     <br><br>
     Для разделов <b>Серии</b>, <b>Книги</b> все аналогично разделу <b>Авторы</b>.
 </p>
-`;        
+`;
 
         this.$root.stdDialog.alert(info, 'Памятка', {iconName: 'la la-info-circle'});
     }

@@ -5,6 +5,14 @@
                 <div style="font-size: 110%">
                     Расширенный поиск
                 </div>
+
+                <DivBtn class="q-ml-md text-white bg-secondary" :size="30" :icon-size="24" icon="la la-question" round @click.stop.prevent="showSearchHelp">
+                    <template #tooltip>
+                        <q-tooltip :delay="1500" anchor="bottom middle" content-style="font-size: 80%" max-width="400px">
+                            Памятка
+                        </q-tooltip>
+                    </template>
+                </DivBtn>
             </div>
         </template>
 
@@ -41,11 +49,14 @@
 import vueComponent from '../../vueComponent.js';
 
 import Dialog from '../../share/Dialog.vue';
+import DivBtn from '../../share/DivBtn.vue';
+
 import _ from 'lodash';
 
 const componentOptions = {
     components: {
-        Dialog
+        Dialog,
+        DivBtn,
     },
     watch: {
         modelValue(newValue) {
@@ -124,6 +135,49 @@ class SelectExtSearchDialog {
         }
 
         this.error = error.join('<br>');
+    }
+
+    showSearchHelp() {
+        let info = `<div style="min-width: 250px" />`;
+        info += `
+<p>
+    Расширенный поиск ведется непосредственно по значениям атрибутов записей описания книг.
+    Атрибуты можно увидеть, если включить опцию "Показывать JSON".
+    Названия атрибутов соответствуют названиям полей струкутры записей из inpx-файла.
+    На поисковые значения действуют те же правила, что и для разделов "Авторы", "Серии", "Книги".
+    <br>
+    Для строковых значений (S):
+    <ul>
+        <li>
+            без префикса: значение трактуется, как "начинается с"
+        </li>
+        <br>
+        <li>
+            префикс "=": поиск по точному совпадению
+        </li>
+        <br>
+        <li>
+            префикс "*": поиск подстроки в строке
+        </li>
+        <br>
+        <li>
+            префикс "#": поиск подстроки в строке, но только среди начинающихся не с латинского или кириллического символа
+        </li>
+    </ul>
+    Для числовых значений (N):
+    <ul>
+        <li>
+            число N: поиск по точному совпадению
+        </li>
+        <li>
+            диапазон N..M: поиск по диапазону числовых значений, включая N и M. Например, поисковое значение 1024..2048 в поле "size"
+            найдет все ссылки на файлы размером от 1КБ до 2КБ.
+        </li>
+    </ul>
+</p>
+`;
+
+        this.$root.stdDialog.alert(info, 'Памятка', {iconName: 'la la-info-circle'});
     }
 
     onKeyPress(event) {
