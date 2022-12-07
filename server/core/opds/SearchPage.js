@@ -38,7 +38,7 @@ class SearchPage extends BasePage {
                     entry.push(
                         this.makeEntry({
                             id: row.id,
-                            title: `${(from === 'series' ? 'Серия: ': '')}${row[from]}`,
+                            title: `${(from === 'series' ? 'Серия: ': '')}${from === 'author' ? this.bookAuthor(row[from]) : row[from]}`,
                             link: this.navLink({href: `/${from}?${from}==${encodeURIComponent(row[from])}`}),
                             content: {
                                 '*ATTRS': {type: 'text'},
@@ -86,6 +86,15 @@ class SearchPage extends BasePage {
                     content: {
                         '*ATTRS': {type: 'text'},
                         '*TEXT': `Искать по названиям книг`,
+                    },
+                }),
+                this.makeEntry({
+                    id: 'search_help',
+                    title: '[Памятка по поиску]',
+                    link: this.acqLink({href: `/search-help`}),
+                    content: {
+                        '*ATTRS': {type: 'text'},
+                        '*TEXT': `Описание формата поискового значения`,
                     },
                 }),
             ]
