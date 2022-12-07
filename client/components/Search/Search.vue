@@ -690,8 +690,12 @@ class Search {
 
     async updateListFromRoute(to) {
         const newPath = to.path;
+
         let newList = this.getListRoute(newPath);
+        if (newList == 'extended' && !this.config.extendedSearch)
+            newList = '';
         newList = (newList ? newList : 'author');
+
         if (this.selectedList != newList)
             this.selectedList = newList;
     }
@@ -747,7 +751,8 @@ class Search {
                 result = [a, result].filter(v => v).join(' ');
             }
         } else {
-            result = this.extSearchNames;
+            if (this.extSearchNames)
+                result = this.extSearchNames;
         }
 
         this.$root.setAppTitle(result);
