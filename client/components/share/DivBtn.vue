@@ -1,5 +1,5 @@
 <template>
-    <div ref="btn" class="button clickable row justify-center items-center" @click="clickEffect">
+    <div ref="btn" class="button clickable row justify-center items-center" :class="{disabled}" @click.stop.prevent="clickEffect">
         <div class="row justify-center items-center no-wrap" :class="{'button-pressed': pressed}">
             <i :class="icon" :style="`font-size: ${iconSize}px; margin-top: ${imt}px`" />
             <slot></slot>
@@ -29,8 +29,9 @@ class DivBtn {
         height: { type: Number, default: 0 },
         icon: { type: String, default: '' },
         iconSize: { type: Number, default: 14 },
-        round: { type: Boolean },
+        round: Boolean,
         imt:  { type: Number, default: 0 },// icon margin top
+        disabled: Boolean,
     };
 
     pressed = false;
@@ -57,7 +58,12 @@ class DivBtn {
             style.borderRadius = `${this.size/10}px`;
     }
 
-    async clickEffect() {
+    async clickEffect(event) {
+        if (this.disabled) {
+            return;
+        }
+
+        this.$emit('meClick', event);
         this.pressed = true;
         await utils.sleep(100);
         this.pressed = false;

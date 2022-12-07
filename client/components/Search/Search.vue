@@ -192,7 +192,7 @@
                     <q-input
                         v-model="extSearchNames"
                         class="col q-mt-xs" :bg-color="inputBgColor('extended')" input-style="cursor: pointer"
-                        style="min-width: 200px; max-width: 752px;" label="Расширенный поиск" stack-label outlined dense clearable readonly
+                        style="min-width: 200px; max-width: 638px;" label="Расширенный поиск" stack-label outlined dense clearable readonly
                         @click.stop.prevent="selectExtSearch"
                     >
                         <template v-if="extSearchNames" #append>
@@ -203,6 +203,54 @@
                             {{ extSearchNames }}
                         </q-tooltip>
                     </q-input>
+
+                    <div class="q-mx-xs" />
+                    <DivBtn
+                        class="text-grey-8 bg-yellow-1 q-mt-xs" :size="30" round
+                        :disabled="!extSearch.author"
+                        @me-click="extToList('author')"
+                    >
+                        <div style="font-size: 130%">
+                            <b>А</b>
+                        </div>
+                        <template #tooltip>
+                            <q-tooltip :delay="1500" anchor="bottom middle" content-style="font-size: 80%" max-width="400px">
+                                В раздел "Авторы" с переносом значения author={{ extSearch.author }}
+                            </q-tooltip>
+                        </template>
+                    </DivBtn>
+
+                    <div class="q-mx-xs" />
+                    <DivBtn
+                        class="text-grey-8 bg-yellow-1 q-mt-xs" :size="30" round
+                        :disabled="!extSearch.series"
+                        @me-click="extToList('series')"
+                    >
+                        <div style="font-size: 130%">
+                            <b>С</b>
+                        </div>
+                        <template #tooltip>
+                            <q-tooltip :delay="1500" anchor="bottom middle" content-style="font-size: 80%" max-width="400px">
+                                В раздел "Серии" с переносом значения series={{ extSearch.series }}
+                            </q-tooltip>
+                        </template>
+                    </DivBtn>
+
+                    <div class="q-mx-xs" />
+                    <DivBtn
+                        class="text-grey-8 bg-yellow-1 q-mt-xs" :size="30" round
+                        :disabled="!extSearch.title"
+                        @me-click="extToList('title')"
+                    >
+                        <div style="font-size: 130%">
+                            <b>К</b>
+                        </div>
+                        <template #tooltip>
+                            <q-tooltip :delay="1500" anchor="bottom middle" content-style="font-size: 80%" max-width="400px">
+                                В раздел "Книги" с переносом значения title={{ extSearch.title }}
+                            </q-tooltip>
+                        </template>
+                    </DivBtn>
 
                     <div class="q-mx-xs" />
                     <DivBtn
@@ -1112,6 +1160,12 @@ class Search {
 
     cloneSearch() {
         window.open(window.location.href, '_blank');
+    }
+
+    extToList(list) {
+        if (this.extSearch[list])
+            this.search[list] = this.extSearch[list];
+        this.selectedList = list;
     }
 
     async logout() {
