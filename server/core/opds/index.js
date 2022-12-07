@@ -9,12 +9,13 @@ const BookPage = require('./BookPage');
 
 const OpensearchPage = require('./OpensearchPage');
 const SearchPage = require('./SearchPage');
+const SearchHelpPage = require('./SearchHelpPage');
 
 module.exports = function(app, config) {
     if (!config.opds || !config.opds.enabled)
         return;
     
-    const opdsRoot = '/opds';
+    const opdsRoot = config.opds.root || '/opds';
     config.opdsRoot = opdsRoot;
 
     const root = new RootPage(config);
@@ -26,6 +27,7 @@ module.exports = function(app, config) {
 
     const opensearch = new OpensearchPage(config);
     const search = new SearchPage(config);
+    const searchHelp = new SearchHelpPage(config);
 
     const routes = [
         ['', root],
@@ -38,6 +40,7 @@ module.exports = function(app, config) {
 
         ['/opensearch', opensearch],
         ['/search', search],
+        ['/search-help', searchHelp],
     ];
 
     const pages = new Map();

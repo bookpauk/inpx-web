@@ -1,4 +1,5 @@
 const BasePage = require('./BasePage');
+const utils = require('../utils');
 
 class TitlePage extends BasePage {
     constructor(config) {
@@ -65,14 +66,27 @@ class TitlePage extends BasePage {
             //навигация по каталогу
             const queryRes = await this.opdsQuery('title', query, '[Остальные названия]');
 
-            for (const rec of queryRes) {                
-                entry.push(
-                    this.makeEntry({
-                        id: rec.id,
-                        title: rec.title,
-                        link: this.navLink({href: `/${this.id}?title=${rec.q}&genre=${encodeURIComponent(query.genre)}`}),
-                    })
-                );
+            for (const rec of queryRes) {
+                const e = {
+                    id: rec.id,
+                    title: rec.title,
+                    link: this.navLink({href: `/${this.id}?title=${rec.q}&genre=${encodeURIComponent(query.genre)}`}),
+                };
+
+                let countStr = '';
+                if (rec.count)
+                    countStr = `${rec.count} назван${utils.wordEnding(rec.count, 3)}${(query.genre ? ' (в выбранном жанре)' : '')}`;
+                if (!countStr && rec.bookCount && !query.genre)
+                    countStr = `${rec.bookCount} книг${utils.wordEnding(rec.bookCount, 8)}`;
+
+                if (countStr) {
+                    e.content = {
+                        '*ATTRS': {type: 'text'},
+                        '*TEXT': countStr,
+                    };
+                }
+
+                entry.push(this.makeEntry(e));
             }
         }
 

@@ -12,12 +12,13 @@ module.exports = {
 
     accessPassword: '',
     accessTimeout: 0,
+    extendedSearch: true,
     bookReadLink: '',
     loggingEnabled: true,
 
     //поправить в случае, если были критические изменения в DbCreator или InpxParser
     //иначе будет рассинхронизация между сервером и клиентом на уровне БД
-    dbVersion: '8',
+    dbVersion: '10',
     dbCacheSize: 5,
 
     maxPayloadSize: 500,//in MB
@@ -30,7 +31,7 @@ module.exports = {
     lowMemoryMode: false,
     fullOptimization: false,
 
-    webConfigParams: ['name', 'version', 'branch', 'bookReadLink', 'dbVersion'],
+    webConfigParams: ['name', 'version', 'branch', 'bookReadLink', 'dbVersion', 'extendedSearch'],
 
     allowRemoteLib: false,
     remoteLib: false,
@@ -45,12 +46,14 @@ module.exports = {
     server: {
         host: '0.0.0.0',
         port: '22380',
+        root: '',
     },
     //opds: false,
     opds: {
         enabled: true,
         user: '',
         password: '',
+        root: '/opds',
     },
 };
 

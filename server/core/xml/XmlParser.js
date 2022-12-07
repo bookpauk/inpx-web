@@ -734,8 +734,8 @@ class XmlParser extends NodeBase {
                 } else if (tag === '*ATTRS') {
                     //пропускаем
                 } else {
-                    if (typeof(objNode) === 'string') {
-                        result.push(this.createNode(tag, null, [this.createText(objNode).raw]).raw);
+                    if (typeof(objNode) === 'string' || typeof(objNode) === 'number') {
+                        result.push(this.createNode(tag, null, [this.createText(objNode.toString()).raw]).raw);
                     } else if (Array.isArray(objNode)) {
                         for (const n of objNode) {
                             if (typeof(n) === 'string') {
@@ -747,6 +747,8 @@ class XmlParser extends NodeBase {
 
                     } else if (typeof(objNode) === 'object') {
                         result.push(this.createNode(tag, (objNode['*ATTRS'] ? Object.entries(objNode['*ATTRS']) : null), objectToNodes(objNode)).raw);
+                    } else {
+                        throw new Error(`Unknown node type "${typeof(objNode)}" of node: ${objNode}`);
                     }
                 }
             }

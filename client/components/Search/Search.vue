@@ -55,9 +55,9 @@
                         </template>
                     </DivBtn>
                 </div>
-                <div class="row q-mx-md q-mb-xs items-center">
+                <div v-show="!isExtendedSearch" class="row q-mx-md q-mb-xs items-center">
                     <DivBtn
-                        class="text-grey-5 bg-yellow-1 q-mt-xs" :size="34" :icon-size="24" round
+                        class="text-grey-5 bg-yellow-1 q-mt-xs" :size="30" :icon-size="24" round
                         :icon="(extendedParams ? 'la la-angle-double-up' : 'la la-angle-double-down')"
                         @click.stop.prevent="extendedParams = !extendedParams"
                     >
@@ -110,7 +110,7 @@
                     </q-input>
                     <div class="q-mx-xs" />
                     <DivBtn
-                        class="text-grey-8 bg-yellow-1 q-mt-xs" :size="34" :icon-size="24" round
+                        class="text-grey-8 bg-yellow-1 q-mt-xs" :size="30" :icon-size="24" round
                         icon="la la-level-up-alt"
                         @click.stop.prevent="cloneSearch"
                     >
@@ -121,8 +121,8 @@
                         </template>
                     </DivBtn>
                 </div>
-                <div v-show="extendedParams" class="row q-mx-md q-mb-xs items-center">
-                    <div style="width: 34px" />
+                <div v-show="!isExtendedSearch && extendedParams" class="row q-mx-md q-mb-xs items-center">
+                    <div style="width: 30px" />
                     <div class="q-mx-xs" />
                     <q-input
                         v-model="genreNames" :maxlength="inputMaxLength" :debounce="inputDebounce"
@@ -184,8 +184,86 @@
                         </q-tooltip>
                     </q-input>
                 </div>
-                <div v-show="!extendedParams && extendedParamsMessage" class="row q-mx-md items-center clickable" @click.stop.prevent="extendedParams = true">
+                <div v-show="!isExtendedSearch && !extendedParams && extendedParamsMessage" class="row q-mx-md items-center clickable" @click.stop.prevent="extendedParams = true">
                     +{{ extendedParamsMessage }}
+                </div>
+
+                <div v-show="isExtendedSearch" class="row q-mx-md q-mb-xs items-center">
+                    <q-input
+                        v-model="extSearchNames"
+                        class="col q-mt-xs" :bg-color="inputBgColor('extended')" input-style="cursor: pointer"
+                        style="min-width: 200px; max-width: 638px;" label="Расширенный поиск" stack-label outlined dense clearable readonly
+                        @click.stop.prevent="selectExtSearch"
+                    >
+                        <template v-if="extSearchNames" #append>
+                            <q-icon name="la la-times-circle" class="q-field__focusable-action" @click.stop.prevent="clearExtSearch" />
+                        </template>
+
+                        <q-tooltip v-if="extSearchNames && showTooltips" :delay="500" anchor="bottom middle" content-style="font-size: 80%" max-width="400px">
+                            {{ extSearchNames }}
+                        </q-tooltip>
+                    </q-input>
+
+                    <div class="q-mx-xs" />
+                    <DivBtn
+                        class="text-grey-8 bg-yellow-1 q-mt-xs" :size="30" round
+                        :disabled="!extSearch.author"
+                        @me-click="extToList('author')"
+                    >
+                        <div style="font-size: 130%">
+                            <b>А</b>
+                        </div>
+                        <template #tooltip>
+                            <q-tooltip :delay="1500" anchor="bottom middle" content-style="font-size: 80%" max-width="400px">
+                                В раздел "Авторы" с переносом значения author={{ extSearch.author }}
+                            </q-tooltip>
+                        </template>
+                    </DivBtn>
+
+                    <div class="q-mx-xs" />
+                    <DivBtn
+                        class="text-grey-8 bg-yellow-1 q-mt-xs" :size="30" round
+                        :disabled="!extSearch.series"
+                        @me-click="extToList('series')"
+                    >
+                        <div style="font-size: 130%">
+                            <b>С</b>
+                        </div>
+                        <template #tooltip>
+                            <q-tooltip :delay="1500" anchor="bottom middle" content-style="font-size: 80%" max-width="400px">
+                                В раздел "Серии" с переносом значения series={{ extSearch.series }}
+                            </q-tooltip>
+                        </template>
+                    </DivBtn>
+
+                    <div class="q-mx-xs" />
+                    <DivBtn
+                        class="text-grey-8 bg-yellow-1 q-mt-xs" :size="30" round
+                        :disabled="!extSearch.title"
+                        @me-click="extToList('title')"
+                    >
+                        <div style="font-size: 130%">
+                            <b>К</b>
+                        </div>
+                        <template #tooltip>
+                            <q-tooltip :delay="1500" anchor="bottom middle" content-style="font-size: 80%" max-width="400px">
+                                В раздел "Книги" с переносом значения title={{ extSearch.title }}
+                            </q-tooltip>
+                        </template>
+                    </DivBtn>
+
+                    <div class="q-mx-xs" />
+                    <DivBtn
+                        class="text-grey-8 bg-yellow-1 q-mt-xs" :size="30" :icon-size="24" round
+                        icon="la la-level-up-alt"
+                        @click.stop.prevent="cloneSearch"
+                    >
+                        <template #tooltip>
+                            <q-tooltip :delay="1500" anchor="bottom middle" content-style="font-size: 80%" max-width="400px">
+                                Клонировать поиск
+                            </q-tooltip>
+                        </template>
+                    </DivBtn>
                 </div>
             </div>
 
@@ -197,12 +275,16 @@
                 <div v-show="list.totalFound > 0" class="text-bold" style="font-size: 120%; padding-bottom: 2px">
                     {{ foundCountMessage }}
                 </div>
+
+                <div v-show="list.totalFound > 0 && isExtendedSearch" class="q-ml-md">
+                    <q-checkbox v-model="showJson" size="36px" label="Показывать JSON" />
+                </div>
             </div>
 
             <!-- Формирование списка ------------------------------------------------------------------------>
             <div v-if="selectedListComponent">
                 <div class="separator" />
-                <component :is="selectedListComponent" ref="list" :list="list" :search="search" :genre-map="genreMap" @list-event="listEvent" />
+                <component :is="selectedListComponent" ref="list" :list="list" :search="search" :ext-search="extSearch" :genre-map="genreMap" @list-event="listEvent" />
                 <div class="separator" />
             </div>
             <!-- Формирование списка конец ------------------------------------------------------------------>
@@ -224,6 +306,7 @@
         <SelectLibRateDialog v-model="selectLibRateDialogVisible" v-model:librate="search.librate" />
         <SelectDateDialog v-model="selectDateDialogVisible" v-model:date="search.date" />
         <BookInfoDialog v-model="bookInfoDialogVisible" :book-info="bookInfo" />
+        <SelectExtSearchDialog v-model="selectExtSearchDialogVisible" v-model:ext-search="extSearch" />        
     </div>
 </template>
 
@@ -234,6 +317,7 @@ import vueComponent from '../vueComponent.js';
 import AuthorList from './AuthorList/AuthorList.vue';
 import SeriesList from './SeriesList/SeriesList.vue';
 import TitleList from './TitleList/TitleList.vue';
+import ExtendedList from './ExtendedList/ExtendedList.vue';
 
 import PageScroller from './PageScroller/PageScroller.vue';
 import SettingsDialog from './SettingsDialog/SettingsDialog.vue';
@@ -242,6 +326,7 @@ import SelectLangDialog from './SelectLangDialog/SelectLangDialog.vue';
 import SelectLibRateDialog from './SelectLibRateDialog/SelectLibRateDialog.vue';
 import SelectDateDialog from './SelectDateDialog/SelectDateDialog.vue';
 import BookInfoDialog from './BookInfoDialog/BookInfoDialog.vue';
+import SelectExtSearchDialog from './SelectExtSearchDialog/SelectExtSearchDialog.vue';
 
 import authorBooksStorage from './authorBooksStorage';
 import DivBtn from '../share/DivBtn.vue';
@@ -252,10 +337,13 @@ import diffUtils from '../../share/diffUtils';
 
 import _ from 'lodash';
 
+const maxLimit = 1000;
+
 const route2component = {
     'author': {component: 'AuthorList', label: 'Авторы'},
     'series': {component: 'SeriesList', label: 'Серии'},
     'title': {component: 'TitleList', label: 'Книги'},
+    'extended': {component: 'ExtendedList', label: 'Расширенный поиск'},
 };
 
 const componentOptions = {
@@ -263,6 +351,7 @@ const componentOptions = {
         AuthorList,
         SeriesList,
         TitleList,
+        ExtendedList,
         PageScroller,
         SettingsDialog,
         SelectGenreDialog,
@@ -270,6 +359,7 @@ const componentOptions = {
         SelectLibRateDialog,
         SelectDateDialog,
         BookInfoDialog,
+        SelectExtSearchDialog,
         Dialog,
         DivBtn
     },
@@ -292,6 +382,19 @@ const componentOptions = {
                 this.makeTitle();
                 this.updateRouteQueryFromSearch();
                 this.updateSearchDate(true);
+
+                //extSearch
+                if (this.isExtendedSearch) {
+                    this.extSearch.page = newValue.page;
+                    this.extSearch.limit = newValue.limit;
+                }
+            },
+            deep: true,
+        },
+        extSearch: {
+            handler() {
+                this.makeTitle();
+                this.updateRouteQueryFromSearch();
             },
             deep: true,
         },
@@ -309,6 +412,9 @@ const componentOptions = {
         },
         langDefault() {
             this.updateSearchFromRouteQuery(this.$route);
+        },
+        showJson(newValue) {
+            this.setSetting('showJson', newValue);
         },
         list: {
             handler(newValue) {
@@ -337,6 +443,8 @@ const componentOptions = {
             if (this.getListRoute() != newValue) {
                 this.updateRouteQueryFromSearch();
             }
+
+            this.makeTitle();
         },
         searchDate() {
             this.updateSearchDate(false);
@@ -362,6 +470,7 @@ class Search {
     selectLibRateDialogVisible = false;
     selectDateDialogVisible = false;
     bookInfoDialogVisible = false;
+    selectExtSearchDialogVisible = false;
 
     pageCount = 1;    
 
@@ -370,21 +479,8 @@ class Search {
     inputDebounce = 200;
 
     //search fields
-    search = {
-        setDefaults(search) {
-            return Object.assign({}, search, {
-                author: search.author || '',
-                series: search.series || '',
-                title: search.title || '',
-                genre: search.genre || '',
-                lang: search.lang || '',
-                date: search.date || '',
-                librate: search.librate || '',
-                page: search.page || 1,
-                limit: search.limit || 50,
-            });
-        },
-    };
+    search = {};
+    extSearch = {};
 
     searchDate = '';
     prevManualDate = '';
@@ -394,6 +490,7 @@ class Search {
     langDefault = '';
     limit = 20;
     extendedParams = false;
+    showJson = false;
 
     //stuff
     prevList = {};
@@ -423,12 +520,22 @@ class Search {
         {label: 'выбрать даты', value: 'manual'},
     ];
 
+    generateDefaults(obj, fields) {
+        obj.setDefaults = (self, value = {}) => {
+            for (const f of fields)
+                self[f] = value[f] || '';
+
+            self.page = value.page || 1;
+            self.limit = value.limit || 50;
+        };
+    }
+
     created() {
         this.commit = this.$store.commit;
         this.api = this.$root.api;
 
-        this.search = this.search.setDefaults(this.search);
-        this.search.lang = this.langDefault;
+        this.generateDefaults(this.search, ['author', 'series', 'title', 'genre', 'lang', 'date', 'librate']);
+        this.search.setDefaults(this.search);
 
         this.loadSettings();
     }
@@ -436,6 +543,10 @@ class Search {
     mounted() {
         (async() => {
             await this.api.updateConfig();
+
+            this.generateDefaults(this.extSearch, this.recStruct.map(f => f.field));
+            this.extSearch.setDefaults(this.extSearch);
+            this.search.lang = this.langDefault;
 
             //для встраивания в liberama
             window.addEventListener('message', (event) => {
@@ -454,11 +565,11 @@ class Search {
                 this.$refs.authorInput.focus();
 
             this.updateListFromRoute(this.$route);
-            this.updateSearchFromRouteQuery(this.$route);
-
-            this.sendMessage({type: 'mes', data: 'hello-from-inpx-web'});
 
             this.ready = true;
+
+            this.sendMessage({type: 'mes', data: 'hello-from-inpx-web'});
+            this.updateSearchFromRouteQuery(this.$route);
         })();
     }
 
@@ -472,6 +583,7 @@ class Search {
         this.expandedSeries = _.cloneDeep(settings.expandedSeries);
         this.abCacheEnabled = settings.abCacheEnabled;
         this.langDefault = settings.langDefault;
+        this.showJson = settings.showJson;
     }
 
     recvMessage(d) {
@@ -496,6 +608,13 @@ class Search {
 
     get config() {
         return this.$store.state.config;
+    }
+
+    get recStruct() {
+        if (this.config.dbConfig && this.config.dbConfig.inpxInfo.recStruct)
+            return this.config.dbConfig.inpxInfo.recStruct;
+        else
+            return [];
     }
 
     get settings() {
@@ -529,7 +648,13 @@ class Search {
     get listOptions() {
         const result = [];
         for (const [route, rec] of Object.entries(route2component))
-            result.push({label: rec.label, value: route});
+            if (route == 'extended') {
+                if (this.config.extendedSearch) {
+                    result.push({value: route, icon: 'la la-code', size: '10px'});
+                }
+            } else {
+                result.push({label: rec.label, value: route, icon: rec.icon});
+            }
         return result;
     }
 
@@ -543,6 +668,19 @@ class Search {
         return result.filter(s => s).join(', ');
     }
 
+    get isExtendedSearch() {
+        return this.selectedList === 'extended';
+    }
+
+    get extSearchNames() {
+        let result = [];
+        for (const f of this.recStruct) {
+            if (this.extSearch[f.field])
+                result.push(`${f.field}=${this.extSearch[f.field]}`);
+        }
+        return result.join(', ');
+    }
+
     inputBgColor(inp) {
         if (inp === this.selectedList)
             return 'white';
@@ -552,8 +690,12 @@ class Search {
 
     async updateListFromRoute(to) {
         const newPath = to.path;
+
         let newList = this.getListRoute(newPath);
+        if (newList == 'extended' && !this.config.extendedSearch)
+            newList = '';
         newList = (newList ? newList : 'author');
+
         if (this.selectedList != newList)
             this.selectedList = newList;
     }
@@ -582,30 +724,35 @@ class Search {
 
         let result = `Коллекция ${this.collection}`;
 
-        const search = this.search;
-        const specSym = new Set(['*', '#']);
-        const correctValue = (v) => {
-            if (v) {
-                if (v[0] === '=')
-                    v = v.substring(1);
-                else if (!specSym.has(v[0]))
-                    v = '^' + v;
+        if (!this.isExtendedSearch) {
+            const search = this.search;
+            const specSym = new Set(['*', '#']);
+            const correctValue = (v) => {
+                if (v) {
+                    if (v[0] === '=')
+                        v = v.substring(1);
+                    else if (!specSym.has(v[0]))
+                        v = '^' + v;
+                }
+                return v || '';
+            };
+
+            if (search.author || search.series || search.title) {
+                const as = (search.author ? search.author.split(',') : []);
+                const author = (as.length ? as[0] : '') + (as.length > 1 ? ' и др.' : '');
+
+                const a = correctValue(author);
+                let s = correctValue(search.series);
+                s = (s ? `(Серия: ${s})` : '');
+                let t = correctValue(search.title);
+                t = (t ? `"${t}"` : '');
+
+                result = [s, t].filter(v => v).join(' ');
+                result = [a, result].filter(v => v).join(' ');
             }
-            return v || '';
-        };
-
-        if (search.author || search.series || search.title) {
-            const as = (search.author ? search.author.split(',') : []);
-            const author = (as.length ? as[0] : '') + (as.length > 1 ? ' и др.' : '');
-
-            const a = correctValue(author);
-            let s = correctValue(search.series);
-            s = (s ? `(Серия: ${s})` : '');
-            let t = correctValue(search.title);
-            t = (t ? `"${t}"` : '');
-
-            result = [s, t].filter(v => v).join(' ');
-            result = [a, result].filter(v => v).join(' ');
+        } else {
+            if (this.extSearchNames)
+                result = this.extSearchNames;
         }
 
         this.$root.setAppTitle(result);
@@ -614,8 +761,7 @@ class Search {
     }
 
     showSearchHelp() {
-        let info = '';  
-        info += `<div style="min-width: 250px" />`;
+        let info = `<div style="min-width: 250px" />`;
         info += `
 <p>
     Для раздела <b>Авторы</b>, работу поискового движка можно описать простой фразой: найти авторов по указанным критериям.
@@ -654,7 +800,7 @@ class Search {
     <br><br>
     Для разделов <b>Серии</b>, <b>Книги</b> все аналогично разделу <b>Авторы</b>.
 </p>
-`;        
+`;
 
         this.$root.stdDialog.alert(info, 'Памятка', {iconName: 'la la-info-circle'});
     }
@@ -742,6 +888,16 @@ class Search {
     selectLibRate() {
         this.hideTooltip();
         this.selectLibRateDialogVisible = true;
+    }
+
+    selectExtSearch() {
+        this.hideTooltip();
+        this.selectExtSearchDialogVisible = true;
+    }
+
+    clearExtSearch() {
+        const self = this.extSearch;
+        self.setDefaults(self, {page: self.page, limit: self.limit});
     }
     
     onScroll() {
@@ -847,6 +1003,8 @@ class Search {
     }
 
     updateSearchFromRouteQuery(to) {
+        if (!this.ready)
+            return;
         if (this.list.liberamaReady)
             this.sendCurrentUrl();
 
@@ -855,22 +1013,34 @@ class Search {
 
         const query = to.query;
 
-        this.search = this.search.setDefaults(
-            Object.assign({}, this.search, {
-                author: query.author,
-                series: query.series,
-                title: query.title,
-                genre: query.genre,
-                lang: (typeof(query.lang) == 'string' ? query.lang : this.langDefault),
-                date: query.date,
-                librate: query.librate,
-                page: parseInt(query.page, 10),
-                limit: parseInt(query.limit, 10) || this.search.limit,
-            })
-        );
+        this.search.setDefaults(this.search, {
+            author: query.author,
+            series: query.series,
+            title: query.title,
+            genre: query.genre,
+            lang: (typeof(query.lang) == 'string' ? query.lang : this.langDefault),
+            date: query.date,
+            librate: query.librate,
 
-        if (this.search.limit > 1000)
-            this.search.limit = 1000;
+            page: parseInt(query.page, 10),
+            limit: parseInt(query.limit, 10) || this.search.limit,
+        });
+
+        if (this.search.limit > maxLimit)
+            this.search.limit = maxLimit;
+
+        const queryExtSearch = {
+            page: this.search.page,
+            limit: this.search.limit,
+        };
+
+        for (const f of this.recStruct) {
+            const field = `ex_${f.field}`;
+            if (query[field])
+                queryExtSearch[f.field] = query[field];
+        }
+
+        this.extSearch.setDefaults(this.extSearch, queryExtSearch);
     }
 
     updateRouteQueryFromSearch() {
@@ -880,16 +1050,23 @@ class Search {
         this.routeUpdating = true;
         try {
             const oldQuery = this.$route.query;
-            const cloned = _.cloneDeep(this.search);
+            let query = {};
 
-            delete cloned.setDefaults;
+            const cloned = {};
+            this.search.setDefaults(cloned, this.search);
 
-            const query = _.pickBy(cloned);
+            query = _.pickBy(cloned);
 
             if (this.search.lang == this.langDefault) {
                 delete query.lang;
             } else {
                 query.lang = this.search.lang;
+            }
+
+            for (const f of this.recStruct) {
+                const field = `ex_${f.field}`;
+                if (this.extSearch[f.field])
+                    query[field] = this.extSearch[f.field];
             }
 
             const diff = diffUtils.getObjDiff(oldQuery, query);
@@ -988,6 +1165,12 @@ class Search {
 
     cloneSearch() {
         window.open(window.location.href, '_blank');
+    }
+
+    extToList(list) {
+        if (this.extSearch[list])
+            this.search[list] = this.extSearch[list];
+        this.selectedList = list;
     }
 
     async logout() {

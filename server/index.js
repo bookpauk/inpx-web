@@ -50,13 +50,14 @@ async function init() {
     config.logDir = `${config.dataDir}/log`;
     config.publicDir = `${config.dataDir}/public`;
     config.publicFilesDir = `${config.dataDir}/public-files`;
-    config.filesPathStatic = `/book`;
-    config.filesDir = `${config.publicFilesDir}${config.filesPathStatic}`;
+    config.rootPathStatic = config.server.root || '';
+    config.bookPathStatic = `${config.rootPathStatic}/book`;
+    config.bookDir = `${config.publicFilesDir}/book`;
 
     configManager.config = config;
 
     await fs.ensureDir(config.dataDir);
-    await fs.ensureDir(config.filesDir);
+    await fs.ensureDir(config.bookDir);
     await fs.ensureDir(config.tempDir);
     await fs.emptyDir(config.tempDir);
 
@@ -156,6 +157,8 @@ async function main() {
 
     const opds = require('./core/opds');
     opds(app, config);
+
+    const initStatic = require('./static');
     initStatic(app, config);
     
     const webAccess = new (require('./core/WebAccess'))(config);
@@ -177,63 +180,6 @@ async function main() {
         config.server.ready = true;
         log(`Server ready`);
     });
-}
-
-function initStatic(app, config) {
-    /*
-    publicFilesDir = `${config.dataDir}/public-files`;
-    filesPathStatic = `/book`;
-    filesDir = `${config.publicFilesDir}${config.filesPathStatic}`;
-    */
-    const filesPath = `${config.filesPathStatic}/`;
-    //загрузка или восстановление файлов в /files, при необходимости
-    app.use(async(req, res, next) => {
-        if ((req.method !== 'GET' && req.method !== 'HEAD') ||
-            !(req.path.indexOf(filesPath) === 0)
-            ) {
-            return next();
-        }
-
-        if (path.extname(req.path) == '') {
-            const bookFile = `${config.publicFilesDir}${req.path}`;
-            const bookFileDesc = `${bookFile}.d.json`;
-
-            let downFileName = '';
-            //восстановим из json-файла описания
-            try {
-                if (await fs.pathExists(bookFile) && await fs.pathExists(bookFileDesc)) {
-                    await utils.touchFile(bookFile);
-                    await utils.touchFile(bookFileDesc);
-
-                    let desc = await fs.readFile(bookFileDesc, 'utf8');
-                    desc = JSON.parse(desc);
-                    downFileName = desc.downFileName;
-                } else {
-                    await fs.remove(bookFile);
-                    await fs.remove(bookFileDesc);
-                }
-            } catch(e) {
-                log(LM_ERR, e.message);
-            }
-
-            if (downFileName)
-                res.downFileName = downFileName;
-        }
-
-        return next();
-    });
-
-    //заголовки при отдаче
-    app.use(config.filesPathStatic, express.static(config.filesDir, {
-        setHeaders: (res) => {
-            if (res.downFileName) {
-                res.set('Content-Encoding', 'gzip');
-                res.set('Content-Disposition', `inline; filename*=UTF-8''${encodeURIComponent(res.downFileName)}`);
-            }
-        },
-    }));
-
-    app.use(express.static(config.publicDir));
 }
 
 (async() => {

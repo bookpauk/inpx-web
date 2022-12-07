@@ -1,4 +1,5 @@
 const BasePage = require('./BasePage');
+const utils = require('../utils');
 
 class AuthorPage extends BasePage {
     constructor(config) {
@@ -11,17 +12,22 @@ class AuthorPage extends BasePage {
     sortBooks(bookList) {
         //схлопывание серий
         const books = [];
-        const seriesSet = new Set();
+        const seriesMap = new Map();
         for (const book of bookList) {
             if (book.series) {
-                if (!seriesSet.has(book.series)) {
+                let seriesIndex = seriesMap.get(book.series);
+                if (seriesIndex === undefined) {
+                    seriesIndex = books.length;
                     books.push({
                         type: 'series',
-                        book
+                        book,
+                        bookCount: 0,
                     });
 
-                    seriesSet.add(book.series);
+                    seriesMap.set(book.series, seriesIndex);
                 }
+
+                books[seriesIndex].bookCount++;
             } else {
                 books.push({
                     type: 'book',
@@ -99,21 +105,16 @@ class AuthorPage extends BasePage {
                 for (const book of sorted) {
                     const title = `${book.serno ? `${book.serno}. `: ''}${book.title || 'Без названия'} (${book.ext})`;
 
-                    const e = {
-                        id: book._uid,
-                        title,
-                        link: this.acqLink({href: `/book?uid=${encodeURIComponent(book._uid)}`}),
-                    };
-
-                    if (query.all) {
-                        e.content = {
-                            '*ATTRS': {type: 'text'},
-                            '*TEXT': this.bookAuthor(book.author),
-                        }
-                    }
-
                     entry.push(
-                        this.makeEntry(e)
+                        this.makeEntry({
+                            id: book._uid,
+                            title,
+                            link: this.acqLink({href: `/book?uid=${encodeURIComponent(book._uid)}`}),
+                            content: {
+                                '*ATTRS': {type: 'text'},
+                                '*TEXT': this.bookAuthor(book.author),
+                            },
+                        })
                     );
                 }
             }
@@ -134,6 +135,10 @@ class AuthorPage extends BasePage {
                                 link: this.navLink({
                                     href: `/${this.id}?author=${encodeURIComponent(query.author)}` +
                                         `&series=${encodeURIComponent(b.book.series)}&genre=${encodeURIComponent(query.genre)}`}),
+                                content: {
+                                    '*ATTRS': {type: 'text'},
+                                    '*TEXT': `${b.bookCount} книг${utils.wordEnding(b.bookCount, 8)} по автору${(query.genre ? ' (в выбранном жанре)' : '')}`,
+                                },
                             })
                         );
                     } else {
@@ -143,6 +148,10 @@ class AuthorPage extends BasePage {
                                 id: b.book._uid,
                                 title,
                                 link: this.acqLink({href: `/book?uid=${encodeURIComponent(b.book._uid)}`}),
+                                content: {
+                                    '*ATTRS': {type: 'text'},
+                                    '*TEXT': this.bookAuthor(b.book.author),
+                                },
                             })
                         );
                     }
@@ -162,14 +171,27 @@ class AuthorPage extends BasePage {
             //навигация по каталогу
             const queryRes = await this.opdsQuery('author', query, '[Остальные авторы]');
 
-            for (const rec of queryRes) {                
-                entry.push(
-                    this.makeEntry({
-                        id: rec.id,
-                        title: this.bookAuthor(rec.title),
-                        link: this.navLink({href: `/${this.id}?author=${rec.q}&genre=${encodeURIComponent(query.genre)}`}),
-                    })
-                );
+            for (const rec of queryRes) {
+                const e = {
+                    id: rec.id,
+                    title: this.bookAuthor(rec.title),
+                    link: this.navLink({href: `/${this.id}?author=${rec.q}&genre=${encodeURIComponent(query.genre)}`}),
+                };
+
+                let countStr = '';
+                if (rec.count)
+                    countStr = `${rec.count} автор${utils.wordEnding(rec.count, 0)}${(query.genre ? ' (в выбранном жанре)' : '')}`;
+                if (!countStr && rec.bookCount && !query.genre)
+                    countStr = `${rec.bookCount} книг${utils.wordEnding(rec.bookCount, 8)}`;
+
+                if (countStr) {
+                    e.content = {
+                        '*ATTRS': {type: 'text'},
+                        '*TEXT': countStr,
+                    };
+                }
+
+                entry.push(this.makeEntry(e));
             }
         }
 

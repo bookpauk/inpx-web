@@ -68,7 +68,8 @@ class RemoteLib {
 
             const buf = await this.down.load(`${this.remoteHost}${link}`, {decompress: false});
 
-            const publicPath = `${this.config.publicFilesDir}${link}`;
+            const hash = path.basename(link);
+            const publicPath = `${this.config.bookDir}/${hash}`;
             
             await fs.writeFile(publicPath, buf);
 

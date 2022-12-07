@@ -1,4 +1,5 @@
 const BasePage = require('./BasePage');
+const utils = require('../utils');
 
 class SeriesPage extends BasePage {
     constructor(config) {
@@ -63,21 +64,16 @@ class SeriesPage extends BasePage {
                 for (const book of sorted) {
                     const title = `${book.serno ? `${book.serno}. `: ''}${book.title || 'Без названия'} (${book.ext})`;
 
-                    const e = {
-                        id: book._uid,
-                        title,
-                        link: this.acqLink({href: `/book?uid=${encodeURIComponent(book._uid)}`}),
-                    };
-
-                    if (query.all) {
-                        e.content = {
-                            '*ATTRS': {type: 'text'},
-                            '*TEXT': this.bookAuthor(book.author),
-                        }
-                    }
-
                     entry.push(
-                        this.makeEntry(e)
+                        this.makeEntry({
+                            id: book._uid,
+                            title,
+                            link: this.acqLink({href: `/book?uid=${encodeURIComponent(book._uid)}`}),
+                            content: {
+                                '*ATTRS': {type: 'text'},
+                                '*TEXT': this.bookAuthor(book.author),
+                            },
+                        })
                     );
                 }
             }
@@ -95,14 +91,27 @@ class SeriesPage extends BasePage {
             //навигация по каталогу
             const queryRes = await this.opdsQuery('series', query, '[Остальные серии]');
 
-            for (const rec of queryRes) {                
-                entry.push(
-                    this.makeEntry({
-                        id: rec.id,
-                        title: rec.title,
-                        link: this.navLink({href: `/${this.id}?series=${rec.q}&genre=${encodeURIComponent(query.genre)}`}),
-                    })
-                );
+            for (const rec of queryRes) {
+                const e = {
+                    id: rec.id,
+                    title: (rec.count ? rec.title : `Серия: ${rec.title}`),
+                    link: this.navLink({href: `/${this.id}?series=${rec.q}&genre=${encodeURIComponent(query.genre)}`}),
+                };
+
+                let countStr = '';
+                if (rec.count)
+                    countStr = `${rec.count} сери${utils.wordEnding(rec.count, 1)}${(query.genre ? ' (в выбранном жанре)' : '')}`;
+                if (!countStr && rec.bookCount && !query.genre)
+                    countStr = `${rec.bookCount} книг${utils.wordEnding(rec.bookCount, 8)}`;
+
+                if (countStr) {
+                    e.content = {
+                        '*ATTRS': {type: 'text'},
+                        '*TEXT': countStr,
+                    };
+                }
+
+                entry.push(this.makeEntry(e));
             }
         }
 

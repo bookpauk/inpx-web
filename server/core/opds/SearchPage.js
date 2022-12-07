@@ -1,4 +1,5 @@
 const BasePage = require('./BasePage');
+const utils = require('../utils');
 
 class SearchPage extends BasePage {
     constructor(config) {
@@ -30,16 +31,19 @@ class SearchPage extends BasePage {
                 const found = queryRes.found;
 
                 for (let i = 0; i < found.length; i++) {
-                    if (i >= limit)
-                        break;
-
                     const row = found[i];
+                    if (!row.bookCount)
+                        continue;
 
                     entry.push(
                         this.makeEntry({
                             id: row.id,
-                            title: row[from],
+                            title: `${(from === 'series' ? 'Серия: ': '')}${from === 'author' ? this.bookAuthor(row[from]) : row[from]}`,
                             link: this.navLink({href: `/${from}?${from}==${encodeURIComponent(row[from])}`}),
+                            content: {
+                                '*ATTRS': {type: 'text'},
+                                '*TEXT': `${row.bookCount} книг${utils.wordEnding(row.bookCount, 8)}`,
+                            },
                         }),
                     );
                 }
@@ -61,16 +65,37 @@ class SearchPage extends BasePage {
                     id: 'search_author',
                     title: 'Поиск авторов',
                     link: this.navLink({href: `/${this.id}?type=author&term=${encodeURIComponent(query.term)}`}),
+                    content: {
+                        '*ATTRS': {type: 'text'},
+                        '*TEXT': `Искать по именам авторов`,
+                    },
                 }),
                 this.makeEntry({
                     id: 'search_series',
                     title: 'Поиск серий',
                     link: this.navLink({href: `/${this.id}?type=series&term=${encodeURIComponent(query.term)}`}),
+                    content: {
+                        '*ATTRS': {type: 'text'},
+                        '*TEXT': `Искать по названиям серий`,
+                    },
                 }),
                 this.makeEntry({
                     id: 'search_title',
                     title: 'Поиск книг',
                     link: this.navLink({href: `/${this.id}?type=title&term=${encodeURIComponent(query.term)}`}),
+                    content: {
+                        '*ATTRS': {type: 'text'},
+                        '*TEXT': `Искать по названиям книг`,
+                    },
+                }),
+                this.makeEntry({
+                    id: 'search_help',
+                    title: '[Памятка по поиску]',
+                    link: this.acqLink({href: `/search-help`}),
+                    content: {
+                        '*ATTRS': {type: 'text'},
+                        '*TEXT': `Описание формата поискового значения`,
+                    },
                 }),
             ]
         }

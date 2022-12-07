@@ -109,9 +109,10 @@ function gzipFile(inputFile, outputFile, level = 1) {
             .pipe(gzip).on('error', reject)
             .pipe(output).on('error', reject)
             .on('finish', (err) => {
-            if (err) reject(err);
-            else resolve();
-        });
+                if (err) reject(err);
+                else resolve();
+            }
+        );
     });
 }
 
@@ -125,9 +126,10 @@ function gunzipFile(inputFile, outputFile) {
             .pipe(gzip).on('error', reject)
             .pipe(output).on('error', reject)
             .on('finish', (err) => {
-            if (err) reject(err);
-            else resolve();
-        });
+                if (err) reject(err);
+                else resolve();
+            }
+        );
     });
 }
 
@@ -174,6 +176,26 @@ function makeValidFileNameOrEmpty(fileName) {
     }
 }
 
+function wordEnding(num, type = 0) {
+    const endings = [
+        ['ов', '', 'а', 'а', 'а', 'ов', 'ов', 'ов', 'ов', 'ов'],//0
+        ['й', 'я', 'и', 'и', 'и', 'й', 'й', 'й', 'й', 'й'],//1
+        ['о', '', 'о', 'о', 'о', 'о', 'о', 'о', 'о', 'о'],//2
+        ['ий', 'ие', 'ия', 'ия', 'ия', 'ий', 'ий', 'ий', 'ий', 'ий'],//3
+        ['о', 'а', 'о', 'о', 'о', 'о', 'о', 'о', 'о', 'о'],//4
+        ['ок', 'ка', 'ки', 'ки', 'ки', 'ок', 'ок', 'ок', 'ок', 'ок'],//5
+        ['ых', 'ое', 'ых', 'ых', 'ых', 'ых', 'ых', 'ых', 'ых', 'ых'],//6
+        ['о', 'о', 'о', 'о', 'о', 'о', 'о', 'о', 'о', 'о'],//7
+        ['', 'а', 'и', 'и', 'и', '', '', '', '', ''],//8
+    ];
+    const deci = num % 100;
+    if (deci > 10 && deci < 20) {
+        return endings[type][0];
+    } else {
+        return endings[type][num % 10];
+    }
+}
+
 module.exports = {
     sleep,
     processLoop,
@@ -193,4 +215,5 @@ module.exports = {
     toUnixPath,
     makeValidFileName,
     makeValidFileNameOrEmpty,
+    wordEnding,
 };

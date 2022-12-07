@@ -33,7 +33,7 @@
         </div>
 
         <div class="q-ml-sm column">
-            <div v-if="(mode == 'series' || mode == 'title') && bookAuthor" class="row">
+            <div v-if="(mode == 'series' || mode == 'title' || mode == 'extended') && bookAuthor" class="row">
                 <div class="clickable2 text-green-10" @click.stop.prevent="emit('authorClick')">
                     {{ bookAuthor }}
                 </div>
@@ -46,7 +46,7 @@
                 <div class="clickable2" :class="titleColor" @click.stop.prevent="emit('titleClick')">
                     {{ book.title }}
                 </div>
-                <div v-if="mode == 'title' && bookSeries" class="q-ml-xs clickable2" @click.stop.prevent="emit('seriesClick')">
+                <div v-if="(mode == 'title' || mode == 'extended') && bookSeries" class="q-ml-xs clickable2" @click.stop.prevent="emit('seriesClick')">
                     {{ bookSeries }}
                 </div>
 
@@ -79,10 +79,10 @@
                     {{ bookDate }}
                 </div>
             </div>
-        </div>
 
-        <div v-show="false">
-            {{ book }}
+            <div v-show="showJson && mode == 'extended'">
+                <pre style="font-size: 80%; white-space: pre-wrap;">{{ book }}</pre>
+            </div>
         </div>
     </div>
 </template>
@@ -117,6 +117,7 @@ class BookView {
     showGenres = true;
     showDeleted = false;
     showDates = false;
+    showJson = false;
 
     created() {
         this.loadSettings();
@@ -130,6 +131,7 @@ class BookView {
         this.showGenres = settings.showGenres;
         this.showDates = settings.showDates;
         this.showDeleted = settings.showDeleted;
+        this.showJson = settings.showJson;
     }
 
     get settings() {

@@ -60,7 +60,7 @@ class WebWorker {
 
             const dirConfig = [
                 {
-                    dir: config.filesDir,
+                    dir: config.bookDir,
                     maxSize: config.maxFilesDirSize,
                 },
             ];
@@ -210,6 +210,7 @@ class WebWorker {
 
             //поисковый движок
             this.dbSearcher = new DbSearcher(config, db);
+            await this.dbSearcher.init();
 
             //stuff
             db.wwCache = {};            
@@ -260,6 +261,17 @@ class WebWorker {
         this.checkMyState();
 
         const result = await this.dbSearcher.search(from, query);
+
+        const config = await this.dbConfig();
+        result.inpxHash = (config.inpxHash ? config.inpxHash : '');
+
+        return result;
+    }
+
+    async bookSearch(query) {
+        this.checkMyState();
+
+        const result = await this.dbSearcher.bookSearch(query);
 
         const config = await this.dbConfig();
         result.inpxHash = (config.inpxHash ? config.inpxHash : '');
@@ -379,8 +391,8 @@ class WebWorker {
             hash = await this.remoteLib.downloadBook(bookUid);
         }
 
-        const link = `${this.config.filesPathStatic}/${hash}`;
-        const bookFile = `${this.config.filesDir}/${hash}`;
+        const link = `${this.config.bookPathStatic}/${hash}`;
+        const bookFile = `${this.config.bookDir}/${hash}`;
         const bookFileDesc = `${bookFile}.d.json`;
 
         if (!await fs.pathExists(bookFile) || !await fs.pathExists(bookFileDesc)) {
@@ -446,11 +458,11 @@ class WebWorker {
             rows = await db.select({table: 'file_hash', where: `@@id(${db.esc(bookPath)})`});
             if (rows.length) {//хеш найден по bookPath
                 const hash = rows[0].hash;
-                const bookFile = `${this.config.filesDir}/${hash}`;
+                const bookFile = `${this.config.bookDir}/${hash}`;
                 const bookFileDesc = `${bookFile}.d.json`;
 
                 if (await fs.pathExists(bookFile) && await fs.pathExists(bookFileDesc)) {
-                    link = `${this.config.filesPathStatic}/${hash}`;
+                    link = `${this.config.bookPathStatic}/${hash}`;
                 }
             }
 
@@ -478,7 +490,7 @@ class WebWorker {
 
             let bookInfo = await this.getBookLink(bookUid);
             const hash = path.basename(bookInfo.link);
-            const bookFile = `${this.config.filesDir}/${hash}`;
+            const bookFile = `${this.config.bookDir}/${hash}`;
             const bookFileInfo = `${bookFile}.i.json`;
 
             let rows = await db.select({table: 'book', where: `@@hash('_uid', ${db.esc(bookUid)})`});
@@ -500,7 +512,7 @@ class WebWorker {
                     result.fb2 = fb2.rawNodes;
 
                     if (cover) {
-                        result.cover = `${this.config.filesPathStatic}/${hash}${coverExt}`;
+                        result.cover = `${this.config.bookPathStatic}/${hash}${coverExt}`;
                         await fs.writeFile(`${bookFile}${coverExt}`, cover);
                     }
                 }

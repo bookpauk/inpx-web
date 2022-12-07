@@ -1,3 +1,4 @@
+import axios from 'axios';
 import dayjs from 'dayjs';
 import _ from 'lodash';
 
@@ -20,13 +21,16 @@ const componentOptions = {
             this.loadSettings();
         },
         search: {
-            handler(newValue) {
-                this.limit = newValue.limit;
-
-                if (this.pageCount > 1)
-                    this.prevPage = this.search.page;
-
-                this.refresh();
+            handler() {
+                if (!this.isExtendedSearch)
+                    this.refresh();
+            },
+            deep: true,
+        },
+        extSearch: {
+            handler() {
+                if (this.isExtendedSearch)
+                    this.refresh();
             },
             deep: true,
         },
@@ -40,6 +44,7 @@ export default class BaseList {
     _props = {
         list: Object,
         search: Object,
+        extSearch: Object,
         genreMap: Object,
     };
     
@@ -50,6 +55,7 @@ export default class BaseList {
     expandedAuthor = [];
     expandedSeries = [];
 
+    downloadAsZip = false;
     showCounts = true;
     showRates = true;
     showGenres = true;    
@@ -66,6 +72,7 @@ export default class BaseList {
     tableData = [];
 
     created() {
+        this.isExtendedSearch = false;
         this.commit = this.$store.commit;
         this.api = this.$root.api;
 
@@ -81,6 +88,7 @@ export default class BaseList {
 
         this.expandedAuthor = _.cloneDeep(settings.expandedAuthor);
         this.expandedSeries = _.cloneDeep(settings.expandedSeries);
+        this.downloadAsZip = settings.downloadAsZip;
         this.showCounts = settings.showCounts;
         this.showRates = settings.showRates;
         this.showGenres = settings.showGenres;
@@ -105,16 +113,19 @@ export default class BaseList {
     }
 
     selectAuthor(author) {
-        this.search.author = `=${author}`;
+        const search = (this.isExtendedSearch ? this.extSearch : this.search);
+        search.author = `=${author}`;
         this.scrollToTop();
     }
 
     selectSeries(series) {
-        this.search.series = `=${series}`;
+        const search = (this.isExtendedSearch ? this.extSearch : this.search);
+        search.series = `=${series}`;
     }
 
     selectTitle(title) {
-        this.search.title = `=${title}`;
+        const search = (this.isExtendedSearch ? this.extSearch : this.search);
+        search.title = `=${title}`;
     }
 
     async download(book, action) {
@@ -133,13 +144,20 @@ export default class BaseList {
             const response = await this.api.getBookLink(book._uid);
             
             const link = response.link;
-            const href = `${window.location.origin}${link}`;
+            let href = `${window.location.origin}${link}`;
 
+            //downloadAsZip
+            if (this.downloadAsZip && (action == 'download' || action == 'copyLink')) {
+                href += '/zip';
+                //подожлем формирования zip-файла
+                await axios.head(href);
+            }
+
+            //action
             if (action == 'download') {
                 //скачивание
                 const d = this.$refs.download;
                 d.href = href;
-                d.download = response.downFileName;
 
                 d.click();
             } else if (action == 'copyLink') {
@@ -506,9 +524,9 @@ export default class BaseList {
     }
 
     getQuery() {
-        let newQuery = _.cloneDeep(this.search);
-        newQuery = newQuery.setDefaults(newQuery);
-        delete newQuery.setDefaults;
+        const search = (this.isExtendedSearch ? this.extSearch : this.search);
+        const newQuery = {};
+        search.setDefaults(newQuery, search);
 
         //дата
         if (newQuery.date) {
@@ -519,8 +537,8 @@ export default class BaseList {
         newQuery.offset = (newQuery.page - 1)*newQuery.limit;
 
         //del
-        if (!this.showDeleted)
-            newQuery.del = 0;
+        if (!newQuery.del && !this.showDeleted)
+            newQuery.del = '0';
 
         return newQuery;
     }

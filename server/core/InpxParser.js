@@ -1,12 +1,32 @@
 const path = require('path');
 const crypto = require('crypto');
 const ZipReader = require('./ZipReader');
+const utils = require('./utils');
 
 const collectionInfo = 'collection.info';
 const structureInfo = 'structure.info';
 const versionInfo = 'version.info';
 
 const defaultStructure = 'AUTHOR;GENRE;TITLE;SERIES;SERNO;FILE;SIZE;LIBID;DEL;EXT;DATE;LANG;LIBRATE;KEYWORDS';
+//'AUTHOR;GENRE;TITLE;SERIES;SERNO;FILE;SIZE;LIBID;DEL;EXT;DATE;INSNO;FOLDER;LANG;LIBRATE;KEYWORDS;'
+const recStructType = {
+    author: 'S',
+    genre: 'S',
+    title: 'S',
+    series: 'S',
+    serno: 'N',
+    file: 'S',
+    size: 'N',
+    libid: 'S',
+    del: 'N',
+    ext: 'S',
+    date: 'S',
+    insno: 'N',
+    folder: 'S',
+    lang: 'S',
+    librate: 'N',
+    keywords: 'S',
+}
 
 class InpxParser {
     constructor() {
@@ -21,6 +41,21 @@ class InpxParser {
         } catch (e) {
             //quiet
         }
+        return result;
+    }
+
+    getRecStruct(structure) {
+        const result = [];
+        let struct = structure;
+        //folder есть всегда
+        if (!struct.includes('folder'))
+            struct = struct.concat(['folder']);
+
+        for (const field of struct) {
+            if (utils.hasProp(recStructType, field))
+                result.push({field, type: recStructType[field]});
+        }
+
         return result;
     }
 
@@ -61,11 +96,11 @@ class InpxParser {
             info.version = await this.safeExtractToString(zipReader, versionInfo);
 
             //структура
-            let inpxStructure = info.structure;
-            if (!inpxStructure)
-                inpxStructure = defaultStructure;
-            inpxStructure = inpxStructure.toLowerCase();
-            const structure = inpxStructure.split(';');
+            if (!info.structure)
+                info.structure = defaultStructure;
+            const structure = info.structure.toLowerCase().split(';');
+
+            info.recStruct = this.getRecStruct(structure);
 
             //парсим inp-файлы
             this.chunk = [];

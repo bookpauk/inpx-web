@@ -12,8 +12,8 @@ const publicDir = `${tmpDir}/public`;
 const outDir = `${distDir}/${platform}`;
 
 async function build() {
-    if (platform != 'linux' && platform != 'win' && platform != 'macos')
-        throw new Error(`Unknown platform: ${platform}`);
+    if (!platform)
+        throw new Error(`Please set platform`);
 
     await fs.emptyDir(outDir);
 

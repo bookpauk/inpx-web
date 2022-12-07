@@ -14,6 +14,7 @@ class FileDownloader {
 
         let options = {
             headers: {
+                'accept-encoding': 'gzip, compress, deflate',
                 'user-agent': userAgent,
                 timeout: 300*1000,
             },

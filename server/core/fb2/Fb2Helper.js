@@ -70,9 +70,6 @@ class Fb2Helper {
         if (coverImage.count) {
             const coverAttrs = coverImage.attrs();
             const href = coverAttrs[`${parser.xlinkNS}:href`];
-            let coverType = coverAttrs['content-type'];
-            coverType = (coverType == 'image/jpg' || coverType == 'application/octet-stream' ? 'image/jpeg' : coverType);
-            coverExt = (coverType == 'image/png' ? '.png' : '.jpg');
 
             if (href) {
                 const binaryId = (href[0] == '#' ? href.substring(1) : href);
@@ -84,6 +81,10 @@ class Fb2Helper {
                         return;
 
                     if (attrs.id === binaryId) {
+                        let coverType = attrs['content-type'];
+                        coverType = (coverType == 'image/jpg' || coverType == 'application/octet-stream' ? 'image/jpeg' : coverType);
+                        coverExt = (coverType == 'image/png' ? '.png' : '.jpg');
+
                         const base64 = node.text();
                         cover = (base64 ? Buffer.from(base64, 'base64') : null);
                     }

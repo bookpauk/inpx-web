@@ -128,7 +128,19 @@ class BookPage extends BasePage {
 
             if (bookInfo) {
                 const {genreMap} = await this.getGenres();
-                const fileFormat = `${bookInfo.book.ext}+zip`;
+
+                //format
+                const ext = bookInfo.book.ext;
+                let fileFormat = `${ext}+zip`;
+                let downHref = bookInfo.link;
+
+                if (ext === 'mobi') {
+                    fileFormat = 'x-mobipocket-ebook';
+                } else if (ext == 'epub') {
+                    //
+                } else {
+                    downHref = `${bookInfo.link}/zip`;
+                }
 
                 //entry
                 const e = this.makeEntry({
@@ -183,7 +195,7 @@ class BookPage extends BasePage {
                 }
 
                 //links
-                e.link = [ this.downLink({href: bookInfo.link, type: `application/${fileFormat}`}) ];
+                e.link = [ this.downLink({href: downHref, type: `application/${fileFormat}`}) ];
                 if (bookInfo.cover) {
                     let coverType = 'image/jpeg';
                     if (path.extname(bookInfo.cover) == '.png')

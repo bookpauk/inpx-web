@@ -261,7 +261,7 @@ class DbCreator {
 
         //парсинг
         const parser = new InpxParser();
-        await parser.parse(config.inpxFile, readFileCallback, parsedCallback);
+        await parser.parse(config.inpxFile, readFileCallback, parsedCallback);        
 
         //чистка памяти, ибо жрет как не в себя
         authorMap = null;
@@ -446,8 +446,16 @@ class DbCreator {
             table: 'config'
         });
 
+        const inpxInfo = parser.info;
+        if (inpxFilter && inpxFilter.info) {
+            if (inpxFilter.info.collection)
+                inpxInfo.collection = inpxFilter.info.collection;
+            if (inpxFilter.info.version)
+                inpxInfo.version = inpxFilter.info.version;
+        }
+
         await db.insert({table: 'config', rows: [
-            {id: 'inpxInfo', value: (inpxFilter && inpxFilter.info ? inpxFilter.info : parser.info)},
+            {id: 'inpxInfo', value: inpxInfo},
             {id: 'stats', value: stats},
             {id: 'inpxHash', value: await inpxHashCreator.getHash()},
         ]});

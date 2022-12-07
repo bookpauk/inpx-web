@@ -19,7 +19,8 @@
                 />
             </div>
 
-            <q-checkbox v-model="showCounts" size="36px" label="Показывать количество" />                
+            <q-checkbox v-model="downloadAsZip" size="36px" label="Скачивать книги в виде zip-архива" />
+            <q-checkbox v-model="showCounts" size="36px" label="Показывать количество" />
             <q-checkbox v-model="showRates" size="36px" label="Показывать оценки" />
             <q-checkbox v-model="showInfo" size="36px" label="Показывать кнопку (инфо)" />
             <q-checkbox v-model="showGenres" size="36px" label="Показывать жанры" />
@@ -60,6 +61,9 @@ const componentOptions = {
         limit(newValue) {
             this.commit('setSettings', {'limit': newValue});
         },
+        downloadAsZip(newValue) {
+            this.commit('setSettings', {'downloadAsZip': newValue});
+        },
         showCounts(newValue) {
             this.commit('setSettings', {'showCounts': newValue});
         },
@@ -93,6 +97,7 @@ class SettingsDialog {
 
     //settings
     limit = 20;
+    downloadAsZip = false;
     showCounts = true;
     showRates = true;
     showInfo = true;
@@ -129,6 +134,7 @@ class SettingsDialog {
 
         this.limit = settings.limit;
 
+        this.downloadAsZip = settings.downloadAsZip;
         this.showCounts = settings.showCounts;
         this.showRates = settings.showRates;
         this.showInfo = settings.showInfo;

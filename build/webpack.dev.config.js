@@ -16,9 +16,8 @@ module.exports = merge(baseWpConfig, {
     mode: 'development',
     devtool: 'inline-source-map',
     output: {
-        path: `${publicDir}/app`,
+        path: `${publicDir}${baseWpConfig.output.publicPath}`,
         filename: 'bundle.js',
-        clean: true
     },
 
     module: {

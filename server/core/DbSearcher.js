@@ -1,6 +1,5 @@
 const fs = require('fs-extra');
 //const _ = require('lodash');
-const LockQueue = require('./LockQueue');
 const utils = require('./utils');
 
 const maxLimit = 1000;
@@ -21,7 +20,6 @@ class DbSearcher {
 
         this.db = db;
 
-        this.lock = new LockQueue();
         this.searchFlag = 0;
         this.timer = null;
         this.closed = false;
@@ -30,11 +28,22 @@ class DbSearcher {
         this.bookIdMap = {};
 
         this.periodicCleanCache();//no await
-        this.fillBookIdMapAll();//no await
+    }
+
+    async init() {
+        await this.fillBookIdMap('author');
+        await this.fillBookIdMap('series');
+        await this.fillBookIdMap('title');
+        await this.fillDbConfig();
     }
 
     queryKey(q) {
-        return JSON.stringify([q.author, q.series, q.title, q.genre, q.lang, q.del, q.date, q.librate]);
+        const result = [];
+        for (const f of this.recStruct) {
+            result.push(q[f.field]);
+        }
+
+        return JSON.stringify(result);
     }
 
     getWhere(a) {
@@ -204,12 +213,13 @@ class DbSearcher {
         }
 
         //удаленные
-        if (query.del !== undefined) {
-            const key = `book-ids-del-${query.del}`;
+        if (query.del) {
+            const del = parseInt(query.del, 10) || 0;
+            const key = `book-ids-del-${del}`;
             let ids = await this.getCached(key);
 
             if (ids === null) {
-                ids = await tableBookIds('del', `@indexLR('value', ${db.esc(query.del)}, ${db.esc(query.del)})`);
+                ids = await tableBookIds('del', `@indexLR('value', ${db.esc(del)}, ${db.esc(del)})`);
 
                 await this.putCached(key, ids);
             }
@@ -298,34 +308,28 @@ class DbSearcher {
         }
     }
 
-    async fillBookIdMap(from) {
-        if (this.bookIdMap[from])
-            return this.bookIdMap[from];
+    async fillDbConfig() {
+        if (!this.dbConfig) {
+            const rows = await this.db.select({table: 'config'});
+            const config = {};
 
-        await this.lock.get();
-        try {
-            const data = await fs.readFile(`${this.config.dataDir}/db/${from}_id.map`, 'utf-8');
+            for (const row of rows) {
+                config[row.id] = row.value;
+            }
 
-            const idMap = JSON.parse(data);
-            idMap.arr = new Uint32Array(idMap.arr);
-            idMap.map = new Map(idMap.map);
-
-            this.bookIdMap[from] = idMap;
-
-            return this.bookIdMap[from];
-        } finally {
-            this.lock.ret();
+            this.dbConfig = config;
+            this.recStruct = config.inpxInfo.recStruct;
         }
     }
 
-    async fillBookIdMapAll() {
-        try {
-            await this.fillBookIdMap('author');
-            await this.fillBookIdMap('series');
-            await this.fillBookIdMap('title');
-        } catch (e) {
-            throw new Error(`DbSearcher.fillBookIdMapAll error: ${e.message}`)
-        }
+    async fillBookIdMap(from) {
+        const data = await fs.readFile(`${this.config.dataDir}/db/${from}_id.map`, 'utf-8');
+
+        const idMap = JSON.parse(data);
+        idMap.arr = new Uint32Array(idMap.arr);
+        idMap.map = new Map(idMap.map);
+
+        this.bookIdMap[from] = idMap;
     }
 
     async tableIdsFilter(from, query) {
@@ -376,7 +380,7 @@ class DbSearcher {
                 const filter = await this.tableIdsFilter(from, query);
 
                 const tableIdsSet = new Set();
-                const idMap = await this.fillBookIdMap(from);
+                const idMap = this.bookIdMap[from];
                 let proc = 0;
                 let nextProc = 0;
                 for (const bookId of bookIds) {
@@ -534,6 +538,137 @@ class DbSearcher {
         }
     }
 
+    async bookSearchIds(query) {
+        const queryKey = this.queryKey(query);
+        const bookKey = `book-search-ids-${queryKey}`;
+        let bookIds = await this.getCached(bookKey);
+
+        if (bookIds === null) {
+            const db = this.db;
+            const filterBySearch = (bookField, searchValue) => {
+                searchValue = searchValue.toLowerCase();
+                //особая обработка префиксов
+                if (searchValue == emptyFieldValue) {
+                    return `(row.${bookField} === '' || row.${bookField}.indexOf(${db.esc(emptyFieldValue)}) === 0)`;
+                } else if (searchValue[0] == '=') {
+
+                    searchValue = searchValue.substring(1);
+                    return `(row.${bookField}.toLowerCase().localeCompare(${db.esc(searchValue)}) === 0)`;
+                } else if (searchValue[0] == '*') {
+
+                    searchValue = searchValue.substring(1);
+                    return `(row.${bookField} && row.${bookField}.toLowerCase().indexOf(${db.esc(searchValue)}) >= 0)`;
+                } else if (searchValue[0] == '#') {
+
+                    searchValue = searchValue.substring(1);
+                    return `(row.${bookField} === '' || (!enru.has(row.${bookField}.toLowerCase()[0]) && row.${bookField}.toLowerCase().indexOf(${db.esc(searchValue)}) >= 0))`;
+                } else {
+
+                    return `(row.${bookField}.toLowerCase().localeCompare(${db.esc(searchValue)}) >= 0 ` +
+                        `&& row.${bookField}.toLowerCase().localeCompare(${db.esc(searchValue)} + ${db.esc(maxUtf8Char)}) <= 0)`;
+                }
+            };
+
+            const checks = ['true'];
+            for (const f of this.recStruct) {
+                if (query[f.field]) {
+                    let searchValue = query[f.field];
+                    if (f.type === 'S') {
+                        checks.push(filterBySearch(f.field, searchValue));
+                    } if (f.type === 'N') {
+                        const v = searchValue.split('..');
+
+                        if (v.length == 1) {
+                            searchValue = parseInt(searchValue, 10);
+                            if (isNaN(searchValue))
+                                throw new Error(`Wrong query param, ${f.field}=${searchValue}`);
+
+                            checks.push(`row.${f.field} === ${searchValue}`);
+                        } else {
+                            const from = parseInt(v[0] || '0', 10);
+                            const to = parseInt(v[1] || '0', 10);
+                            if (isNaN(from) || isNaN(to))
+                                throw new Error(`Wrong query param, ${f.field}=${searchValue}`);
+
+                            checks.push(`row.${f.field} >= ${from} && row.${f.field} <= ${to}`);
+                        }
+                    }
+                }
+            }
+
+            const rows = await db.select({
+                table: 'book',
+                rawResult: true,
+                where: `
+                    const enru = new Set(${db.esc(enruArr)});
+
+                    const checkBook = (row) => {
+                        return ${checks.join(' && ')};
+                    };
+
+                    const result = [];
+                    for (const id of @all()) {
+                        const row = @unsafeRow(id);
+                        if (checkBook(row))
+                            result.push(row);
+                    }
+
+                    result.sort((a, b) => {
+                        let cmp = a.author.localeCompare(b.author);
+                        if (cmp === 0 && (a.series || b.series)) {
+                            cmp = (a.series && b.series ? a.series.localeCompare(b.series) : (a.series ? -1 : 1));
+                        }
+                        if (cmp === 0)
+                            cmp = a.serno - b.serno;
+                        if (cmp === 0)
+                            cmp = a.title.localeCompare(b.title);
+
+                        return cmp;
+                    });
+
+                    return new Uint32Array(result.map(row => row.id));
+                `
+            });
+
+            bookIds = rows[0].rawResult;
+    
+            await this.putCached(bookKey, bookIds);
+        }
+
+        return bookIds;
+    }
+
+    //неоптимизированный поиск по всем книгам, по всем полям
+    async bookSearch(query) {
+        if (this.closed)
+            throw new Error('DbSearcher closed');
+
+        this.searchFlag++;
+
+        try {
+            const db = this.db;
+
+            const ids = await this.bookSearchIds(query);
+
+            const totalFound = ids.length;            
+            let limit = (query.limit ? query.limit : 100);
+            limit = (limit > maxLimit ? maxLimit : limit);
+            const offset = (query.offset ? query.offset : 0);
+
+            const slice = ids.slice(offset, offset + limit);
+
+            //выборка найденных значений
+            const found = await db.select({
+                table: 'book',
+                where: `@@id(${db.esc(Array.from(slice))})`
+            });
+
+            return {found, totalFound};
+        } finally {
+            this.searchFlag--;
+        }
+    }
+
     async opdsQuery(from, query) {
         if (this.closed)
             throw new Error('DbSearcher closed');
@@ -570,10 +705,11 @@ class DbSearcher {
                             const s = row.value.substring(0, depth);
                             let g = group.get(s);
                             if (!g) {
-                                g = {id: row.id, name: row.name, value: s, count: 0};
+                                g = {id: row.id, name: row.name, value: s, count: 0, bookCount: 0};
                                 group.set(s, g);
                             }
                             g.count++;
+                            g.bookCount += row.bookCount;
                         }
 
                         const result = Array.from(group.values());

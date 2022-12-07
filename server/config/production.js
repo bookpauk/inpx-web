@@ -11,6 +11,7 @@ module.exports = Object.assign({}, base, {
     server: {
         host: '0.0.0.0',
         port: '12380',
+        root: '',
     },
 
 });
