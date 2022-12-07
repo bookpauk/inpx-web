@@ -548,7 +548,9 @@ class DbSearcher {
             const filterBySearch = (bookField, searchValue) => {
                 searchValue = searchValue.toLowerCase();
                 //особая обработка префиксов
-                if (searchValue[0] == '=') {
+                if (searchValue == emptyFieldValue) {
+                    return `(row.${bookField} === '' || row.${bookField}.indexOf(${db.esc(emptyFieldValue)}) === 0)`;
+                } else if (searchValue[0] == '=') {
 
                     searchValue = searchValue.substring(1);
                     return `(row.${bookField}.toLowerCase().localeCompare(${db.esc(searchValue)}) === 0)`;
