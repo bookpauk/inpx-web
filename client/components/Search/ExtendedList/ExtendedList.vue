@@ -9,7 +9,7 @@
         <div v-for="item in tableData" :key="item.key" class="column" :class="{'odd-item': item.num % 2}" style="font-size: 120%">
             <BookView
                 class="q-ml-md"
-                :book="item.book" mode="title" :genre-map="genreMap" :show-read-link="showReadLink" @book-event="bookEvent"
+                :book="item.book" mode="extended" :genre-map="genreMap" :show-read-link="showReadLink" @book-event="bookEvent"
             />
         </div>
         <!-- Формирование списка конец ------------------------------------------------------------------>

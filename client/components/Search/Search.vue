@@ -227,6 +227,10 @@
                 <div v-show="list.totalFound > 0" class="text-bold" style="font-size: 120%; padding-bottom: 2px">
                     {{ foundCountMessage }}
                 </div>
+
+                <div v-show="list.totalFound > 0 && isExtendedSearch" class="q-ml-md">
+                    <q-checkbox v-model="showJson" size="36px" label="Показывать JSON" />
+                </div>
             </div>
 
             <!-- Формирование списка ------------------------------------------------------------------------>
@@ -361,6 +365,9 @@ const componentOptions = {
         langDefault() {
             this.updateSearchFromRouteQuery(this.$route);
         },
+        showJson(newValue) {
+            this.setSetting('showJson', newValue);
+        },
         list: {
             handler(newValue) {
                 this.updateGenreTreeIfNeeded();
@@ -433,6 +440,7 @@ class Search {
     langDefault = '';
     limit = 20;
     extendedParams = false;
+    showJson = false;
 
     //stuff
     prevList = {};
@@ -525,6 +533,7 @@ class Search {
         this.expandedSeries = _.cloneDeep(settings.expandedSeries);
         this.abCacheEnabled = settings.abCacheEnabled;
         this.langDefault = settings.langDefault;
+        this.showJson = settings.showJson;
     }
 
     recvMessage(d) {

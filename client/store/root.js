@@ -16,6 +16,7 @@ const state = {
         showDeleted: false,
         abCacheEnabled: true,
         langDefault: '',
+        showJson: false,
     },    
 };
 
