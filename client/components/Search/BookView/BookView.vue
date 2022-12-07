@@ -81,7 +81,7 @@
             </div>
 
             <div v-show="showJson && mode == 'extended'">
-                <pre style="font-size: 80%">{{ book }}</pre>
+                <pre style="font-size: 80%; white-space: pre-wrap;">{{ book }}</pre>
             </div>
         </div>
     </div>

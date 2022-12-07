@@ -395,6 +395,8 @@ const componentOptions = {
             if (this.getListRoute() != newValue) {
                 this.updateRouteQueryFromSearch();
             }
+
+            this.makeTitle();
         },
         searchDate() {
             this.updateSearchDate(false);
@@ -670,30 +672,34 @@ class Search {
 
         let result = `Коллекция ${this.collection}`;
 
-        const search = this.search;
-        const specSym = new Set(['*', '#']);
-        const correctValue = (v) => {
-            if (v) {
-                if (v[0] === '=')
-                    v = v.substring(1);
-                else if (!specSym.has(v[0]))
-                    v = '^' + v;
+        if (!this.isExtendedSearch) {
+            const search = this.search;
+            const specSym = new Set(['*', '#']);
+            const correctValue = (v) => {
+                if (v) {
+                    if (v[0] === '=')
+                        v = v.substring(1);
+                    else if (!specSym.has(v[0]))
+                        v = '^' + v;
+                }
+                return v || '';
+            };
+
+            if (search.author || search.series || search.title) {
+                const as = (search.author ? search.author.split(',') : []);
+                const author = (as.length ? as[0] : '') + (as.length > 1 ? ' и др.' : '');
+
+                const a = correctValue(author);
+                let s = correctValue(search.series);
+                s = (s ? `(Серия: ${s})` : '');
+                let t = correctValue(search.title);
+                t = (t ? `"${t}"` : '');
+
+                result = [s, t].filter(v => v).join(' ');
+                result = [a, result].filter(v => v).join(' ');
             }
-            return v || '';
-        };
-
-        if (search.author || search.series || search.title) {
-            const as = (search.author ? search.author.split(',') : []);
-            const author = (as.length ? as[0] : '') + (as.length > 1 ? ' и др.' : '');
-
-            const a = correctValue(author);
-            let s = correctValue(search.series);
-            s = (s ? `(Серия: ${s})` : '');
-            let t = correctValue(search.title);
-            t = (t ? `"${t}"` : '');
-
-            result = [s, t].filter(v => v).join(' ');
-            result = [a, result].filter(v => v).join(' ');
+        } else {
+            result = this.extSearchNames;
         }
 
         this.$root.setAppTitle(result);
