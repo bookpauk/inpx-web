@@ -113,16 +113,19 @@ export default class BaseList {
     }
 
     selectAuthor(author) {
-        this.search.author = `=${author}`;
+        const search = (this.isExtendedSearch ? this.extSearch : this.search);
+        search.author = `=${author}`;
         this.scrollToTop();
     }
 
     selectSeries(series) {
-        this.search.series = `=${series}`;
+        const search = (this.isExtendedSearch ? this.extSearch : this.search);
+        search.series = `=${series}`;
     }
 
     selectTitle(title) {
-        this.search.title = `=${title}`;
+        const search = (this.isExtendedSearch ? this.extSearch : this.search);
+        search.title = `=${title}`;
     }
 
     async download(book, action) {

@@ -608,10 +608,23 @@ class DbSearcher {
                     for (const id of @all()) {
                         const row = @unsafeRow(id);
                         if (checkBook(row))
-                            result.push(row.id);
+                            result.push(row);
                     }
 
-                    return new Uint32Array(result);
+                    result.sort((a, b) => {
+                        let cmp = a.author.localeCompare(b.author);
+                        if (cmp === 0 && (a.series || b.series)) {
+                            cmp = (a.series && b.series ? a.series.localeCompare(b.series) : (a.series ? -1 : 1));
+                        }
+                        if (cmp === 0)
+                            cmp = a.serno - b.serno;
+                        if (cmp === 0)
+                            cmp = a.title.localeCompare(b.title);
+
+                        return cmp;
+                    });
+
+                    return new Uint32Array(result.map(row => row.id));
                 `
             });
 
