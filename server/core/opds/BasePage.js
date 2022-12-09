@@ -256,8 +256,8 @@ class BasePage {
             } else if (searchValue[0] == '~') {//RegExp
 
                 searchValue = searchValue.substring(1);
-                const re = new RegExp(searchValue, 'gi');
-                return re.exec(bookValue);
+                const re = new RegExp(searchValue, 'i');
+                return re.test(bookValue);
             } else {
                 //where = `@dirtyIndexLR('value', ${db.esc(a)}, ${db.esc(a + maxUtf8Char)})`;
                 return bookValue.localeCompare(searchValue) >= 0 && bookValue.localeCompare(searchValue + maxUtf8Char) <= 0;

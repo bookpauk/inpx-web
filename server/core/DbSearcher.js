@@ -71,8 +71,8 @@ class DbSearcher {
             a = a.substring(1);
             where = `
                 await (async() => {
-                    const re = new RegExp(${db.esc(a)}, 'gi');
-                    @@indexIter('value', (v) => re.exec(v) );
+                    const re = new RegExp(${db.esc(a)}, 'i');
+                    @@indexIter('value', (v) => re.test(v) );
                 })()
             `;
         } else {
@@ -577,8 +577,8 @@ class DbSearcher {
 
                     return `
                         (() => {
-                            const re = new RegExp(${db.esc(searchValue)}, 'gi');
-                            return re.exec(row.${bookField});
+                            const re = new RegExp(${db.esc(searchValue)}, 'i');
+                            return re.test(row.${bookField});
                         })()
                     `;
                 } else {
