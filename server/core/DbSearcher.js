@@ -63,8 +63,18 @@ class DbSearcher {
             a = a.substring(1);
             where = `@indexIter('value', (v) => {
                 const enru = new Set(${db.esc(enruArr)});
-                return !v || (v !== ${db.esc(emptyFieldValue)} && !enru.has(v[0]) && v.indexOf(${db.esc(a)}) >= 0);
+                if (!v)
+                    return false;
+                return v !== ${db.esc(emptyFieldValue)} && !enru.has(v[0]) && v.indexOf(${db.esc(a)}) >= 0;
             })`;
+        } else if (a[0] == '~') {//RegExp
+            a = a.substring(1);
+            where = `
+                await (async() => {
+                    const re = new RegExp(${db.esc(a)}, 'gi');
+                    @@indexIter('value', (v) => re.exec(v) );
+                })()
+            `;
         } else {
             where = `@dirtyIndexLR('value', ${db.esc(a)}, ${db.esc(a + maxUtf8Char)})`;
         }
@@ -99,7 +109,7 @@ class DbSearcher {
         };
 
         //авторы
-        if (query.author && query.author !== '*') {
+        if (query.author) {
             const key = `book-ids-author-${query.author}`;
             let ids = await this.getCached(key);
 
@@ -113,7 +123,7 @@ class DbSearcher {
         }
 
         //серии
-        if (query.series && query.series !== '*') {
+        if (query.series) {
             const key = `book-ids-series-${query.series}`;
             let ids = await this.getCached(key);
 
@@ -127,7 +137,7 @@ class DbSearcher {
         }
 
         //названия
-        if (query.title && query.title !== '*') {
+        if (query.title) {
             const key = `book-ids-title-${query.title}`;
             let ids = await this.getCached(key);
 
@@ -337,7 +347,7 @@ class DbSearcher {
         //то в выборку по bookId могут попасть авторы, которые отсутствуют в критерии query.author,
         //поэтому дополнительно фильтруем
         let result = null;
-        if (from == 'author' && query.author && query.author !== '*') {
+        if (from == 'author' && query.author) {
             const key = `filter-ids-author-${query.author}`;
             let authorIds = await this.getCached(key);
 
@@ -562,6 +572,15 @@ class DbSearcher {
 
                     searchValue = searchValue.substring(1);
                     return `(row.${bookField} === '' || (!enru.has(row.${bookField}.toLowerCase()[0]) && row.${bookField}.toLowerCase().indexOf(${db.esc(searchValue)}) >= 0))`;
+                } else if (searchValue[0] == '~') {//RegExp
+                    searchValue = searchValue.substring(1);
+
+                    return `
+                        (() => {
+                            const re = new RegExp(${db.esc(searchValue)}, 'gi');
+                            return re.exec(row.${bookField});
+                        })()
+                    `;
                 } else {
 
                     return `(row.${bookField}.toLowerCase().localeCompare(${db.esc(searchValue)}) >= 0 ` +
