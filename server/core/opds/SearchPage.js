@@ -21,40 +21,50 @@ class SearchPage extends BasePage {
         let entry = [];
         if (query.type) {
             if (['author', 'series', 'title'].includes(query.type)) {
-                const from = query.type;
-                const page = query.page;
+                try {
+                    const from = query.type;
+                    const page = query.page;
 
-                const limit = 100;
-                const offset = (page - 1)*limit;
-                const queryRes = await this.webWorker.search(from, {[from]: query.term, del: 0, offset, limit});
+                    const limit = 100;
+                    const offset = (page - 1)*limit;
+                    const queryRes = await this.webWorker.search(from, {[from]: query.term, del: 0, offset, limit});
 
-                const found = queryRes.found;
+                    const found = queryRes.found;
 
-                for (let i = 0; i < found.length; i++) {
-                    const row = found[i];
-                    if (!row.bookCount)
-                        continue;
+                    for (let i = 0; i < found.length; i++) {
+                        const row = found[i];
+                        if (!row.bookCount)
+                            continue;
 
+                        entry.push(
+                            this.makeEntry({
+                                id: row.id,
+                                title: `${(from === 'series' ? 'Серия: ': '')}${from === 'author' ? this.bookAuthor(row[from]) : row[from]}`,
+                                link: this.navLink({href: `/${from}?${from}==${encodeURIComponent(row[from])}`}),
+                                content: {
+                                    '*ATTRS': {type: 'text'},
+                                    '*TEXT': `${row.bookCount} книг${utils.wordEnding(row.bookCount, 8)}`,
+                                },
+                            }),
+                        );
+                    }
+
+                    if (queryRes.totalFound > offset + found.length) {
+                        entry.push(
+                            this.makeEntry({
+                                id: 'next_page',
+                                title: '[Следующая страница]',
+                                link: this.navLink({href: `/${this.id}?type=${from}&term=${encodeURIComponent(query.term)}&page=${page + 1}`}),
+                            })
+                        );
+                    }
+                } catch(e) {
                     entry.push(
                         this.makeEntry({
-                            id: row.id,
-                            title: `${(from === 'series' ? 'Серия: ': '')}${from === 'author' ? this.bookAuthor(row[from]) : row[from]}`,
-                            link: this.navLink({href: `/${from}?${from}==${encodeURIComponent(row[from])}`}),
-                            content: {
-                                '*ATTRS': {type: 'text'},
-                                '*TEXT': `${row.bookCount} книг${utils.wordEnding(row.bookCount, 8)}`,
-                            },
-                        }),
-                    );
-                }
-
-                if (queryRes.totalFound > offset + found.length) {
-                    entry.push(
-                        this.makeEntry({
-                            id: 'next_page',
-                            title: '[Следующая страница]',
-                            link: this.navLink({href: `/${this.id}?type=${from}&term=${encodeURIComponent(query.term)}&page=${page + 1}`}),
-                        }),
+                            id: 'error',
+                            title: `Ошибка: ${e.message}`,
+                            link: this.navLink({href: `/fake-error-link`}),
+                        })
                     );
                 }
             }
