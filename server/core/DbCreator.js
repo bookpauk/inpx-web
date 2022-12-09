@@ -337,7 +337,7 @@ class DbCreator {
         //сохраним поисковые таблицы
         const chunkSize = 10000;
 
-        const saveTable = async(table, arr, nullArr, indexType = 'string') => {
+        const saveTable = async(table, arr, nullArr, indexType = 'string', delEmpty = false) => {
             
             if (indexType == 'string')
                 arr.sort((a, b) => a.value.localeCompare(b.value));
@@ -366,6 +366,13 @@ class DbCreator {
                 callback({progress: i/arr.length});                
             }
 
+            if (delEmpty) {
+                const delResult = await db.delete({table, where: `@@indexLR('value', '?', '?')`});
+                const statField = `${table}Count`;
+                if (stats[statField])
+                    stats[statField] -= delResult.deleted;
+            }
+
             nullArr();
             await db.close({table});
             utils.freeMemory();
@@ -378,7 +385,7 @@ class DbCreator {
 
         //series
         callback({job: 'series save', jobMessage: 'Сохранение индекса серий', jobStep: 4, progress: 0});
-        await saveTable('series', seriesArr, () => {seriesArr = null});
+        await saveTable('series', seriesArr, () => {seriesArr = null}, 'string', true);
 
         //title
         callback({job: 'title save', jobMessage: 'Сохранение индекса названий', jobStep: 5, progress: 0});
