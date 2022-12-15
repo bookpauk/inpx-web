@@ -593,6 +593,7 @@ class Search {
                     this.list.liberamaReady = true;
                     this.sendMessage({type: 'mes', data: 'ready'});
                     this.sendCurrentUrl();
+                    this.makeTitle();
                     break;
             }
         }
