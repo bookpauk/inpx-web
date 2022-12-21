@@ -268,7 +268,7 @@
             </div>
 
             <div class="row items-center q-ml-lg q-mt-sm">
-                <div style="width: 400px; height: 50px">
+                <div style="width: 400px;">
                     <PageScroller v-show="pageCount > 1" ref="pageScroller1" v-model="search.page" :page-count="pageCount" />
                 </div>
 
@@ -906,35 +906,6 @@ class Search {
         self.setDefaults(self, {page: self.page, limit: self.limit});
     }
     
-    onScroll() {
-        const curScrollTop = this.$refs.scroller.scrollTop;
-
-        if (this.ignoreScrolling) {
-            this.lastScrollTop = curScrollTop;
-            if (this.$refs.toolPanel.offsetTop > curScrollTop)
-                this.$refs.toolPanel.style.top = `${curScrollTop}px`;
-            return;
-        }
-
-        if (!this.lastScrollTop)
-            this.lastScrollTop = 0;
-        if (!this.lastScrollTop2)
-            this.lastScrollTop2 = 0;
-
-        if (curScrollTop - this.lastScrollTop > 0) {
-            this.$refs.toolPanel.style.position = 'relative';
-            if (this.lastScrollTop2 <= curScrollTop - this.$refs.toolPanel.clientHeight)
-                this.lastScrollTop2 = 0;
-
-            this.$refs.toolPanel.style.top = `${this.lastScrollTop2}px`;
-        } else {
-            this.$refs.toolPanel.style.position = 'sticky';
-            this.$refs.toolPanel.style.top = 0;
-            this.lastScrollTop2 = curScrollTop;
-        }
-
-        this.lastScrollTop = curScrollTop;
-    }
 
     async ignoreScroll(ms = 300) {
         this.ignoreScrolling = true;
