@@ -1,5 +1,4 @@
 /node_modules
 /server/.inpx-web*
-/server/inpx-web-filter.json
 /dist
 dev*.sh

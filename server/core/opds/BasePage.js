@@ -250,7 +250,14 @@ class BasePage {
             } else if (searchValue[0] == '#') {
 
                 searchValue = searchValue.substring(1);
-                return !bookValue || (bookValue !== emptyFieldValue && !enru.has(bookValue[0]) && bookValue.indexOf(searchValue) >= 0);
+                if (!bookValue)
+                    return false;
+                return bookValue !== emptyFieldValue && !enru.has(bookValue[0]) && bookValue.indexOf(searchValue) >= 0;
+            } else if (searchValue[0] == '~') {//RegExp
+
+                searchValue = searchValue.substring(1);
+                const re = new RegExp(searchValue, 'i');
+                return re.test(bookValue);
             } else {
                 //where = `@dirtyIndexLR('value', ${db.esc(a)}, ${db.esc(a + maxUtf8Char)})`;
                 return bookValue.localeCompare(searchValue) >= 0 && bookValue.localeCompare(searchValue + maxUtf8Char) <= 0;

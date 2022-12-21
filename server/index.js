@@ -16,16 +16,16 @@ let branch = '';
 const argvStrings = ['host', 'port', 'app-dir', 'lib-dir', 'inpx'];
 
 function showHelp(defaultConfig) {
-    console.log(utils.versionText(config));
+    console.log(utils.versionText(defaultConfig));
     console.log(
-`Usage: ${config.name} [options]
+`Usage: ${defaultConfig.name} [options]
 
 Options:
-  --help              Print ${config.name} command line options
+  --help              Print ${defaultConfig.name} command line options
   --host=<ip>         Set web server host, default: ${defaultConfig.server.host}
   --port=<port>       Set web server port, default: ${defaultConfig.server.port}
-  --app-dir=<dirpath> Set application working directory, default: <execDir>/.${config.name}
-  --lib-dir=<dirpath> Set library directory, default: the same as ${config.name} executable's
+  --app-dir=<dirpath> Set application working directory, default: <execDir>/.${defaultConfig.name}
+  --lib-dir=<dirpath> Set library directory, default: the same as ${defaultConfig.name} executable's
   --inpx=<filepath>   Set INPX collection file, default: the one that found in library dir
   --recreate          Force recreation of the search database on start
 `
