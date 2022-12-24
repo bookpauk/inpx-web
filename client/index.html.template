@@ -4,6 +4,47 @@
     <title></title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0">
+<script src="headroom.min.js"></script>
+<script>
+function pollDOM () {
+  const el = document.querySelector('.tool-panel');
+  if ( el != null ) {
+	var scroller = el.parentNode;
+var options = {
+    scroller : scroller,
+	offset : 300
+	};
+	var headroom  = new Headroom(el,options);
+	headroom.init();
+	  } else {
+    setTimeout(pollDOM, 300); // try again in 300 milliseconds
+  }
+}
+window.onload = (event) => {
+pollDOM(); //Функция ожидает окончания работы bundle.js по созданию DOM страницы и подключает headroom
+};
+</script>
+<style>
+
+.headroom--pinned {
+    display: block;
+}
+.headroom--unpinned {
+    display: block;
+
+}
+.headroom {
+    will-change: transform;
+    transition: transform 300ms linear !important;
+
+}
+.headroom--pinned {
+    transform: translateY(0%);
+}
+.headroom--unpinned {
+    transform: translateY(-100%);
+}
+</style>
   </head>
   <body>
     <div id="app"></div>

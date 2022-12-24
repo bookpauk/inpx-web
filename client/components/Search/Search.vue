@@ -1,6 +1,6 @@
 <template>
     <div class="root column fit" style="position: relative">
-        <div ref="scroller" class="col fit column no-wrap" style="overflow: auto; position: relative" @scroll="onScroll">
+        <div ref="scroller" class="col fit column no-wrap" style="overflow: auto; position: relative">
             <div ref="toolPanel" class="tool-panel q-pb-xs column bg-cyan-2" style="position: sticky; top: 0; z-index: 10;">
                 <div class="header q-mx-md q-mb-xs q-mt-sm row items-center">
                     <a :href="newSearchLink" style="height: 33px; width: 34px">
