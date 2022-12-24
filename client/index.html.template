@@ -10,9 +10,10 @@ function pollDOM () {
   const el = document.querySelector('.tool-panel');
   if ( el != null ) {
 	var scroller = el.parentNode;
+	var scroll_offset=el.offsetHeight;
 var options = {
     scroller : scroller,
-	offset : 300
+	offset : scroll_offset
 	};
 	var headroom  = new Headroom(el,options);
 	headroom.init();
