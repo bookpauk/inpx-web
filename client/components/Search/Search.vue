@@ -954,6 +954,8 @@ class Search {
     scrollToTop() {
         this.$refs.scroller.scrollTop = 0;
         this.lastScrollTop = 0;
+	this.$refs.toolPanel.style.top="0px";
+	this.$refs.toolPanel.style.position="sticky";
     }
 
     updatePageCount() {
