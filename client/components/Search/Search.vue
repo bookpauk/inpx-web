@@ -268,7 +268,7 @@
             </div>
 
             <div class="row items-center q-ml-lg q-mt-sm">
-                <div style="width: 400px; height: 50px">
+                <div style="width: 400px;">
                     <PageScroller v-show="pageCount > 1" ref="pageScroller1" v-model="search.page" :page-count="pageCount" />
                 </div>
 
@@ -908,6 +908,7 @@ class Search {
     
     onScroll() {
         const curScrollTop = this.$refs.scroller.scrollTop;
+		const toolpanelviewportoffset= this.$refs.toolPanel.getBoundingClientRect().top;
 
         if (this.ignoreScrolling) {
             this.lastScrollTop = curScrollTop;
@@ -916,24 +917,29 @@ class Search {
             return;
         }
 
+
+		if (this.lastScrollTop==curScrollTop) return; //если событие вызвано более 1 раза на 1 скролл
+
         if (!this.lastScrollTop)
             this.lastScrollTop = 0;
-        if (!this.lastScrollTop2)
-            this.lastScrollTop2 = 0;
 
-        if (curScrollTop - this.lastScrollTop > 0) {
-            this.$refs.toolPanel.style.position = 'relative';
-            if (this.lastScrollTop2 <= curScrollTop - this.$refs.toolPanel.clientHeight)
-                this.lastScrollTop2 = 0;
-
-            this.$refs.toolPanel.style.top = `${this.lastScrollTop2}px`;
-        } else {
-            this.$refs.toolPanel.style.position = 'sticky';
-            this.$refs.toolPanel.style.top = 0;
-            this.lastScrollTop2 = curScrollTop;
-        }
-
+		if (curScrollTop - this.lastScrollTop > 0) { //страницу крутят вверх
+		    if (this.$refs.toolPanel.style.position=="sticky") //Если блок приклеен к окну
+			this.$refs.toolPanel.style.top=`${curScrollTop}px`;//Приклеиваем его к позиции в родителе
+		    this.$refs.toolPanel.style.position="relative";
+		    if (toolpanelviewportoffset<-this.$refs.toolPanel.offsetHeight) //Но не даём блоку оказаться дальше своей высоты за экраном
+			this.$refs.toolPanel.style.top = `${curScrollTop-this.$refs.toolPanel.offsetHeight}px`;
+    		} else {
+        	if (toolpanelviewportoffset>=0)
+			{
+				this.$refs.toolPanel.style.top="0px";
+				this.$refs.toolPanel.style.position="sticky";
+			
+			}
+		}
         this.lastScrollTop = curScrollTop;
+
+
     }
 
     async ignoreScroll(ms = 300) {
@@ -948,6 +954,8 @@ class Search {
     scrollToTop() {
         this.$refs.scroller.scrollTop = 0;
         this.lastScrollTop = 0;
+	this.$refs.toolPanel.style.top="0px";
+	this.$refs.toolPanel.style.position="sticky";
     }
 
     updatePageCount() {
