@@ -56,18 +56,6 @@
                     </DivBtn>
                 </div>
                 <div v-show="!isExtendedSearch" class="row q-mx-md q-mb-xs items-center">
-                    <DivBtn
-                        class="text-grey-5 bg-yellow-1 q-mt-xs" :size="30" :icon-size="24" round
-                        :icon="(extendedParams ? 'la la-angle-double-up' : 'la la-angle-double-down')"
-                        @click.stop.prevent="extendedParams = !extendedParams"
-                    >
-                        <template #tooltip>
-                            <q-tooltip :delay="1500" anchor="bottom middle" content-style="font-size: 80%" max-width="400px">
-                                {{ `${(extendedParams ? 'Скрыть' : 'Показать')} дополнительные критерии поиска` }}
-                            </q-tooltip>
-                        </template>
-                    </DivBtn>
-                    <div class="q-mx-xs" />
                     <q-input
                         ref="authorInput" v-model="search.author" :maxlength="5000" :debounce="inputDebounce"
                         class="q-mt-xs" :bg-color="inputBgColor('author')" style="width: 200px;" label="Автор" stack-label outlined dense clearable
@@ -122,8 +110,6 @@
                     </DivBtn>
                 </div>
                 <div v-show="!isExtendedSearch && extendedParams" class="row q-mx-md q-mb-xs items-center">
-                    <div style="width: 30px" />
-                    <div class="q-mx-xs" />
                     <q-input
                         v-model="genreNames" :maxlength="inputMaxLength" :debounce="inputDebounce"
                         class="q-mt-xs" :bg-color="inputBgColor()" input-style="cursor: pointer" style="width: 200px;" label="Жанр" stack-label outlined dense clearable readonly
@@ -187,6 +173,20 @@
                 <div v-show="!isExtendedSearch && !extendedParams && extendedParamsMessage" class="row q-mx-md items-center clickable" @click.stop.prevent="extendedParams = true">
                     +{{ extendedParamsMessage }}
                 </div>
+
+                <DivBtn
+                    v-show="!isExtendedSearch && (extendedParams || !extendedParamsMessage)"
+                    class="text-grey-6" :size="16" :icon-size="16"
+                    :icon="(extendedParams ? 'la la-angle-double-up' : 'la la-angle-double-down')"
+                    @click.stop.prevent="extendedParams = !extendedParams"
+                    no-shadow
+                >
+                    <template #tooltip>
+                        <q-tooltip :delay="1500" anchor="bottom middle" content-style="font-size: 80%" max-width="400px">
+                            {{ `${(extendedParams ? 'Скрыть' : 'Показать')} дополнительные критерии поиска` }}
+                        </q-tooltip>
+                    </template>
+                </DivBtn>
 
                 <div v-show="isExtendedSearch" class="row q-mx-md q-mb-xs items-center">
                     <q-input
