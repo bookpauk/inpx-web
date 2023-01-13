@@ -908,7 +908,7 @@ class Search {
     
     onScroll() {
         const curScrollTop = this.$refs.scroller.scrollTop;
-		const toolpanelviewportoffset= this.$refs.toolPanel.getBoundingClientRect().top;
+        const toolPanelOffset = this.$refs.toolPanel.getBoundingClientRect().top;
 
         if (this.ignoreScrolling) {
             this.lastScrollTop = curScrollTop;
@@ -917,36 +917,35 @@ class Search {
             return;
         }
 
-
-		if (this.lastScrollTop==curScrollTop) return; //если событие вызвано более 1 раза на 1 скролл
+        if (this.lastScrollTop === curScrollTop)
+            return; //если событие вызвано более 1 раза на 1 скролл
 
         if (!this.lastScrollTop)
             this.lastScrollTop = 0;
 
-		if (curScrollTop - this.lastScrollTop > 0) { //страницу крутят вверх
-		    if (this.$refs.toolPanel.style.position=="sticky") //Если блок приклеен к окну
-			this.$refs.toolPanel.style.top=`${curScrollTop}px`;//Приклеиваем его к позиции в родителе
-		    this.$refs.toolPanel.style.position="relative";
-		    if (toolpanelviewportoffset<-this.$refs.toolPanel.offsetHeight) //Но не даём блоку оказаться дальше своей высоты за экраном
-			this.$refs.toolPanel.style.top = `${curScrollTop-this.$refs.toolPanel.offsetHeight}px`;
-    		} else {
-        	if (toolpanelviewportoffset>=0)
-			{
-				this.$refs.toolPanel.style.top="0px";
-				this.$refs.toolPanel.style.position="sticky";
-			
-			}
-		}
+        if (curScrollTop - this.lastScrollTop > 0) { //страницу крутят вверх
+            if (this.$refs.toolPanel.style.position == 'sticky') //если блок приклеен к окну
+                this.$refs.toolPanel.style.top = `${this.lastScrollTop}px`;//приклеиваем его к позиции в родителе
+
+            this.$refs.toolPanel.style.position = 'relative';
+            (async() => {//"отложенная" коректировка, из-за артефактов в firefox
+                if (toolPanelOffset < -this.$refs.toolPanel.offsetHeight) { //не даём блоку оказаться дальше своей высоты за экраном
+                    await utils.sleep(10);
+                    this.$refs.toolPanel.style.top = `${curScrollTop - this.$refs.toolPanel.offsetHeight}px`;
+                }
+            })();
+
+        } else if (toolPanelOffset >= 0) {
+            this.$refs.toolPanel.style.top = '0px';
+            this.$refs.toolPanel.style.position = 'sticky';
+        }
+
         this.lastScrollTop = curScrollTop;
-
-
     }
 
     async ignoreScroll(ms = 300) {
         this.ignoreScrolling = true;
         await utils.sleep(ms);
-        await this.$nextTick();
-        await this.$nextTick();
         await this.$nextTick();
         this.ignoreScrolling = false;
     }
@@ -954,8 +953,8 @@ class Search {
     scrollToTop() {
         this.$refs.scroller.scrollTop = 0;
         this.lastScrollTop = 0;
-	this.$refs.toolPanel.style.top="0px";
-	this.$refs.toolPanel.style.position="sticky";
+        this.$refs.toolPanel.style.top = '0px';
+        this.$refs.toolPanel.style.position = 'sticky';
     }
 
     updatePageCount() {
