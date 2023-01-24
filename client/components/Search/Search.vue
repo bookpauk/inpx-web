@@ -2,7 +2,7 @@
     <div class="root column fit" style="position: relative">
         <div ref="scroller" class="col fit column no-wrap" style="overflow: auto; position: relative" @scroll="onScroll">
             <!-- Tool Panel begin -->
-            <div ref="toolPanel" class="tool-panel q-pb-xs column bg-cyan-2" style="position: sticky; top: 0; z-index: 10;">
+            <div ref="toolPanel" class="tool-panel column bg-cyan-2" style="position: sticky; top: 0; z-index: 10;">
                 <!-- 1 -->
                 <div class="row">
                     <!-- 1-1 -->
@@ -167,7 +167,7 @@
                             <q-input
                                 v-model="extSearchNames"
                                 class="col q-mt-xs" :bg-color="inputBgColor('extended')" input-style="cursor: pointer"
-                                style="min-width: 200px; max-width: 638px;" label="Расширенный поиск" stack-label outlined dense clearable readonly
+                                style="min-width: 140px; max-width: 638px;" label="Расширенный поиск" stack-label outlined dense clearable readonly
                                 @click.stop.prevent="selectExtSearch"
                             >
                                 <template v-if="extSearchNames" #append>
@@ -244,18 +244,18 @@
                     <!-- 1-2 -->
                     <div class="column q-mx-sm">
                         <div style="height: 3px" />
-                        <DivBtn v-if="!config.freeAccess" class="q-mt-sm text-white bg-secondary" :size="28" :icon-size="24" :imt="1" icon="la la-sign-out-alt" round @click.stop.prevent="logout">
-                            <template #tooltip>
-                                <q-tooltip :delay="1500" anchor="bottom middle" content-style="font-size: 80%" max-width="400px">
-                                    Выход
-                                </q-tooltip>
-                            </template>
-                        </DivBtn>
-
                         <DivBtn class="q-mt-sm text-white bg-secondary" :size="28" :icon-size="24" :imt="1" icon="la la-cog" round @click.stop.prevent="settingsDialogVisible = true">
                             <template #tooltip>
                                 <q-tooltip :delay="1500" anchor="bottom middle" content-style="font-size: 80%" max-width="400px">
                                     Настройки
+                                </q-tooltip>
+                            </template>
+                        </DivBtn>
+
+                        <DivBtn v-if="!config.freeAccess" class="q-mt-sm text-white bg-secondary" :size="28" :icon-size="24" :imt="1" icon="la la-sign-out-alt" round @click.stop.prevent="logout">
+                            <template #tooltip>
+                                <q-tooltip :delay="1500" anchor="bottom middle" content-style="font-size: 80%" max-width="400px">
+                                    Выход
                                 </q-tooltip>
                             </template>
                         </DivBtn>
