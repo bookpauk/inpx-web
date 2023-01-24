@@ -18,7 +18,7 @@
 
             <div class="row q-mt-sm no-wrap">
                 <div class="poster-size">
-                    <div class="poster-size column justify-center items-center" :class="{poster: coverSrc}" @click.stop.prevent="posterClick">
+                    <div class="column justify-center items-center" :class="{'poster': coverSrc, 'no-poster': !coverSrc}" @click.stop.prevent="posterClick">
                         <img v-if="coverSrc" :src="coverSrc" class="fit row justify-center items-center" style="object-fit: contain" @error="coverSrc = ''" />
                         <div v-if="!coverSrc" class="fit row justify-center items-center text-grey-5" style="border: 1px solid #ccc; font-size: 300%">
                             <i>{{ book.ext }}</i>
@@ -317,7 +317,7 @@ export default vueComponent(BookInfoDialog);
     min-width: 100px;
 }
 
-.poster {
+.poster, .no-poster {
     width: 100%;
     height: 100%;
 }
