@@ -159,7 +159,7 @@
                                 </q-tooltip>
                             </q-input>
                         </div>
-                        <div v-show="!isExtendedSearch && !extendedParams && extendedParamsMessage" class="row q-mx-md items-center clickable" @click.stop.prevent="extendedParams = true">
+                        <div v-show="!isExtendedSearch && !extendedParams && extendedParamsMessage" class="row q-mx-sm items-center clickable" @click.stop.prevent="extendedParams = true">
                             +{{ extendedParamsMessage }}
                         </div>
 
