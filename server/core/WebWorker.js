@@ -433,20 +433,27 @@ class WebWorker {
             const db = this.db;
             let link = '';
 
-            //найдем bookPath и downFileName
+            //найдем downFileName и bookPath
             let rows = await db.select({table: 'book', where: `@@hash('_uid', ${db.esc(bookUid)})`});
             if (!rows.length)
                 throw new Error('404 Файл не найден');
 
             const book = rows[0];
             let downFileName = book.file;
-            const author = book.author.split(',');
-            const at = [author[0], book.title];
-            downFileName = utils.makeValidFileNameOrEmpty(at.filter(r => r).join(' - '))
+            const authors = book.author.split(',');
+            let author = authors[0];
+            author = author.split(' ').filter(r => r.trim());
+            for (let i = 1; i < author.length; i++)
+                author[i] = `${(i === 1 ? ' ' : '')}${author[i][0]}.`;
+            if (authors.length > 1)
+                author.push(' и др.');
+
+            const at = [author.join(''), (book.title ? `_${book.title}` : '')];
+            downFileName = utils.makeValidFileNameOrEmpty(at.filter(r => r).join(''))
                 || utils.makeValidFileNameOrEmpty(at[0])
                 || utils.makeValidFileNameOrEmpty(at[1])
                 || downFileName;
-            downFileName = downFileName.substring(0, 100);
+            downFileName = downFileName.substring(0, 50);
 
             const ext = `.${book.ext}`;
             if (downFileName.substring(downFileName.length - ext.length) != ext)
