@@ -6,7 +6,7 @@
                     Расширенный поиск
                 </div>
 
-                <DivBtn class="q-ml-md text-white bg-secondary" :size="30" :icon-size="24" icon="la la-question" round @click.stop.prevent="showSearchHelp">
+                <DivBtn class="q-ml-sm text-grey-5 bg-yellow-1" :size="28" :icon-size="24" icon="la la-question" round @click.stop.prevent="showSearchHelp">
                     <template #tooltip>
                         <q-tooltip :delay="1500" anchor="bottom middle" content-style="font-size: 80%" max-width="400px">
                             Памятка
