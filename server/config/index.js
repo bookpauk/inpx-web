@@ -25,6 +25,7 @@ const propsToSave = [
     'remoteLib',
     'server',
     'opds',
+    'uiDefaults',
 ];
 
 let instance = null;

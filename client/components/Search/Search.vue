@@ -557,6 +557,13 @@ class Search {
         (async() => {
             await this.api.updateConfig();
 
+            //устанавливаем uiDefaults от сервера, если это необходимо
+            if (!this.settings.defaultsSet) {
+                const uiDefaults = _.cloneDeep(this.config.uiDefaults);
+                uiDefaults.defaultsSet = true;
+                this.commit('setSettings', uiDefaults);
+            }
+
             this.generateDefaults(this.extSearch, this.recStruct.map(f => f.field));
             this.extSearch.setDefaults(this.extSearch);
             this.search.lang = this.langDefault;

@@ -33,7 +33,7 @@ module.exports = {
     lowMemoryMode: false,
     fullOptimization: false,
 
-    webConfigParams: ['name', 'version', 'branch', 'bookReadLink', 'dbVersion', 'extendedSearch'],
+    webConfigParams: ['name', 'version', 'branch', 'bookReadLink', 'dbVersion', 'extendedSearch', 'uiDefaults'],
 
     allowRemoteLib: false,
     remoteLib: false,
@@ -56,6 +56,19 @@ module.exports = {
         user: '',
         password: '',
         root: '/opds',
+    },
+    uiDefaults: {
+        limit: 20,
+        downloadAsZip: false,
+        showCounts: true,
+        showRates: true,
+        showInfo: true,
+        showGenres: true,
+        showDates: false,
+        showDeleted: false,
+        abCacheEnabled: true,
+        langDefault: '',
+        showJson: false,
     },
 };
 
