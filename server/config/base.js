@@ -9,6 +9,8 @@ module.exports = {
     name: pckg.name,
 
     execDir,
+    libDir: '',
+    inpx: '',
 
     accessPassword: '',
     accessTimeout: 0,
