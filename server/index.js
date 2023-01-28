@@ -84,7 +84,7 @@ async function init() {
     }
 
     if (!config.remoteLib) {
-        const libDir = argv['lib-dir'];
+        const libDir = argv['lib-dir'] || config.libDir;
         if (libDir) {
             if (await fs.pathExists(libDir)) {
                 config.libDir = libDir;
@@ -95,11 +95,12 @@ async function init() {
             config.libDir = config.execDir;
         }
 
-        if (argv.inpx) {
-            if (await fs.pathExists(argv.inpx)) {
-                config.inpxFile = argv.inpx;
+        const inpxFile = argv.inpx || config.inpx;
+        if (inpxFile) {
+            if (await fs.pathExists(inpxFile)) {
+                config.inpxFile = inpxFile;
             } else {
-                throw new Error(`File "${argv.inpx}" not found`);
+                throw new Error(`File "${inpxFile}" not found`);
             }
         } else {
             const inpxFiles = [];

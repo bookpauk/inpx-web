@@ -32,6 +32,7 @@ class DivBtn {
         round: Boolean,
         imt:  { type: Number, default: 0 },// icon margin top
         disabled: Boolean,
+        noShadow: Boolean,
     };
 
     pressed = false;
@@ -56,6 +57,9 @@ class DivBtn {
             style.borderRadius = `${this.size}px`;
         else
             style.borderRadius = `${this.size/10}px`;
+
+        if (!this.noShadow)
+            style.boxShadow = '0.5px 1px 3px #333333';
     }
 
     async clickEffect(event) {
@@ -77,7 +81,6 @@ export default vueComponent(DivBtn);
 <style scoped>
 .button {
     position: relative;
-    box-shadow: 0.5px 1px 3px #333333;
 }
 
 .button:hover {

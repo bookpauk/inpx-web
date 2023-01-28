@@ -5,6 +5,8 @@ const fs = require('fs-extra');
 const branchFilename = __dirname + '/application_env';
 
 const propsToSave = [
+    'libDir',
+    'inpx',
     'accessPassword',
     'accessTimeout',
     'extendedSearch',
@@ -23,6 +25,7 @@ const propsToSave = [
     'remoteLib',
     'server',
     'opds',
+    'uiDefaults',
 ];
 
 let instance = null;

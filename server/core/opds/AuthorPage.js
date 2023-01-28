@@ -66,7 +66,7 @@ class AuthorPage extends BasePage {
             author: req.query.author || '',
             series: req.query.series || '',
             genre: req.query.genre || '',
-            del: 0,
+            del: '0',
             
             all: req.query.all || '',
             depth: 0,
@@ -86,7 +86,7 @@ class AuthorPage extends BasePage {
 
             if (bookList.books) {
                 let books = bookList.books;
-                const booksAll = this.filterBooks(books, {del: 0});
+                const booksAll = this.filterBooks(books);
                 const filtered = (query.all ? booksAll : this.filterBooks(books, query));
                 const sorted = this.sortSeriesBooks(filtered);
 

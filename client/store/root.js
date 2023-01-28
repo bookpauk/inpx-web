@@ -4,9 +4,13 @@ const state = {
     settings: {
         accessToken: '',
         extendedParams: false,
-        limit: 20,
         expandedAuthor: [],
         expandedSeries: [],
+
+        defaultsSet: false,
+        
+        //uiDefaults
+        limit: 20,
         downloadAsZip: false,
         showCounts: true,
         showRates: true,
