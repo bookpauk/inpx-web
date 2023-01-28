@@ -55,7 +55,7 @@ class SearchPage extends BasePage {
                             this.makeEntry({
                                 id: 'next_page',
                                 title: '[Следующая страница]',
-                                link: this.navLink({href: `/${this.id}?type=${from}&term=${encodeURIComponent(query.term)}&page=${page + 1}`}),
+                                link: this.navLink({href: `/${this.id}?type=${from}&term=${encodeURIComponent(query.term)}&genre=${encodeURIComponent(query.genre)}&page=${page + 1}`}),
                             })
                         );
                     }
