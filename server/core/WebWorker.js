@@ -453,7 +453,8 @@ class WebWorker {
                 || utils.makeValidFileNameOrEmpty(at[0])
                 || utils.makeValidFileNameOrEmpty(at[1])
                 || downFileName;
-            downFileName = downFileName.substring(0, 50);
+            if (downFileName.length > 50)
+                downFileName = `${downFileName.substring(0, 50)}_`;
 
             const ext = `.${book.ext}`;
             if (downFileName.substring(downFileName.length - ext.length) != ext)
