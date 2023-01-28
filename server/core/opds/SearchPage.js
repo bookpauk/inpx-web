@@ -15,6 +15,7 @@ class SearchPage extends BasePage {
         const query = {
             type: req.query.type || '',
             term: req.query.term || '',
+            genre: req.query.genre || '',
             page: parseInt(req.query.page, 10) || 1,
         };
 
@@ -27,7 +28,7 @@ class SearchPage extends BasePage {
 
                     const limit = 100;
                     const offset = (page - 1)*limit;
-                    const queryRes = await this.webWorker.search(from, {[from]: query.term, del: 0, offset, limit});
+                    const queryRes = await this.webWorker.search(from, {[from]: query.term, genre: query.genre, del: '0', offset, limit});
 
                     const found = queryRes.found;
 
@@ -96,6 +97,15 @@ class SearchPage extends BasePage {
                     content: {
                         '*ATTRS': {type: 'text'},
                         '*TEXT': `Искать по названиям книг`,
+                    },
+                }),
+                this.makeEntry({
+                    id: 'search_genre',
+                    title: 'Поиск книг в жанре',
+                    link: this.navLink({href: `/genre?from=search&term=${encodeURIComponent(query.term)}`}),
+                    content: {
+                        '*ATTRS': {type: 'text'},
+                        '*TEXT': `Искать по названиям книг в выбранном жанре`,
                     },
                 }),
                 this.makeEntry({

@@ -15,7 +15,7 @@ class TitlePage extends BasePage {
         const query = {
             title: req.query.title || '',
             genre: req.query.genre || '',
-            del: 0,
+            del: '0',
             
             depth: 0,
         };

@@ -13,13 +13,17 @@ class GenrePage extends BasePage {
         const result = {};
 
         const query = {
-            from: req.query.from || '',
+            from: req.query.from || 'search',
+            term: req.query.term || '*',
             section: req.query.section || '',
         };
 
+        let searchQuery = '';
+        if (query.from == 'search')
+            searchQuery = `&type=title&term=${encodeURIComponent(query.term)}`;
+
         const entry = [];
         if (query.from) {
-
             if (query.section) {
                 //выбираем подразделы
                 const {genreSection} = await this.getGenres();
@@ -34,7 +38,7 @@ class GenrePage extends BasePage {
                             this.makeEntry({
                                 id: ++id,
                                 title: g.name,
-                                link: this.navLink({href: `/${encodeURIComponent(query.from)}?genre=${encodeURIComponent(g.value)}`}),
+                                link: this.navLink({href: `/${encodeURIComponent(query.from)}?genre=${encodeURIComponent(g.value)}${searchQuery}`}),
                             })
                         );
                     }
@@ -43,7 +47,7 @@ class GenrePage extends BasePage {
                         this.makeEntry({
                             id: 'whole_section',
                             title: '[Весь раздел]',
-                            link: this.navLink({href: `/${encodeURIComponent(query.from)}?genre=${encodeURIComponent(all.join(','))}`}),
+                            link: this.navLink({href: `/${encodeURIComponent(query.from)}?genre=${encodeURIComponent(all.join(','))}${searchQuery}`}),
                         })
                     );
                 }
@@ -56,7 +60,7 @@ class GenrePage extends BasePage {
                         this.makeEntry({
                             id: ++id,
                             title: section.name,
-                            link: this.navLink({href: `/genre?from=${encodeURIComponent(query.from)}&section=${encodeURIComponent(section.name)}`}),
+                            link: this.navLink({href: `/genre?from=${encodeURIComponent(query.from)}&section=${encodeURIComponent(section.name)}${searchQuery}`}),
                         })
                     );
                 }

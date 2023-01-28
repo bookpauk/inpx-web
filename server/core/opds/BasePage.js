@@ -20,6 +20,8 @@ class BasePage {
         this.webWorker = new WebWorker(config);
         this.rootTag = 'feed';
         this.opdsRoot = config.opdsRoot;
+
+        this.showDeleted = false;
     }
 
     makeEntry(entry = {}) {
@@ -213,7 +215,7 @@ class BasePage {
     }
 
     //скопировано из BaseList.js, часть функционала не используется
-    filterBooks(books, query) {
+    filterBooks(books, query = {}) {
         const s = query;
 
         const splitAuthor = (author) => {
