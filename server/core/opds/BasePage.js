@@ -24,13 +24,18 @@ class BasePage {
         this.showDeleted = false;
     }
 
+    escape(s) {
+        //костыль для koreader, не понимает hex-экранирование вида &#x27;
+        return he.escape(s).replace(/&#x27;/g, '&#39;').replace(/&#x60;/g, '&#96;');
+    }
+
     makeEntry(entry = {}) {
         if (!entry.id)
             throw new Error('makeEntry: no id');
         if (!entry.title)
             throw new Error('makeEntry: no title');
 
-        entry.title = he.escape(entry.title);
+        entry.title = this.escape(entry.title);
 
         const result = {
             updated: (new Date()).toISOString().substring(0, 19) + 'Z',
@@ -48,7 +53,7 @@ class BasePage {
     }
 
     makeLink(attrs) {
-        attrs.href = he.escape(attrs.href);
+        attrs.href = this.escape(attrs.href);
         return {'*ATTRS': attrs};
     }
 

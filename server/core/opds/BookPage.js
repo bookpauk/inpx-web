@@ -1,6 +1,5 @@
 const path = require('path');
 const _ = require('lodash');
-const he = require('he');
 const dayjs = require('dayjs');
 
 const BasePage = require('./BasePage');
@@ -190,7 +189,7 @@ class BookPage extends BasePage {
                 if (content) {
                     e.content = {
                         '*ATTRS': {type: 'text/html'},
-                        '*TEXT': he.escape(content),
+                        '*TEXT': this.escape(content),
                     };
                 }
 

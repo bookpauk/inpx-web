@@ -1,5 +1,3 @@
-const he = require('he');
-
 const BasePage = require('./BasePage');
 
 class SearchHelpPage extends BasePage {
@@ -45,7 +43,7 @@ class SearchHelpPage extends BasePage {
                 title: this.title,
                 content: {
                     '*ATTRS': {type: 'text/html'},
-                    '*TEXT': he.escape(content),
+                    '*TEXT': this.escape(content),
                 },
                 link: [
                     this.downLink({href: '/book/fake-link', type: `application/fb2+zip`})

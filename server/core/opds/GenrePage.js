@@ -14,7 +14,7 @@ class GenrePage extends BasePage {
 
         const query = {
             from: req.query.from || 'search',
-            term: req.query.term || '*',
+            term: req.query.term || '',
             section: req.query.section || '',
         };
 

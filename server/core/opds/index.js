@@ -11,6 +11,8 @@ const OpensearchPage = require('./OpensearchPage');
 const SearchPage = require('./SearchPage');
 const SearchHelpPage = require('./SearchHelpPage');
 
+const log = new (require('../AppLogger'))().log;//singleton
+
 module.exports = function(app, config) {
     if (!config.opds || !config.opds.enabled)
         return;
@@ -63,10 +65,8 @@ module.exports = function(app, config) {
                 next();
             }
         } catch (e) {
+            log(LM_ERR, `OPDS: ${e.message}, url: ${req.originalUrl}`);
             res.status(500).send({error: e.message});
-            if (config.branch == 'development') {
-                console.error({error: e.message, url: req.originalUrl});
-            }
         }
     };
 
