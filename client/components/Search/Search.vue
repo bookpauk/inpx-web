@@ -3,6 +3,19 @@
         <div ref="scroller" class="col fit column no-wrap" style="overflow: auto; position: relative" @scroll="onScroll">
             <!-- Tool Panel begin -->
             <div ref="toolPanel" class="tool-panel column bg-cyan-2" style="position: sticky; top: 0; z-index: 10;">
+                <!-- Обновление -->
+                <div v-show="showNewReleaseAvailable && newReleaseAvailable" class="row q-py-sm bg-green-4 items-center">
+                    <div class="q-ml-sm" style="font-size: 120%">
+                        Доступна новая версия <b>{{ config.name }} v{{ config.latestVersion }}</b>
+                    </div>
+                    <DivBtn class="q-ml-sm q-px-sm bg-white" :size="20" @click.stop.prevent="openReleasePage">
+                        Скачать
+                    </DivBtn>
+                    <DivBtn class="q-ml-sm q-px-sm bg-white" :size="20" @click.stop.prevent="settingsDialogVisible = true">
+                        Отключить уведомление
+                    </DivBtn>
+                </div>
+
                 <!-- 1 -->
                 <div class="row">
                     <!-- 1-1 -->
@@ -504,6 +517,7 @@ class Search {
     limit = 20;
     extendedParams = false;
     showJson = false;
+    showNewReleaseAvailable = true;
 
     //stuff
     prevList = {};
@@ -555,6 +569,7 @@ class Search {
 
     mounted() {
         (async() => {
+            //для срабатывания watch.config
             await this.api.updateConfig();
 
             //устанавливаем uiDefaults от сервера, если это необходимо
@@ -604,6 +619,7 @@ class Search {
         this.abCacheEnabled = settings.abCacheEnabled;
         this.langDefault = settings.langDefault;
         this.showJson = settings.showJson;
+        this.showNewReleaseAvailable = settings.showNewReleaseAvailable;
     }
 
     recvMessage(d) {
@@ -629,6 +645,10 @@ class Search {
 
     get config() {
         return this.$store.state.config;
+    }
+
+    get newReleaseAvailable() {
+        return (this.config.latestVersion && this.config.version != this.config.latestVersion);
     }
 
     get recStruct() {
@@ -728,14 +748,19 @@ class Search {
     }
 
     openReleasePage() {
-        window.open('https://github.com/bookpauk/inpx-web/releases', '_blank');
+        if (this.config.latestReleaseLink)
+            window.open(this.config.latestReleaseLink, '_blank');
     }
 
     makeProjectName() {
         const collection = this.config.dbConfig.inpxInfo.collection.split('\n');
         this.collection = collection[0].trim();
 
-        this.projectName = `${this.config.name} v${this.config.webAppVersion}`;
+        let projectName = `${this.config.name} v${this.config.webAppVersion}`;
+        if (this.newReleaseAvailable)
+            projectName += `, доступно обновление: v${this.config.latestVersion}`;
+
+        this.projectName = projectName;
         this.makeTitle();
     }
 

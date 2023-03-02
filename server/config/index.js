@@ -25,6 +25,8 @@ const propsToSave = [
     'remoteLib',
     'server',
     'opds',
+    'latestReleaseLink',
+    'checkReleaseLink',
     'uiDefaults',
 ];
 

@@ -89,8 +89,10 @@ export default vueComponent(DivBtn);
 }
 
 .button-pressed {
-    margin-left: 2px;
-    margin-top: 2px;
+    margin-left: 1px;
+    margin-top: 1px;
+    margin-right: -1px;
+    margin-bottom: -1px;
 }
 
 .clickable {
