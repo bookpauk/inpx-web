@@ -147,6 +147,11 @@ class BookPage extends BasePage {
                     title: bookInfo.book.title || 'Без названия',
                 });
 
+                //author bookInfo
+                if (bookInfo.book.author) {
+                    e.author = bookInfo.book.author.split(',').map(a => ({name: a}));
+                }
+
                 e['dc:language'] = bookInfo.book.lang;
                 e['dc:format'] = fileFormat;
 
@@ -172,7 +177,8 @@ class BookPage extends BasePage {
                     const infoObj = parser.bookInfo();
 
                     if (infoObj.titleInfo) {
-                        if (infoObj.titleInfo.author.length) {
+                        //author fb2Info
+                        if (!e.author && infoObj.titleInfo.author.length) {
                             e.author = infoObj.titleInfo.author.map(a => ({name: a}));
                         }
 
