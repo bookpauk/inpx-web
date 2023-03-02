@@ -6,6 +6,7 @@ const execDir = path.resolve(__dirname, '..');
 module.exports = {
     branch: 'unknown',
     version: pckg.version,
+    latestVersion: '',
     name: pckg.name,
 
     execDir,
@@ -19,7 +20,7 @@ module.exports = {
     loggingEnabled: true,
 
     //поправить в случае, если были критические изменения в DbCreator или InpxParser
-    //иначе будет рассинхронизация между сервером и клиентом на уровне БД
+    //иначе будет рассинхронизация по кешу между сервером и клиентом на уровне БД
     dbVersion: '11',
     dbCacheSize: 5,
 
@@ -33,7 +34,7 @@ module.exports = {
     lowMemoryMode: false,
     fullOptimization: false,
 
-    webConfigParams: ['name', 'version', 'branch', 'bookReadLink', 'dbVersion', 'extendedSearch', 'uiDefaults'],
+    webConfigParams: ['name', 'version', 'latestVersion', 'branch', 'bookReadLink', 'dbVersion', 'extendedSearch', 'latestReleaseLink', 'uiDefaults'],
 
     allowRemoteLib: false,
     remoteLib: false,
@@ -57,6 +58,10 @@ module.exports = {
         password: '',
         root: '/opds',
     },
+
+    latestReleaseLink: 'https://github.com/bookpauk/inpx-web/releases/latest',
+    checkReleaseLink: 'https://api.github.com/repos/bookpauk/inpx-web/releases/latest',
+
     uiDefaults: {
         limit: 20,
         downloadAsZip: false,
@@ -69,6 +74,7 @@ module.exports = {
         abCacheEnabled: true,
         langDefault: '',
         showJson: false,
+        showNewReleaseAvailable: true,
     },
 };
 

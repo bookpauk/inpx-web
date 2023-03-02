@@ -21,6 +21,7 @@ const state = {
         abCacheEnabled: true,
         langDefault: '',
         showJson: false,
+        showNewReleaseAvailable: true,
     },    
 };
 

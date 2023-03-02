@@ -174,6 +174,13 @@ Options:
         "root": "/opds"
     },
 
+    // страница для скачивания свежего релиза
+    "latestReleaseLink": "https://github.com/bookpauk/inpx-web/releases/latest",
+
+    // api для проверки новой версии, 
+    // пустая строка - отключить проверку выхода новых версий
+    "checkReleaseLink": "https://api.github.com/repos/bookpauk/inpx-web/releases/latest",
+
     // настройки по умолчанию для веб-интерфейса
     // устанавливаются при первой загрузке страницы в браузере
     // дальнейшие изменения настроек с помощью веб-интерфейса уже сохраняются в самом браузере
@@ -188,7 +195,8 @@ Options:
         "showDeleted": false, // показывать удаленные
         "abCacheEnabled": true, // кешировать запросы
         "langDefault": "", // язык по умолчанию (например "ru,en")
-        "showJson": false // показывать JSON (в расширенном поиске)
+        "showJson": false, // показывать JSON (в расширенном поиске)
+        "showNewReleaseAvailable": true // уведомлять о выходе новой версии
     }
 }
 ```

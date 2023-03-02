@@ -10,6 +10,7 @@ const DbCreator = require('./DbCreator');
 const DbSearcher = require('./DbSearcher');
 const InpxHashCreator = require('./InpxHashCreator');
 const RemoteLib = require('./RemoteLib');//singleton
+const FileDownloader = require('./FileDownloader');
 
 const asyncExit = new (require('./AsyncExit'))();
 const log = new (require('./AppLogger'))().log;//singleton
@@ -28,7 +29,8 @@ const stateToText = {
     [ssDbCreating]: 'Создание поисковой базы',
 };
 
-const cleanDirPeriod = 60*60*1000;//каждый час
+const cleanDirInterval = 60*60*1000;//каждый час
+const checkReleaseInterval = 2*60*60*1000;//каждые 2 часа
 
 //singleton
 let instance = null;
@@ -67,6 +69,7 @@ class WebWorker {
 
             this.periodicCleanDir(dirConfig);//no await
             this.periodicCheckInpx();//no await
+            this.periodicCheckNewRelease();//no await
 
             instance = this;
         }
@@ -638,7 +641,7 @@ class WebWorker {
             let lastCleanDirTime = 0;
             while (1) {// eslint-disable-line no-constant-condition
                 //чистка папок
-                if (Date.now() - lastCleanDirTime >= cleanDirPeriod) {
+                if (Date.now() - lastCleanDirTime >= cleanDirInterval) {
                     for (const config of dirConfig) {
                         try {
                             await this.cleanDir(config);
@@ -688,6 +691,27 @@ class WebWorker {
             }
 
             await utils.sleep(inpxCheckInterval*60*1000);
+        }
+    }
+
+    async periodicCheckNewRelease() {
+        const checkReleaseLink = this.config.checkReleaseLink;
+        if (!checkReleaseLink)
+            return;
+        const down = new FileDownloader(1024*1024);
+
+        while (1) {// eslint-disable-line no-constant-condition
+            try {
+                let release = await down.load(checkReleaseLink);
+                release = JSON.parse(release.toString());
+
+                if (release.tag_name)
+                    this.config.latestVersion = release.tag_name;
+            } catch(e) {
+                log(LM_ERR, `periodicCheckNewRelease: ${e.message}`);
+            }
+
+            await utils.sleep(checkReleaseInterval);
         }
     }
 }

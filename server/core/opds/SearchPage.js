@@ -1,5 +1,6 @@
 const BasePage = require('./BasePage');
 const utils = require('../utils');
+const iconv = require('iconv-lite');
 
 class SearchPage extends BasePage {
     constructor(config) {
@@ -28,7 +29,14 @@ class SearchPage extends BasePage {
 
                     const limit = 100;
                     const offset = (page - 1)*limit;
-                    const queryRes = await this.webWorker.search(from, {[from]: query.term, genre: query.genre, del: '0', offset, limit});
+
+                    const searchQuery = {[from]: query.term, genre: query.genre, del: '0', offset, limit};
+                    let queryRes = await this.webWorker.search(from, searchQuery);
+                    
+                    if (queryRes.totalFound === 0) { // не нашли ничего, проверим, может term в кодировке ISO-8859-1 (баг koreader)
+                        searchQuery[from] = iconv.encode(query.term, 'ISO-8859-1').toString();
+                        queryRes = await this.webWorker.search(from, searchQuery);
+                    }
 
                     const found = queryRes.found;
 
