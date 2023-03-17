@@ -298,7 +298,7 @@ class DbSearcher {
                     table: 'ext',
                     rawResult: true,
                     where: `
-                        const exts = ${db.esc(query.ext.split(','))};
+                        const exts = ${db.esc(query.ext.split('|'))};
 
                         const ids = new Set();
                         for (const l of exts) {

@@ -450,6 +450,13 @@ export default class BaseList {
                 librateFound = searchLibrate.has(book.librate);
             }
 
+            //ext
+            let extFound = !s.ext;
+            if (!extFound) {
+                const searchExt = new Set(s.ext.split('|'));
+                extFound = searchExt.has(book.ext.toLowerCase() || emptyFieldValue);
+            }
+
             return (this.showDeleted || !book.del)
                 && authorFound
                 && filterBySearch(book.series, s.series)
@@ -458,6 +465,7 @@ export default class BaseList {
                 && langFound
                 && dateFound
                 && librateFound
+                && extFound
             ;
         });
     }

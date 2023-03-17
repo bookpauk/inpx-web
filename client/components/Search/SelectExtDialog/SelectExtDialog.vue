@@ -16,7 +16,13 @@
                         :options="optionsPre"
                         type="checkbox"
                         inline
-                    />
+                    >
+                        <template #label="opt">
+                            <div class="row items-center" style="width: 35px">
+                                <span>{{ opt.label }}</span>
+                            </div>
+                        </template>
+                    </q-option-group>
                 </div>
 
                 <q-checkbox v-model="tickAll" label="Выбрать/снять все" toggle-order="ft" @update:model-value="makeTickAll" />
@@ -57,12 +63,12 @@ const componentOptions = {
         dialogVisible(newValue) {
             this.$emit('update:modelValue', newValue);
         },
-        lang() {
+        ext() {
             this.updateTicked();
         },
         ticked() {
             this.checkAllTicked();
-            this.updateLang();
+            this.updateExt();
         },
     }
 };
@@ -95,7 +101,13 @@ class SelectExtDialog {
         const result = [];
 
         for (const ext of this.extList) {
-            result.push({label: ext, value: ext});
+            if (ext.length <= 4)
+                result.push({label: ext, value: ext});
+        }
+
+        for (const ext of this.extList) {
+            if (ext.length > 4)
+                result.push({label: ext, value: ext});
         }
 
         return result;
@@ -104,7 +116,7 @@ class SelectExtDialog {
     get optionsPre() {
         const result = [];
 
-        for (const ext of ['fb2', 'pdf']) {
+        for (const ext of ['fb2', 'epub', 'mobi', 'pdf', 'djvu', 'doc', 'docx', 'rtf', 'xml', 'html', 'txt', 'zip']) {
             if (this.extList.includes(ext)) {
                 result.push({label: ext, value: ext});
             }
@@ -145,11 +157,11 @@ class SelectExtDialog {
     }
 
     updateTicked() {
-        this.ticked = this.ext.split(',').filter(s => s);
+        this.ticked = this.ext.split('|').filter(s => s);
     }
 
-    updateLang() {
-        this.$emit('update:ext', this.ticked.join(','));
+    updateExt() {
+        this.$emit('update:ext', this.ticked.join('|'));
     }
 
     okClick() {

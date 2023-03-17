@@ -725,6 +725,7 @@ class Search {
         result.push(s.genre ? 'Жанр' : '');
         result.push(s.date ? 'Дата поступления' : '');
         result.push(s.librate ? 'Оценка' : '');
+        result.push(s.ext ? 'Тип файла' : '');
 
         return result.filter(s => s).join(', ');
     }
@@ -1104,6 +1105,7 @@ class Search {
             lang: (typeof(query.lang) == 'string' ? query.lang : this.langDefault),
             date: query.date,
             librate: query.librate,
+            ext: query.ext,
 
             page: parseInt(query.page, 10),
             limit: parseInt(query.limit, 10) || this.search.limit,
