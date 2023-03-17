@@ -160,7 +160,7 @@
                             <div class="q-mx-xs" />
                             <q-input
                                 v-model="librateNames" :maxlength="inputMaxLength" :debounce="inputDebounce"
-                                class="q-mt-xs col-1" :bg-color="inputBgColor()" input-style="cursor: pointer" style="min-width: 90px;" label="Оценка" stack-label outlined dense clearable readonly
+                                class="q-mt-xs col-2" :bg-color="inputBgColor()" input-style="cursor: pointer" style="min-width: 140px;" label="Оценка" stack-label outlined dense clearable readonly
                                 @click.stop.prevent="selectLibRate"
                             >
                                 <template v-if="librateNames" #append>
@@ -171,6 +171,21 @@
                                     {{ librateNames }}
                                 </q-tooltip>
                             </q-input>
+
+                            <div class="q-mx-xs" />
+                            <q-input
+                                v-model="search.ext" :maxlength="inputMaxLength" :debounce="inputDebounce"
+                                class="q-mt-xs col-2" :bg-color="inputBgColor()" input-style="cursor: pointer" style="min-width: 140px;" label="Тип файла" stack-label outlined dense clearable readonly
+                                @click.stop.prevent="selectExt"
+                            >
+                                <template v-if="search.ext" #append>
+                                    <q-icon name="la la-times-circle" class="q-field__focusable-action" @click.stop.prevent="search.ext = ''" />
+                                </template>
+
+                                <q-tooltip v-if="search.ext && showTooltips" :delay="500" anchor="bottom middle" content-style="font-size: 80%" max-width="400px">
+                                    {{ search.ext }}
+                                </q-tooltip>
+                            </q-input>                            
                         </div>
                         <div v-show="!isExtendedSearch && !extendedParams && extendedParamsMessage" class="row q-mx-sm items-center clickable" @click.stop.prevent="extendedParams = true">
                             +{{ extendedParamsMessage }}
@@ -331,6 +346,7 @@
         <SelectLangDialog v-model="selectLangDialogVisible" v-model:lang="search.lang" :lang-list="langList" :lang-default="langDefault" />        
         <SelectLibRateDialog v-model="selectLibRateDialogVisible" v-model:librate="search.librate" />
         <SelectDateDialog v-model="selectDateDialogVisible" v-model:date="search.date" />
+        <SelectExtDialog v-model="selectExtDialogVisible" v-model:ext="search.ext" :ext-list="extList" />        
         <BookInfoDialog v-model="bookInfoDialogVisible" :book-info="bookInfo" />
         <SelectExtSearchDialog v-model="selectExtSearchDialogVisible" v-model:ext-search="extSearch" />        
     </div>
@@ -351,6 +367,7 @@ import SelectGenreDialog from './SelectGenreDialog/SelectGenreDialog.vue';
 import SelectLangDialog from './SelectLangDialog/SelectLangDialog.vue';
 import SelectLibRateDialog from './SelectLibRateDialog/SelectLibRateDialog.vue';
 import SelectDateDialog from './SelectDateDialog/SelectDateDialog.vue';
+import SelectExtDialog from './SelectExtDialog/SelectExtDialog.vue';
 import BookInfoDialog from './BookInfoDialog/BookInfoDialog.vue';
 import SelectExtSearchDialog from './SelectExtSearchDialog/SelectExtSearchDialog.vue';
 
@@ -384,6 +401,7 @@ const componentOptions = {
         SelectLangDialog,
         SelectLibRateDialog,
         SelectDateDialog,
+        SelectExtDialog,
         BookInfoDialog,
         SelectExtSearchDialog,
         Dialog,
@@ -495,6 +513,7 @@ class Search {
     selectLangDialogVisible = false;
     selectLibRateDialogVisible = false;
     selectDateDialogVisible = false;
+    selectExtDialogVisible = false;
     bookInfoDialogVisible = false;
     selectExtSearchDialogVisible = false;
 
@@ -531,6 +550,7 @@ class Search {
     genreTree = [];
     genreMap = new Map();
     langList = [];
+    extList = [];
     genreTreeInpxHash = '';
     showTooltips = true;
 
@@ -561,7 +581,7 @@ class Search {
         this.commit = this.$store.commit;
         this.api = this.$root.api;
 
-        this.generateDefaults(this.search, ['author', 'series', 'title', 'genre', 'lang', 'date', 'librate']);
+        this.generateDefaults(this.search, ['author', 'series', 'title', 'genre', 'lang', 'date', 'librate', 'ext']);
         this.search.setDefaults(this.search);
 
         this.loadSettings();
@@ -941,6 +961,11 @@ class Search {
         this.selectLibRateDialogVisible = true;
     }
 
+    selectExt() {
+        this.hideTooltip();
+        this.selectExtDialogVisible = true;
+    }
+
     selectExtSearch() {
         this.hideTooltip();
         this.selectExtSearchDialogVisible = true;
@@ -1170,6 +1195,7 @@ class Search {
                 }
 
                 this.langList = result.langList;
+                this.extList = result.extList;
                 this.genreTreeInpxHash = result.inpxHash;
             }
         } catch (e) {

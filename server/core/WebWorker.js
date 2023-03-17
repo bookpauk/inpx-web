@@ -350,9 +350,14 @@ class WebWorker {
             rows = await db.select({table: 'lang', map: `(r) => ({value: r.value})`});
             const langs = rows.map(r => r.value);            
 
+            // exts
+            rows = await db.select({table: 'ext', map: `(r) => ({value: r.value})`});
+            const exts = rows.map(r => r.value);            
+
             result = {
                 genreTree: genres,
                 langList: langs,
+                extList: exts,
                 inpxHash: (config.inpxHash ? config.inpxHash : ''),
             };
 

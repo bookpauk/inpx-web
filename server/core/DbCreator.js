@@ -64,6 +64,8 @@ class DbCreator {
         let dateArr = [];
         let librateMap = new Map();//оценка
         let librateArr = [];
+        let extMap = new Map();//тип файла
+        let extArr = [];
 
         let uidSet = new Set();//уникальные идентификаторы
 
@@ -215,6 +217,9 @@ class DbCreator {
 
             //оценка
             parseField(rec.librate, librateMap, librateArr, rec.id);
+
+            //тип файла
+            parseField(rec.ext, extMap, extArr, rec.id);
         };
 
         //основная процедура парсинга
@@ -272,6 +277,8 @@ class DbCreator {
         delMap = null;
         dateMap = null;
         librateMap = null;
+        extMap = null;
+
         uidSet = null;
 
         await db.close({table: 'book'});
@@ -407,6 +414,9 @@ class DbCreator {
 
         //librate
         await saveTable('librate', librateArr, () => {librateArr = null}, 'number');
+
+        //ext
+        await saveTable('ext', extArr, () => {extArr = null});
 
         //кэш-таблицы запросов
         await db.create({table: 'query_cache'});
