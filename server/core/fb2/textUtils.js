@@ -4,7 +4,7 @@ function getEncoding(buf) {
     let selected = getEncodingLite(buf);
 
     if (selected == 'ISO-8859-5' && buf.length > 10) {
-        const charsetAll = chardet.analyse(buf.slice(0, 20000));
+        const charsetAll = chardet.analyse(buf.slice(0, 100000));
         for (const charset of charsetAll) {
             if (charset.name.indexOf('ISO-8859') < 0) {
                 selected = charset.name;
@@ -39,9 +39,7 @@ function getEncodingLite(buf, returnAll) {
         'u': 0,
     };
 
-    const len = buf.length;
-    const blockSize = (len > 5*3000 ? 3000 : len);
-    let counter = 0;
+    const len = (buf.length > 100000 ? 100000 : buf.length);
     let i = 0;
     let totalChecked = 0;
     while (i < len) {
@@ -75,13 +73,6 @@ function getEncodingLite(buf, returnAll) {
             //ISO-8859-5
             if (char > 207 && char < 240) charsets['i'] += lowerCase;
             if (char > 175 && char < 208) charsets['i'] += upperCase;
-        }
-
-        counter++;
-
-        if (counter > blockSize) {
-            counter = 0;
-            i += Math.round(len/2 - 2*blockSize);
         }
     }
 
