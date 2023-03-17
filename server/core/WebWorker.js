@@ -30,7 +30,7 @@ const stateToText = {
 };
 
 const cleanDirInterval = 60*60*1000;//каждый час
-const checkReleaseInterval = 2*60*60*1000;//каждые 2 часа
+const checkReleaseInterval = 7*60*60*1000;//каждые 7 часов
 
 //singleton
 let instance = null;
