@@ -372,17 +372,28 @@ class WebWorker {
     async extractBook(bookPath) {
         const outFile = `${this.config.tempDir}/${utils.randomHexString(30)}`;
 
-        const folder = `${this.config.libDir}/${path.dirname(bookPath)}`;
-        const file = path.basename(bookPath);
+        bookPath = bookPath.replace(/\\/g, '/').replace(/\/\//g, '/');
 
-        const zipReader = new ZipReader();
-        await zipReader.open(folder);
+        const i = bookPath.indexOf('/');
+        const folder = `${this.config.libDir}/${(i >= 0 ? bookPath.substring(0, i) : bookPath )}`;
+        const file = (i >= 0 ? bookPath.substring(i + 1) : '' );
 
-        try {
-            await zipReader.extractToFile(file, outFile);
+        const fullPath = `${folder}/${file}`;
+
+        if (!file || await fs.pathExists(fullPath)) {// файл есть на диске
+            
+            await fs.copy(fullPath, outFile);
             return outFile;
-        } finally {
-            await zipReader.close();
+        } else {// файл в zip-архиве
+            const zipReader = new ZipReader();
+            await zipReader.open(folder);
+
+            try {
+                await zipReader.extractToFile(file, outFile);
+                return outFile;
+            } finally {
+                await zipReader.close();
+            }
         }
     }
 
