@@ -30,6 +30,7 @@ OPDS-сервер доступен по адресу [http://127.0.0.1:12380/opd
     * [Фильтр по авторам и книгам](#filter)
     * [Настройка https с помощью nginx](#https)
 * [Сборка проекта](#build)
+* [Запуск без сборки релиза](#native_run)
 * [Разработка](#development)
 
 <a id="capabilities" />
@@ -339,6 +340,31 @@ npm run release
 ```
 
 Результат сборки будет доступен в каталоге `dist/release`
+
+<a id="native_run" />
+
+### Запуск без сборки релиза
+Т.к. сборщик pkg поддерживает не все платформы, то не всегда удается собрать релиз.
+Однако, можно скачать и запустить inpx-web нативным путем, с помощью nodejs.
+Ниже пример для Ubuntu, для других линуксов различия не принципиальны:
+
+```sh
+# установка nodejs v16 и выше:
+curl -s https://deb.nodesource.com/setup_16.x | sudo bash
+sudo apt install nodejs -y
+
+# подготовка
+git clone https://github.com/bookpauk/inpx-web
+cd inpx-web
+npm i
+npm run build:client && node build/prepkg.js linux
+
+# удалим файл development-среды, чтобы запускался в production-режиме
+rm ./server/config/application_env
+
+# запуск inpx-web, тут же будет создан каталог .inpx-web
+node server --app-dir=.inpx-web
+```
 
 <a id="development" />
 
