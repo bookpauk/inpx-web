@@ -48,6 +48,7 @@ export default class BaseList {
         genreMap: Object,
     };
     
+    error = '';
     loadingMessage = '';
     loadingMessage2 = '';
 

@@ -126,9 +126,9 @@
         </div>
         <!-- Формирование списка конец ------------------------------------------------------------------>
 
-        <div v-if="!refreshing && !tableData.length" class="row items-center q-ml-md" style="font-size: 120%">
+        <div v-if="!refreshing && (!tableData.length || error)" class="row items-center q-ml-md" style="font-size: 120%">
             <q-icon class="la la-meh q-mr-xs" size="28px" />
-            Поиск не дал результатов
+            {{ (error ? error : 'Поиск не дал результатов') }}
         </div>
     </div>
 </template>
@@ -438,6 +438,7 @@ class AuthorList extends BaseList {
         if (this.refreshing)
             return;
 
+        this.error = '';
         this.refreshing = true;
 
         (async() => {
@@ -467,7 +468,12 @@ class AuthorList extends BaseList {
                         this.highlightPageScroller(query);
                     }
                 } catch (e) {
-                    this.$root.stdDialog.alert(e.message, 'Ошибка');
+                    this.list.queryFound = 0;
+                    this.list.totalFound = 0;
+                    this.searchResult = {found: []};
+                    await this.updateTableData();
+                    //this.$root.stdDialog.alert(e.message, 'Ошибка');
+                    this.error = `Ошибка: ${e.message}`;
                 }
             }
         } finally {
