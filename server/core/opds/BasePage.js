@@ -243,7 +243,8 @@ class BasePage {
                 bookValue = emptyFieldValue;
 
             bookValue = bookValue.toLowerCase();
-            searchValue = searchValue.toLowerCase();
+            if (searchValue[0] !== '~')
+                searchValue = searchValue.toLowerCase();
 
             //особая обработка префиксов
             if (searchValue[0] == '=') {

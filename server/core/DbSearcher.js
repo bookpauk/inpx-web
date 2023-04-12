@@ -49,7 +49,8 @@ class DbSearcher {
     getWhere(a) {
         const db = this.db;
 
-        a = a.toLowerCase();
+        if (a[0] !== '~')
+            a = a.toLowerCase();
         let where;
 
         //особая обработка префиксов
