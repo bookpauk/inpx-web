@@ -49,7 +49,8 @@ class DbSearcher {
     getWhere(a) {
         const db = this.db;
 
-        a = a.toLowerCase();
+        if (a[0] !== '~')
+            a = a.toLowerCase();
         let where;
 
         //особая обработка префиксов
@@ -282,6 +283,42 @@ class DbSearcher {
                 });
 
                 ids = dateRows[0].rawResult;
+                await this.putCached(key, ids);
+            }
+
+            idsArr.push(ids);
+        }
+
+        //тип файла
+        if (query.ext) {
+            const key = `book-ids-ext-${query.ext}`;
+            let ids = await this.getCached(key);
+
+            if (ids === null) {
+                const extRows = await db.select({
+                    table: 'ext',
+                    rawResult: true,
+                    where: `
+                        const exts = ${db.esc(query.ext.split('|'))};
+
+                        const ids = new Set();
+                        for (const l of exts) {
+                            for (const id of @indexLR('value', l, l))
+                                ids.add(id);
+                        }
+                        
+                        const result = new Set();
+                        for (const id of ids) {
+                            const row = @unsafeRow(id);
+                            for (const bookId of row.bookIds)
+                                result.add(bookId);
+                        }
+
+                        return new Uint32Array(result);
+                    `
+                });
+
+                ids = extRows[0].rawResult;
                 await this.putCached(key, ids);
             }
 

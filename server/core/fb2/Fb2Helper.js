@@ -35,7 +35,7 @@ class Fb2Helper {
                 if (m) {
                     let enc = m[1].toLowerCase();
                     if (enc != 'utf-8') {
-                        //enc может не соответсвовать реальной кодировке файла, поэтому:
+                        //если кодировка не определена в getEncoding, используем enc
                         if (encoding.indexOf('ISO-8859') >= 0) {
                             encoding = enc;
                         }

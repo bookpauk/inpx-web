@@ -30,7 +30,7 @@ const stateToText = {
 };
 
 const cleanDirInterval = 60*60*1000;//каждый час
-const checkReleaseInterval = 2*60*60*1000;//каждые 2 часа
+const checkReleaseInterval = 7*60*60*1000;//каждые 7 часов
 
 //singleton
 let instance = null;
@@ -350,9 +350,14 @@ class WebWorker {
             rows = await db.select({table: 'lang', map: `(r) => ({value: r.value})`});
             const langs = rows.map(r => r.value);            
 
+            // exts
+            rows = await db.select({table: 'ext', map: `(r) => ({value: r.value})`});
+            const exts = rows.map(r => r.value);            
+
             result = {
                 genreTree: genres,
                 langList: langs,
+                extList: exts,
                 inpxHash: (config.inpxHash ? config.inpxHash : ''),
             };
 
@@ -367,17 +372,28 @@ class WebWorker {
     async extractBook(bookPath) {
         const outFile = `${this.config.tempDir}/${utils.randomHexString(30)}`;
 
-        const folder = `${this.config.libDir}/${path.dirname(bookPath)}`;
-        const file = path.basename(bookPath);
+        bookPath = bookPath.replace(/\\/g, '/').replace(/\/\//g, '/');
 
-        const zipReader = new ZipReader();
-        await zipReader.open(folder);
+        const i = bookPath.indexOf('/');
+        const folder = `${this.config.libDir}/${(i >= 0 ? bookPath.substring(0, i) : bookPath )}`;
+        const file = (i >= 0 ? bookPath.substring(i + 1) : '' );
 
-        try {
-            await zipReader.extractToFile(file, outFile);
+        const fullPath = `${folder}/${file}`;
+
+        if (!file || await fs.pathExists(fullPath)) {// файл есть на диске
+            
+            await fs.copy(fullPath, outFile);
             return outFile;
-        } finally {
-            await zipReader.close();
+        } else {// файл в zip-архиве
+            const zipReader = new ZipReader();
+            await zipReader.open(folder);
+
+            try {
+                await zipReader.extractToFile(file, outFile);
+                return outFile;
+            } finally {
+                await zipReader.close();
+            }
         }
     }
 

@@ -20,7 +20,7 @@
                 <div class="poster-size">
                     <div class="column justify-center items-center" :class="{'poster': coverSrc, 'no-poster': !coverSrc}" @click.stop.prevent="posterClick">
                         <img v-if="coverSrc" :src="coverSrc" class="fit row justify-center items-center" style="object-fit: contain" @error="coverSrc = ''" />
-                        <div v-if="!coverSrc" class="fit row justify-center items-center text-grey-5" style="border: 1px solid #ccc; font-size: 300%">
+                        <div v-if="!coverSrc" class="fit row justify-center items-center text-grey-5 overflow-hidden" style="border: 1px solid #ccc; font-size: 300%">
                             <i>{{ book.ext }}</i>
                         </div>
                     </div>
