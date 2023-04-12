@@ -29,7 +29,7 @@ OPDS-сервер доступен по адресу [http://127.0.0.1:12380/opd
     * [Удаленная библиотека](#remotelib)
     * [Фильтр по авторам и книгам](#filter)
     * [Настройка https с помощью nginx](#https)
-* [Сборка проекта](#build)
+* [Сборка релизов](#build)
 * [Запуск без сборки релиза](#native_run)
 * [Разработка](#development)
 
@@ -322,7 +322,7 @@ sudo service nginx reload
 
 <a id="build" />
 
-### Сборка проекта
+### Сборка релизов
 Сборка только в среде Linux.
 Необходима версия node.js не ниже 16.
 
@@ -332,10 +332,6 @@ sudo service nginx reload
 git clone https://github.com/bookpauk/inpx-web
 cd inpx-web
 npm i
-```
-
-#### Релизы
-```sh
 npm run release
 ```
 
