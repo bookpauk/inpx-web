@@ -2,6 +2,7 @@ const os = require('os');
 const path = require('path');
 const fs = require('fs-extra');
 const _ = require('lodash');
+const iconv = require('iconv-lite');
 
 const ZipReader = require('./ZipReader');
 const WorkerState = require('./WorkerState');//singleton
@@ -369,15 +370,14 @@ class WebWorker {
         return result;
     }
 
-    async extractBook(bookPath) {
+    async extractBook(libFolder, libFile) {
         const outFile = `${this.config.tempDir}/${utils.randomHexString(30)}`;
 
-        bookPath = bookPath.replace(/\\/g, '/').replace(/\/\//g, '/');
+        libFolder = libFolder.replace(/\\/g, '/').replace(/\/\//g, '/');
 
-        const i = bookPath.indexOf('/');
-        const folder = `${this.config.libDir}/${(i >= 0 ? bookPath.substring(0, i) : bookPath )}`;
-        const file = (i >= 0 ? bookPath.substring(i + 1) : '' );
-
+        const folder = `${this.config.libDir}/${libFolder}`;
+        const file = libFile;
+        
         const fullPath = `${folder}/${file}`;
 
         if (!file || await fs.pathExists(fullPath)) {// файл есть на диске
@@ -390,6 +390,11 @@ class WebWorker {
 
             try {
                 await zipReader.extractToFile(file, outFile);
+
+                if (!await fs.pathExists(outFile)) {//не удалось найти в архиве, попробуем имя файла в кодировке cp866
+                    await zipReader.extractToFile(iconv.encode(file, 'cp866').toString(), outFile);                    
+                }
+
                 return outFile;
             } finally {
                 await zipReader.close();
@@ -397,14 +402,14 @@ class WebWorker {
         }
     }
 
-    async restoreBook(bookUid, bookPath, downFileName) {
+    async restoreBook(bookUid, libFolder, libFile, downFileName) {
         const db = this.db;
 
         let extractedFile = '';
         let hash = '';
 
         if (!this.remoteLib) {
-            extractedFile = await this.extractBook(bookPath);
+            extractedFile = await this.extractBook(libFolder, libFile);
             hash = await utils.getFileHash(extractedFile, 'sha256', 'hex');
         } else {
             hash = await this.remoteLib.downloadBook(bookUid);
@@ -424,7 +429,7 @@ class WebWorker {
                 await utils.touchFile(bookFile);
             }
 
-            await fs.writeFile(bookFileDesc, JSON.stringify({bookPath, downFileName}));
+            await fs.writeFile(bookFileDesc, JSON.stringify({libFolder, libFile, downFileName}));
         } else {
             if (extractedFile)
                 await fs.remove(extractedFile);
@@ -437,8 +442,7 @@ class WebWorker {
             table: 'file_hash',
             replace: true,
             rows: [
-                {id: bookPath, hash},
-                {id: hash, bookPath, downFileName}
+                {id: bookUid, hash},
             ]
         });
 
@@ -452,7 +456,7 @@ class WebWorker {
             const db = this.db;
             let link = '';
 
-            //найдем downFileName и bookPath
+            //найдем downFileName, libFolder, libFile
             let rows = await db.select({table: 'book', where: `@@hash('_uid', ${db.esc(bookUid)})`});
             if (!rows.length)
                 throw new Error('404 Файл не найден');
@@ -479,11 +483,12 @@ class WebWorker {
             if (downFileName.substring(downFileName.length - ext.length) != ext)
                 downFileName += ext;
 
-            const bookPath = `${book.folder}/${book.file}${ext}`;
+            const libFolder = book.folder;
+            const libFile = `${book.file}${ext}`;
 
             //найдем хеш
-            rows = await db.select({table: 'file_hash', where: `@@id(${db.esc(bookPath)})`});
-            if (rows.length) {//хеш найден по bookPath
+            rows = await db.select({table: 'file_hash', where: `@@id(${db.esc(bookUid)})`});
+            if (rows.length) {//хеш найден по bookUid
                 const hash = rows[0].hash;
                 const bookFile = `${this.config.bookDir}/${hash}`;
                 const bookFileDesc = `${bookFile}.d.json`;
@@ -494,13 +499,13 @@ class WebWorker {
             }
 
             if (!link) {
-                link = await this.restoreBook(bookUid, bookPath, downFileName)
+                link = await this.restoreBook(bookUid, libFolder, libFile, downFileName);
             }
 
             if (!link)
                 throw new Error('404 Файл не найден');
 
-            return {link, bookPath, downFileName};
+            return {link, libFolder, libFile, downFileName};
         } catch(e) {
             log(LM_ERR, `getBookLink error: ${e.message}`);
             if (e.message.indexOf('ENOENT') >= 0)
