@@ -74,7 +74,12 @@ module.exports = function(app, config) {
     if (config.opds.password) {
         if (!config.opds.user)
             throw new Error('User must not be empty if password set');
-
+/*
+        app.use((req, res, next) => {
+            console.log(req.headers);
+            next();
+        });
+*/
         app.use(opdsPaths, basicAuth({
             users: {[config.opds.user]: config.opds.password},
             challenge: true,
