@@ -22,6 +22,7 @@ OPDS-сервер доступен по адресу [http://127.0.0.1:12380/opd
 [Отблагодарить автора проекта](https://donatty.com/liberama)
 
 ## 
+## 
 * [Возможности программы](#capabilities)
 * [Использование](#usage)
     * [Параметры командной строки](#cli)
@@ -32,6 +33,7 @@ OPDS-сервер доступен по адресу [http://127.0.0.1:12380/opd
 * [Сборка релизов](#build)
 * [Запуск без сборки релиза](#native_run)
 * [Разработка](#development)
+* [Запуск в docker](#docker)
 
 <a id="capabilities" />
 
@@ -368,5 +370,23 @@ node server --app-dir=.inpx-web
 ```sh
 npm run dev
 ```
+
+<a id="docker" />
+
+### Запуск в docker
+
+Сборка:
+```sh
+docker build -t inpx-web .
+```
+
+Запуск:
+```sh
+docker run -v /path/to/library:/library:ro --user=1000 -p 12380:12380 inpx-web
+```
+
+- В этом случае база данных и конфигурация будут пересоздаваться при каждом запуске. Для того, что сделать конфигурацию персистентной примонтируйте каталог в /app/data добавлением параметра в docker run: `-v /path/to/app_data:/app_data`
+- Использование индекса, находящегося не в директории с библиотекой - передайте в docker run: `-v /path/to/index/flibusta.inpx:/app/index.inpx:ro -e INDEX_FILE=/app/index.inpx`
+- Если используется персистентная конфигурация (см выше), но нужно перечитывать индекс при каждом запуске передайте в docker run: `-e RECREATE=1`
 
 Связаться с автором проекта: [bookpauk@gmail.com](mailto:bookpauk@gmail.com)
