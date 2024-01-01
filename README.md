@@ -1,6 +1,102 @@
 inpx-web
 ========
 
+Клон оригинального https://github.com/bookpauk/inpx-web
+
+Изменения сводятся к адаптации приложения к типовым подходам хранения данных принятым в операционных системах.
+
+* Убрано ежеминутное отображение в лог состояния сервера
+* Добавлен аргумент запуска `--cfg-dir=Каталог_настроек`. В каталоге настроек распологаются файлы `config.json` и `filter.json`. Файлы могут быть доступны только для чтения (оригинальное приложение перезаписывает файл).
+* Временный каталог используется стандартный для операционной системы, а не в каталоге данных. В файле настроек можно задать свое расположение в `tempPath`
+* В файле настроек можно задать свое расположение каталога данных в `dataPath`
+* В файле настроек можно задать свое расположение каталога логов в `logPath`
+* Можно использовать как изолированный сервис systemd
+
+Пример файла настроек. Файл настроек по умолчанию можно получить, запустив inpx-web без файла `config.json` в каталоге настроек.
+
+```
+{
+    "libDir": "",
+    "inpx": "",
+    "dataPath": "/var/lib/inpx-web",
+    "logPath": "/var/log/inpx-web",
+    "tempPath": "",
+    "accessPassword": "",
+    "accessTimeout": 0,
+    "extendedSearch": true,
+    "bookReadLink": "",
+    "loggingEnabled": false,
+    "dbCacheSize": 5,
+    "maxFilesDirSize": 1073741824,
+    "queryCacheEnabled": true,
+    "queryCacheMemSize": 50,
+    "queryCacheDiskSize": 500,
+    "cacheCleanInterval": 60,
+    "inpxCheckInterval": 60,
+    "lowMemoryMode": false,
+    "fullOptimization": false,
+    "allowRemoteLib": false,
+    "remoteLib": false,
+    "server": {
+        "host": "0.0.0.0",
+        "port": "12380",
+        "root": ""
+    },
+    "opds": {
+        "enabled": true,
+        "user": "",
+        "password": "",
+        "root": "/opds"
+    },
+    "latestReleaseLink": "https://github.com/bookpauk/inpx-web/releases/latest",
+    "checkReleaseLink": "",
+    "uiDefaults": {
+        "limit": 20,
+        "downloadAsZip": true,
+        "showCounts": true,
+        "showRates": true,
+        "showInfo": true,
+        "showGenres": true,
+        "showDates": false,
+        "showDeleted": false,
+        "abCacheEnabled": true,
+        "langDefault": "",
+        "showJson": false,
+        "showNewReleaseAvailable": false
+    }
+}
+
+```
+
+Пример unit файла `inpx-web.service`
+
+```
+[Unit]
+Description=inpx-web
+After=network.target
+
+[Service]
+ExecStart=/opt/inpx-web/inpx-web --cfg-dir=/opt/inpx-web/config --unsafe-filter
+Type=simple
+
+DynamicUser=yes
+
+LogsDirectory=inpx-web
+StateDirectory=inpx-web
+
+[Install]
+WantedBy=multi-user.target 
+```
+
+Примерная задумка использования.
+
+* Рапологаем настройки в `/etc/inpx-web`
+* Данные приложения распологаются в `/var/lib/inpx-web` (есть еще и кэш, но не разобрался где что)
+* Логи отключаем, или распологаем `/var/log/inpx-web`, не забыв настроить logrotate. Но и systemd логирует нормально.
+* Используем изолированный сервис systemd с урезанной учетной записью с опцией `DynamicUser=yes` 
+
+---
+
 Веб-сервер для поиска по .inpx-коллекции.
 
 Выглядит следующим образом: [https://lib.omnireader.ru](https://lib.omnireader.ru)

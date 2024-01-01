@@ -1,7 +1,10 @@
 const path = require('path');
 const pckg = require('../../package.json');
+const os = require('os');
 
 const execDir = path.resolve(__dirname, '..');
+
+// const appDir = `${execDir}/.${pckg.name}`;
 
 module.exports = {
     branch: 'unknown',
@@ -9,7 +12,10 @@ module.exports = {
     latestVersion: '',
     name: pckg.name,
 
-    execDir,
+    dataPath: '',
+    execDir: '',
+    tempPath: '',
+    logPath: '',
     libDir: '',
     inpx: '',
 

@@ -59,7 +59,7 @@ class WebWorker {
             asyncExit.add(this.closeDb.bind(this));
 
             this.loadOrCreateDb();//no await
-            this.periodicLogServerStats();//no await
+            //this.periodicLogServerStats();//no await
 
             const dirConfig = [
                 {
@@ -637,8 +637,6 @@ class WebWorker {
             }
         }
 
-        log(LM_WARN, `clean dir ${dir}, maxSize=${maxSize}, found ${files.length} files, total size=${size}`);
-
         files.sort((a, b) => a.stat.mtimeMs - b.stat.mtimeMs);
 
         let i = 0;
@@ -651,7 +649,10 @@ class WebWorker {
             i++;
         }
 
-        log(LM_WARN, `removed ${i} files`);
+        if (i > 0) {
+            log(LM_WARN, `clean dir ${dir}, maxSize=${maxSize}, found ${files.length} files, total size=${size}`);
+            log(LM_WARN, `removed ${i} files`);
+        }
     }
 
     async periodicCleanDir(dirConfig) {
@@ -704,9 +705,8 @@ class WebWorker {
                 if (newInpxHash !== currentInpxHash) {
                     log('inpx file: changes found, recreating DB');
                     await this.recreateDb();
-                } else {
-                    log('inpx file: no changes');
                 }
+                
             } catch(e) {
                 log(LM_ERR, `periodicCheckInpx: ${e.message}`);
             }

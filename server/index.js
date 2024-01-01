@@ -7,6 +7,8 @@ const WebSocket = require ('ws');
 
 const utils = require('./core/utils');
 
+const os = require('os');
+
 const ayncExit = new (require('./core/AsyncExit'))();
 
 let log;
@@ -25,6 +27,7 @@ Options:
   --host=<ip>         Set web server host, default: ${defaultConfig.server.host}
   --port=<port>       Set web server port, default: ${defaultConfig.server.port}
   --app-dir=<dirpath> Set application working directory, default: <execDir>/.${defaultConfig.name}
+  --cfg-dir=<dirpath> Set config directory, default: <execDir>/.${defaultConfig.name}
   --lib-dir=<dirpath> Set library directory, default: the same as ${defaultConfig.name} executable's
   --inpx=<filepath>   Set INPX collection file, default: the one that found in library dir
   --recreate          Force recreation of the search database on start
@@ -34,20 +37,22 @@ Options:
 
 async function init() {
     argv = require('minimist')(process.argv.slice(2), {string: argvStrings});
-    const dataDir = argv['app-dir'];
+    const configDir = argv['cfg-dir'];
 
     //config
     const configManager = new (require('./config'))();//singleton
-    await configManager.init(dataDir);
+    await configManager.init(configDir);
     const defaultConfig = configManager.config;
 
     await configManager.load();
     config = configManager.config;
     branch = config.branch;
 
+    const tmpDir = os.tmpdir();
     //dirs
-    config.tempDir = `${config.dataDir}/tmp`;
-    config.logDir = `${config.dataDir}/log`;
+    config.dataDir = argv['app-dir'] || config.dataPath || `${config.execDir}/.${config.name}`;
+    config.tempDir = config.tempPath || `${tmpDir}/${config.name}`;
+    config.logDir = config.logPath || `${config.dataDir}/log`;
     config.publicDir = `${config.dataDir}/public`;
     config.publicFilesDir = `${config.dataDir}/public-files`;
     config.rootPathStatic = config.server.root || '';
@@ -66,6 +71,8 @@ async function init() {
     await appLogger.init(config);
     log = appLogger.log;
 
+    log(`Using data dir ${config.dataDir}`);
+        
     //cli
     if (argv.help) {
         showHelp(defaultConfig);
@@ -127,7 +134,7 @@ async function init() {
     }
 
     config.recreateDb = argv.recreate || false;
-    config.inpxFilterFile = `${config.dataDir}/filter.json`;
+    config.inpxFilterFile = `${config.configDir}/filter.json`;
     config.allowUnsafeFilter = argv['unsafe-filter'] || false;
 
     //web app

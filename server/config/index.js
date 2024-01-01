@@ -7,6 +7,7 @@ const branchFilename = __dirname + '/application_env';
 const propsToSave = [
     'libDir',
     'inpx',
+    'dataPath', 'logPath', 'tempPath',
     'accessPassword',
     'accessTimeout',
     'extendedSearch',
@@ -44,7 +45,8 @@ class ConfigManager {
         return instance;
     }
 
-    async init(dataDir) {
+    async init(configDir) {
+        
         if (this.inited)
             throw new Error('already inited');
 
@@ -61,14 +63,15 @@ class ConfigManager {
         this.branchConfigFile = __dirname + `/${this.branch}.js`;
         const config = require(this.branchConfigFile);
 
-        if (dataDir) {
-            config.dataDir = path.resolve(dataDir);
+        if (configDir) {
+            config.configDir = path.resolve(configDir);
         } else {
-            config.dataDir = `${config.execDir}/.${config.name}`;
+            config.configDir = `${config.execDir}/.${config.name}`;
         }
+                
+        await fs.ensureDir(config.configDir);
 
-        await fs.ensureDir(config.dataDir);
-        this._userConfigFile = `${config.dataDir}/config.json`;
+        this._userConfigFile = `${config.configDir}/config.json`;    
         this._config = config;
 
         this.inited = true;
@@ -79,7 +82,7 @@ class ConfigManager {
             throw new Error('not inited');
         return _.cloneDeep(this._config);
     }
-
+    
     set config(value) {
         Object.assign(this._config, value);
     }
@@ -95,15 +98,19 @@ class ConfigManager {
 
     async load() {
         try {
+            
             if (!this.inited)
                 throw new Error('not inited');
 
             if (await fs.pathExists(this.userConfigFile)) {
+                
+                console.log(`Loading config file ${this.userConfigFile}`);
+                
                 const data = JSON.parse(await fs.readFile(this.userConfigFile, 'utf8'));
                 const config = _.pick(data, propsToSave);
 
                 this.config = config;
-
+                
                 //сохраним конфиг, если не все атрибуты присутствуют в файле конфига
                 for (const prop of propsToSave)
                     if (!Object.prototype.hasOwnProperty.call(config, prop)) {
@@ -111,6 +118,7 @@ class ConfigManager {
                         break;
                     }
             } else {
+                console.log(`Use default config. file ${this.userConfigFile} not exist`);
                 await this.save();
             }
         } catch(e) {
@@ -119,9 +127,22 @@ class ConfigManager {
     }
 
     async save() {
+        
         if (!this.inited)
             throw new Error('not inited');
-
+        
+        if (await fs.pathExists(this.userConfigFile)) {
+            
+            try {
+                fs.accessSync(this.userConfigFile, fs.constants.W_OK)
+                
+                } catch (err) {
+                    console.log(`Config file not accessible, skip saving ${this.userConfigFile}`);
+                
+                    return;
+                }
+        }
+        console.log(`Saving config to file ${this.userConfigFile}`);
         const dataToSave = _.pick(this._config, propsToSave);
         await fs.writeFile(this.userConfigFile, JSON.stringify(dataToSave, null, 4));
     }
