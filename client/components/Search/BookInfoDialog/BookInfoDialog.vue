@@ -118,6 +118,7 @@ class BookInfoDialog {
     _props = {
         modelValue: Boolean,
         bookInfo: Object,
+        genreMap: Object,
     };
 
     dialogVisible = false;
@@ -169,6 +170,19 @@ class BookInfoDialog {
         return `${size.toFixed(1)} ${unit}`;
     }
 
+    convertGenres(genreArr) {
+        let result = [];
+        if (genreArr) {
+            for (const genre of genreArr) {
+                const g = genre.trim();
+                const name = this.genreMap.get(g);
+                result.push(name ? name : g);
+            }
+        }
+
+        return result.join(', ');
+    }
+
     get inpx() {
         const mapping = [
             {name: 'fileInfo', label: 'Информация о файле', value: [
@@ -210,6 +224,9 @@ class BookInfoDialog {
 
             if (nodePath == 'titleInfo/author')
                 return value.split(',').join(', ');
+
+            if (nodePath == 'titleInfo/genre')
+                return this.convertGenres(value.split(','));
 
             if (nodePath == 'titleInfo/librate' && !value)
                 return null;
@@ -279,10 +296,15 @@ class BookInfoDialog {
                 }
             }
 
+            const self = this;
             this.fb2 = parser.bookInfoList(infoObj, {
                 valueToString(value, nodePath, origVTS) {//eslint-disable-line no-unused-vars
                     if (nodePath == 'documentInfo/historyHtml' && value)
                         return value.replace(/<p>/g, `<p class="p-history">`);
+
+                    if ((nodePath == 'titleInfo/genre' || nodePath == 'srcTitleInfo/genre') && value) {
+                        return self.convertGenres(value);
+                    }
 
                     return origVTS(value, nodePath);
                 },

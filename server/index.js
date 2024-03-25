@@ -137,6 +137,18 @@ async function init() {
     }
 }
 
+function logQueries(app) {
+    app.use(function(req, res, next) {
+        const start = Date.now();
+        log(`${req.method} ${req.originalUrl} ${utils.cutString(req.body)}`);
+        //log(`${JSON.stringify(req.headers, null, 2)}`)
+        res.once('finish', () => {
+            log(`${Date.now() - start}ms`);
+        });
+        next();
+    });
+}
+
 async function main() {
     const log = new (require('./core/AppLogger'))().log;//singleton
 
@@ -168,6 +180,10 @@ async function main() {
     const { WebSocketController } = require('./controllers');
     new WebSocketController(wss, webAccess, config);
 
+    if (config.logQueries) {
+        logQueries(app);
+    }
+
     if (devModule) {
         devModule.logErrors(app);
     } else {
@@ -179,7 +195,7 @@ async function main() {
 
     server.listen(config.server.port, config.server.host, () => {
         config.server.ready = true;
-        log(`Server ready`);
+        log(`Server accessible at http://127.0.0.1:${config.server.port} (listening on ${config.server.host}:${config.server.port})`);
     });
 }
 

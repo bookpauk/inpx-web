@@ -314,7 +314,7 @@ class WebWorker {
 
         let result;
         const db = this.db;
-        if (!db.wwCache.genres) {
+        if (!db.wwCache.genreTree) {
             const genres = _.cloneDeep(genreTree);
             const last = genres[genres.length - 1];
 
@@ -362,9 +362,31 @@ class WebWorker {
                 inpxHash: (config.inpxHash ? config.inpxHash : ''),
             };
 
-            db.wwCache.genres = result;
+            db.wwCache.genreTree = result;
         } else {
-            result = db.wwCache.genres;
+            result = db.wwCache.genreTree;
+        }
+
+        return result;
+    }
+
+    async getGenreMap() {
+        this.checkMyState();
+
+        let result;
+        const db = this.db;
+        if (!db.wwCache.genreMap) {
+            const genreTree = await this.getGenreTree();
+
+            result = new Map();
+            for (const section of genreTree.genreTree) {
+                for (const g of section.value)
+                    result.set(g.value, g.name);
+            }
+
+            db.wwCache.genreMap = result;
+        } else {
+            result = db.wwCache.genreMap;
         }
 
         return result;
@@ -604,16 +626,16 @@ class WebWorker {
             let loadAvg = os.loadavg();
             loadAvg = loadAvg.map(v => v.toFixed(2));
 
-            log(`Server info [ memUsage: ${memUsage.toFixed(2)}MB, loadAvg: (${loadAvg.join(', ')}) ]`);
-
-            if (this.config.server.ready)
-                log(`Server accessible at http://127.0.0.1:${this.config.server.port} (listening on ${this.config.server.host}:${this.config.server.port})`);
+            log(`Server stats [ memUsage: ${memUsage.toFixed(2)}MB, loadAvg: (${loadAvg.join(', ')}) ]`);
         } catch (e) {
             log(LM_ERR, e.message);
         }
     }
     
     async periodicLogServerStats() {
+        if (!this.config.logServerStats)
+            return;
+
         while (1) {// eslint-disable-line
             this.logServerStats();
             await utils.sleep(60*1000);
