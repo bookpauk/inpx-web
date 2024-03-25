@@ -137,6 +137,18 @@ async function init() {
     }
 }
 
+function logQueries(app) {
+    app.use(function(req, res, next) {
+        const start = Date.now();
+        log(`${req.method} ${req.originalUrl} ${utils.cutString(req.body)}`);
+        //log(`${JSON.stringify(req.headers, null, 2)}`)
+        res.once('finish', () => {
+            log(`${Date.now() - start}ms`);
+        });
+        next();
+    });
+}
+
 async function main() {
     const log = new (require('./core/AppLogger'))().log;//singleton
 
@@ -167,6 +179,10 @@ async function main() {
 
     const { WebSocketController } = require('./controllers');
     new WebSocketController(wss, webAccess, config);
+
+    if (config.logQueries) {
+        logQueries(app);
+    }
 
     if (devModule) {
         devModule.logErrors(app);

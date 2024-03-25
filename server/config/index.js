@@ -13,6 +13,7 @@ const propsToSave = [
     'bookReadLink',
     'loggingEnabled',
     'logServerStats',
+    'logQueries',
     'dbCacheSize',
     'maxFilesDirSize',
     'queryCacheEnabled',

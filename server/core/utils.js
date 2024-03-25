@@ -196,6 +196,20 @@ function wordEnding(num, type = 0) {
     }
 }
 
+function cutString(data, len = 500) {
+    try {
+        if (!data)
+            return '';
+
+        if (typeof(data) !== 'string')
+            data = JSON.stringify(data);
+
+        return `${data.substring(0, len)}${data.length > len ? ' ...' : ''}`;
+    } catch (e) {
+        return '';
+    }
+}
+
 module.exports = {
     sleep,
     processLoop,
@@ -216,4 +230,5 @@ module.exports = {
     makeValidFileName,
     makeValidFileNameOrEmpty,
     wordEnding,
+    cutString,
 };

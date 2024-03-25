@@ -56,11 +56,12 @@ class WebSocketController {
     async onMessage(ws, message) {
         let req = {};
         try {
-            if (this.isDevelopment) {
-                log(`WebSocket-IN:  ${message.substr(0, 4000)}`);
+            if (this.isDevelopment || this.config.logQueries) {
+                log(`WebSocket-IN:  ${utils.cutString(message)}`);
             }
 
             req = JSON.parse(message);
+            req.__startTime = Date.now();
 
             ws.lastActivity = Date.now();
             
@@ -123,8 +124,9 @@ class WebSocketController {
             const message = JSON.stringify(r);
             ws.send(message);
 
-            if (this.isDevelopment) {
-                log(`WebSocket-OUT: ${message.substr(0, 200)}`);
+            if (this.isDevelopment || this.config.logQueries) {
+                log(`WebSocket-OUT: ${utils.cutString(message)}`);
+                log(`${Date.now() - req.__startTime}ms`);
             }
 
         }
