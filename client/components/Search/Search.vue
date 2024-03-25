@@ -931,6 +931,10 @@ class Search {
     <b>collection.info:</b>
     <pre>${inpxInfo.collection}</pre>
 </div>
+<div><hr/>
+    <b>version.info:</b>
+    <pre>${inpxInfo.version}</pre>
+</div>
 `;        
 
         this.$root.stdDialog.alert(info, 'Статистика по коллекции', {iconName: 'la la-info-circle'});
