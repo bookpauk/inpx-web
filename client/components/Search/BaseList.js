@@ -8,8 +8,8 @@ import BookView from './BookView/BookView.vue';
 import LoadingMessage from './LoadingMessage/LoadingMessage.vue';
 import * as utils from '../../share/utils';
 
-const showMoreCount = 100;//значение для "Показать еще"
-const maxItemCount = 500;//выше этого значения показываем "Загрузка"
+const showMoreCount = 100; //значение для "Показать еще"
+const maxItemCount = 500; //выше этого значения показываем "Загрузка"
 
 const componentOptions = {
     components: {
@@ -47,7 +47,7 @@ export default class BaseList {
         extSearch: Object,
         genreMap: Object,
     };
-    
+
     error = '';
     loadingMessage = '';
     loadingMessage2 = '';
@@ -59,7 +59,7 @@ export default class BaseList {
     downloadAsZip = false;
     showCounts = true;
     showRates = true;
-    showGenres = true;    
+    showGenres = true;
     showDeleted = false;
     abCacheEnabled = true;
 
@@ -81,7 +81,7 @@ export default class BaseList {
     }
 
     mounted() {
-        this.refresh();//no await
+        this.refresh(); //no await
     }
 
     loadSettings() {
@@ -110,7 +110,7 @@ export default class BaseList {
     }
 
     scrollToTop() {
-        this.$emit('listEvent', {action: 'scrollToTop'});
+        this.$emit('listEvent', { action: 'scrollToTop' });
     }
 
     selectAuthor(author) {
@@ -143,7 +143,7 @@ export default class BaseList {
         try {
             //подготовка
             const response = await this.api.getBookLink(book._uid);
-            
+
             const link = response.link;
             let href = `${window.location.origin}${link}`;
 
@@ -167,7 +167,7 @@ export default class BaseList {
                     this.$root.notify.success('Ссылка успешно скопирована');
                 else
                     this.$root.stdDialog.alert(
-`Копирование ссылки не удалось. Пожалуйста, попробуйте еще раз.
+                        `Копирование ссылки не удалось. Пожалуйста, попробуйте еще раз.
 <br><br>
 <b>Пояснение</b>: вероятно, браузер запретил копирование, т.к. прошло<br>
 слишком много времени с момента нажатия на кнопку (инициация<br>
@@ -176,17 +176,20 @@ export default class BaseList {
             } else if (action == 'readBook') {
                 //читать
                 if (this.list.liberamaReady) {
-                    this.$emit('listEvent', {action: 'submitUrl', data: href});
+                    this.$emit('listEvent', { action: 'submitUrl', data: href });
                 } else {
-                    const url = this.config.bookReadLink.replace('${DOWNLOAD_LINK}', href);
-                    window.open(url, '_blank');
+                    const url = new URL(href);
+                    const url_without_host = url.pathname + url.search + url.hash;
+                    var new_url = this.config.bookReadLink.replace('${DOWNLOAD_LINK}', href);
+                    new_url = this.config.bookReadLink.replace('${DOWNLOAD_URI}', url_without_host);
+                    window.open(new_url, '_blank');
                 }
             } else if (action == 'bookInfo') {
                 //информация о книге
                 const response = await this.api.getBookInfo(book._uid);
-                this.$emit('listEvent', {action: 'bookInfo', data: response.bookInfo});
+                this.$emit('listEvent', { action: 'bookInfo', data: response.bookInfo });
             }
-        } catch(e) {
+        } catch (e) {
             this.$root.stdDialog.alert(e.message, 'Ошибка');
         } finally {
             this.downloadFlag = false;
@@ -209,7 +212,7 @@ export default class BaseList {
             case 'copyLink':
             case 'readBook':
             case 'bookInfo':
-                this.download(event.book, event.action);//no await
+                this.download(event.book, event.action); //no await
                 break;
         }
     }
@@ -223,15 +226,16 @@ export default class BaseList {
     }
 
     setSetting(name, newValue) {
-        this.commit('setSettings', {[name]: _.cloneDeep(newValue)});
+        this.commit('setSettings', {
+            [name]: _.cloneDeep(newValue) });
     }
 
     highlightPageScroller(query) {
-        this.$emit('listEvent', {action: 'highlightPageScroller', query});
+        this.$emit('listEvent', { action: 'highlightPageScroller', query });
     }
 
     async expandSeries(seriesItem) {
-        this.$emit('listEvent', {action: 'ignoreScroll'});
+        this.$emit('listEvent', { action: 'ignoreScroll' });
 
         const expandedSeries = _.cloneDeep(this.expandedSeries);
         const key = seriesItem.key;
@@ -390,7 +394,7 @@ export default class BaseList {
                 if (!bookValue)
                     return false;
                 return bookValue !== emptyFieldValue && !enru.has(bookValue[0]) && bookValue.indexOf(searchValue) >= 0;
-            } else if (searchValue[0] == '~') {//RegExp
+            } else if (searchValue[0] == '~') { //RegExp
 
                 searchValue = searchValue.substring(1);
                 const re = new RegExp(searchValue, 'i');
@@ -459,16 +463,15 @@ export default class BaseList {
                 extFound = searchExt.has(book.ext.toLowerCase() || emptyFieldValue);
             }
 
-            return (this.showDeleted || !book.del)
-                && authorFound
-                && filterBySearch(book.series, s.series)
-                && filterBySearch(book.title, s.title)
-                && genreFound
-                && langFound
-                && dateFound
-                && librateFound
-                && extFound
-            ;
+            return (this.showDeleted || !book.del) &&
+                authorFound &&
+                filterBySearch(book.series, s.series) &&
+                filterBySearch(book.title, s.title) &&
+                genreFound &&
+                langFound &&
+                dateFound &&
+                librateFound &&
+                extFound;
         });
     }
 
@@ -476,7 +479,7 @@ export default class BaseList {
         if (item.booksLoaded) {
             const currentLen = (item.books ? item.books.length : 0);
             let books;
-            if (all || currentLen + this.showMoreCount*1.5 > item.booksLoaded.length) {
+            if (all || currentLen + this.showMoreCount * 1.5 > item.booksLoaded.length) {
                 books = item.booksLoaded;
             } else {
                 books = item.booksLoaded.slice(0, currentLen + this.showMoreCount);
@@ -491,7 +494,7 @@ export default class BaseList {
         if (seriesItem.allBooksLoaded) {
             const currentLen = (seriesItem.allBooks ? seriesItem.allBooks.length : 0);
             let books;
-            if (all || currentLen + this.showMoreCount*1.5 > seriesItem.allBooksLoaded.length) {
+            if (all || currentLen + this.showMoreCount * 1.5 > seriesItem.allBooksLoaded.length) {
                 books = seriesItem.allBooksLoaded;
             } else {
                 books = seriesItem.allBooksLoaded.slice(0, currentLen + this.showMoreCount);
@@ -512,7 +515,7 @@ export default class BaseList {
     }
 
     queryDate(date) {
-        if (!utils.isManualDate(date)) {//!manual
+        if (!utils.isManualDate(date)) { //!manual
             /*
             {label: 'сегодня', value: 'today'},
             {label: 'за 3 дня', value: '3days'},
@@ -525,13 +528,27 @@ export default class BaseList {
             */
             const sqlFormat = 'YYYY-MM-DD';
             switch (date) {
-                case 'today': date = utils.dateFormat(dayjs(), sqlFormat); break;
-                case '3days': date = utils.dateFormat(dayjs().subtract(3, 'days'), sqlFormat); break;
-                case 'week': date = utils.dateFormat(dayjs().subtract(1, 'weeks'), sqlFormat); break;
-                case '2weeks': date = utils.dateFormat(dayjs().subtract(2, 'weeks'), sqlFormat); break;
-                case 'month': date = utils.dateFormat(dayjs().subtract(1, 'months'), sqlFormat); break;
-                case '2months': date = utils.dateFormat(dayjs().subtract(2, 'months'), sqlFormat); break;
-                case '3months': date = utils.dateFormat(dayjs().subtract(3, 'months'), sqlFormat); break;
+                case 'today':
+                    date = utils.dateFormat(dayjs(), sqlFormat);
+                    break;
+                case '3days':
+                    date = utils.dateFormat(dayjs().subtract(3, 'days'), sqlFormat);
+                    break;
+                case 'week':
+                    date = utils.dateFormat(dayjs().subtract(1, 'weeks'), sqlFormat);
+                    break;
+                case '2weeks':
+                    date = utils.dateFormat(dayjs().subtract(2, 'weeks'), sqlFormat);
+                    break;
+                case 'month':
+                    date = utils.dateFormat(dayjs().subtract(1, 'months'), sqlFormat);
+                    break;
+                case '2months':
+                    date = utils.dateFormat(dayjs().subtract(2, 'months'), sqlFormat);
+                    break;
+                case '3months':
+                    date = utils.dateFormat(dayjs().subtract(3, 'months'), sqlFormat);
+                    break;
                 default:
                     date = '';
             }
@@ -551,7 +568,7 @@ export default class BaseList {
         }
 
         //offset
-        newQuery.offset = (newQuery.page - 1)*newQuery.limit;
+        newQuery.offset = (newQuery.page - 1) * newQuery.limit;
 
         //del
         if (!newQuery.del && !this.showDeleted)
