@@ -179,7 +179,7 @@ async function main() {
 
     server.listen(config.server.port, config.server.host, () => {
         config.server.ready = true;
-        log(`Server ready`);
+        log(`Server accessible at http://127.0.0.1:${config.server.port} (listening on ${config.server.host}:${config.server.port})`);
     });
 }
 

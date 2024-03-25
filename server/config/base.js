@@ -18,6 +18,7 @@ module.exports = {
     extendedSearch: true,
     bookReadLink: '',
     loggingEnabled: true,
+    logServerStats: false,
 
     //поправить в случае, если были критические изменения в DbCreator или InpxParser
     //иначе будет рассинхронизация по кешу между сервером и клиентом на уровне БД

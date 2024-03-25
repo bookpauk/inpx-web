@@ -604,16 +604,16 @@ class WebWorker {
             let loadAvg = os.loadavg();
             loadAvg = loadAvg.map(v => v.toFixed(2));
 
-            log(`Server info [ memUsage: ${memUsage.toFixed(2)}MB, loadAvg: (${loadAvg.join(', ')}) ]`);
-
-            if (this.config.server.ready)
-                log(`Server accessible at http://127.0.0.1:${this.config.server.port} (listening on ${this.config.server.host}:${this.config.server.port})`);
+            log(`Server stats [ memUsage: ${memUsage.toFixed(2)}MB, loadAvg: (${loadAvg.join(', ')}) ]`);
         } catch (e) {
             log(LM_ERR, e.message);
         }
     }
     
     async periodicLogServerStats() {
+        if (!this.config.logServerStats)
+            return;
+
         while (1) {// eslint-disable-line
             this.logServerStats();
             await utils.sleep(60*1000);
