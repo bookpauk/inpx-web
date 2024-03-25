@@ -24,6 +24,19 @@ class BookPage extends BasePage {
         return `${size.toFixed(1)} ${unit}`;
     }
 
+    convertGenres(genreArr) {
+        let result = [];
+        if (genreArr) {
+            for (const genre of genreArr) {
+                const g = genre.trim();
+                const name = this.genreMap.get(g);
+                result.push(name ? name : g);
+            }
+        }
+
+        return result.join(', ');
+    }
+
     inpxInfo(bookRec) {
         const mapping = [
             {name: 'fileInfo', label: 'Информация о файле', value: [
@@ -65,6 +78,9 @@ class BookPage extends BasePage {
 
             if (nodePath == 'titleInfo/author')
                 return value.split(',').join(', ');
+
+            if (nodePath == 'titleInfo/genre')
+                return this.convertGenres(value.split(','));
 
             if (nodePath == 'titleInfo/librate' && !value)
                 return null;
@@ -118,6 +134,7 @@ class BookPage extends BasePage {
     async body(req) {
         const result = {};
 
+        this.genreMap = await this.webWorker.getGenreMap();
         result.link = this.baseLinks(req, true);
 
         const bookUid = req.query.uid;
@@ -183,7 +200,17 @@ class BookPage extends BasePage {
                         }
 
                         ann = infoObj.titleInfo.annotationHtml || '';
-                        const infoList = parser.bookInfoList(infoObj);
+                        const self = this;
+                        const infoList = parser.bookInfoList(infoObj, {
+                            valueToString(value, nodePath, origVTS) {//eslint-disable-line no-unused-vars
+                                if ((nodePath == 'titleInfo/genre' || nodePath == 'srcTitleInfo/genre') && value) {
+                                    return self.convertGenres(value);
+                                }
+
+                                return origVTS(value, nodePath);
+                            },
+                        });
+
                         info += this.htmlInfo('Fb2 инфо', infoList);
                     }
                 }

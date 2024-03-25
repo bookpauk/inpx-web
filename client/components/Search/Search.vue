@@ -347,7 +347,7 @@
         <SelectLibRateDialog v-model="selectLibRateDialogVisible" v-model:librate="search.librate" />
         <SelectDateDialog v-model="selectDateDialogVisible" v-model:date="search.date" />
         <SelectExtDialog v-model="selectExtDialogVisible" v-model:ext="search.ext" :ext-list="extList" />        
-        <BookInfoDialog v-model="bookInfoDialogVisible" :book-info="bookInfo" />
+        <BookInfoDialog v-model="bookInfoDialogVisible" :book-info="bookInfo" :genre-map="genreMap" />
         <SelectExtSearchDialog v-model="selectExtSearchDialogVisible" v-model:ext-search="extSearch" />        
     </div>
 </template>

@@ -314,7 +314,7 @@ class WebWorker {
 
         let result;
         const db = this.db;
-        if (!db.wwCache.genres) {
+        if (!db.wwCache.genreTree) {
             const genres = _.cloneDeep(genreTree);
             const last = genres[genres.length - 1];
 
@@ -362,9 +362,31 @@ class WebWorker {
                 inpxHash: (config.inpxHash ? config.inpxHash : ''),
             };
 
-            db.wwCache.genres = result;
+            db.wwCache.genreTree = result;
         } else {
-            result = db.wwCache.genres;
+            result = db.wwCache.genreTree;
+        }
+
+        return result;
+    }
+
+    async getGenreMap() {
+        this.checkMyState();
+
+        let result;
+        const db = this.db;
+        if (!db.wwCache.genreMap) {
+            const genreTree = await this.getGenreTree();
+
+            result = new Map();
+            for (const section of genreTree.genreTree) {
+                for (const g of section.value)
+                    result.set(g.value, g.name);
+            }
+
+            db.wwCache.genreMap = result;
+        } else {
+            result = db.wwCache.genreMap;
         }
 
         return result;
