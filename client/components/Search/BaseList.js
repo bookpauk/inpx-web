@@ -178,7 +178,18 @@ export default class BaseList {
                 if (this.list.liberamaReady) {
                     this.$emit('listEvent', {action: 'submitUrl', data: href});
                 } else {
-                    const url = this.config.bookReadLink.replace('${DOWNLOAD_LINK}', href);
+                    const bookReadLink = this.config.bookReadLink;
+                    let url = bookReadLink;
+
+                    if (bookReadLink.indexOf('${DOWNLOAD_LINK}') >= 0) {
+                        url = bookReadLink.replace('${DOWNLOAD_LINK}', href);
+
+                    } else if (bookReadLink.indexOf('${DOWNLOAD_URI}') >= 0) {
+                        const hrefUrl = new URL(href);
+                        const urlWithoutHost = hrefUrl.pathname + hrefUrl.search + hrefUrl.hash;
+                        url = bookReadLink.replace('${DOWNLOAD_URI}', urlWithoutHost);
+                    }
+
                     window.open(url, '_blank');
                 }
             } else if (action == 'bookInfo') {
