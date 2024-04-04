@@ -659,8 +659,6 @@ class WebWorker {
             }
         }
 
-        log(LM_WARN, `clean dir ${dir}, maxSize=${maxSize}, found ${files.length} files, total size=${size}`);
-
         files.sort((a, b) => a.stat.mtimeMs - b.stat.mtimeMs);
 
         let i = 0;
@@ -673,7 +671,10 @@ class WebWorker {
             i++;
         }
 
-        log(LM_WARN, `removed ${i} files`);
+        if (i) {
+            log(LM_WARN, `clean dir ${dir}, maxSize=${maxSize}, found ${files.length} files, total size=${size}`);
+            log(LM_WARN, `removed ${i} files`);
+        }
     }
 
     async periodicCleanDir(dirConfig) {
@@ -727,7 +728,7 @@ class WebWorker {
                     log('inpx file: changes found, recreating DB');
                     await this.recreateDb();
                 } else {
-                    log('inpx file: no changes');
+                    //log('inpx file: no changes');
                 }
             } catch(e) {
                 log(LM_ERR, `periodicCheckInpx: ${e.message}`);
