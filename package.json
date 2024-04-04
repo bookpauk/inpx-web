@@ -17,6 +17,10 @@
     "build:client-dev": "webpack --config build/webpack.dev.config.js",
     "build:all": "npm run build:linux && npm run build:win && npm run build:macos && npm run build:linux-arm64",
     "release": "npm run build:all && node build/release.js",
+    "release:linux": "npm run build:linux && node build/release.js linux",
+    "release:win": "npm run build:win && node build/release.js win",
+    "release:macos": "npm run build:macos && node build/release.js macos",
+    "release:arm64": "npm run build:linux-arm64 && node build/release.js arm64",
     "postinstall": "npm run build:client-dev"
   },
   "bin": "server/index.js",
