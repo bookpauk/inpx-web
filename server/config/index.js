@@ -5,8 +5,14 @@ const fs = require('fs-extra');
 const branchFilename = __dirname + '/application_env';
 
 const propsToSave = [
+    'dataDir',
+    'tempDir',
+    'logDir',
     'libDir',
     'inpx',
+    'inpxFilterFile',
+    'allowConfigRewrite',
+    'allowUnsafeFilter',
     'accessPassword',
     'accessTimeout',
     'extendedSearch',
@@ -46,7 +52,7 @@ class ConfigManager {
         return instance;
     }
 
-    async init(dataDir) {
+    async init(tempDataDir, configFile) {
         if (this.inited)
             throw new Error('already inited');
 
@@ -63,14 +69,16 @@ class ConfigManager {
         this.branchConfigFile = __dirname + `/${this.branch}.js`;
         const config = require(this.branchConfigFile);
 
-        if (dataDir) {
-            config.dataDir = path.resolve(dataDir);
-        } else {
-            config.dataDir = `${config.execDir}/.${config.name}`;
+        if (!tempDataDir) {
+            tempDataDir = `${config.execDir}/.${config.name}`;
         }
 
-        await fs.ensureDir(config.dataDir);
-        this._userConfigFile = `${config.dataDir}/config.json`;
+        if (configFile) {
+            config.configFile = path.resolve(configFile);
+        } else {
+            config.configFile = `${tempDataDir}/config.json`;
+        }
+
         this._config = config;
 
         this.inited = true;
@@ -86,37 +94,31 @@ class ConfigManager {
         Object.assign(this._config, value);
     }
 
-    get userConfigFile() {
-        return this._userConfigFile;
-    }
-
-    set userConfigFile(value) {
-        if (value)
-            this._userConfigFile = value;
-    }
-
     async load() {
         try {
             if (!this.inited)
                 throw new Error('not inited');
 
-            if (await fs.pathExists(this.userConfigFile)) {
-                const data = JSON.parse(await fs.readFile(this.userConfigFile, 'utf8'));
+            if (await fs.pathExists(this._config.configFile)) {
+                const data = JSON.parse(await fs.readFile(this._config.configFile, 'utf8'));
                 const config = _.pick(data, propsToSave);
 
                 this.config = config;
 
                 //сохраним конфиг, если не все атрибуты присутствуют в файле конфига
-                for (const prop of propsToSave)
-                    if (!Object.prototype.hasOwnProperty.call(config, prop)) {
-                        await this.save();
-                        break;
+                if (config.allowConfigRewrite) {
+                    for (const prop of propsToSave) {
+                        if (!Object.prototype.hasOwnProperty.call(config, prop)) {
+                            await this.save();
+                            break;                        
+                        }
                     }
+                }
             } else {
                 await this.save();
             }
         } catch(e) {
-            throw new Error(`Error while loading "${this.userConfigFile}": ${e.message}`);
+            throw new Error(`Error while loading "${this._config.configFile}": ${e.message}`);
         }
     }
 
@@ -125,7 +127,7 @@ class ConfigManager {
             throw new Error('not inited');
 
         const dataToSave = _.pick(this._config, propsToSave);
-        await fs.writeFile(this.userConfigFile, JSON.stringify(dataToSave, null, 4));
+        await fs.writeFile(this._config.configFile, JSON.stringify(dataToSave, null, 4));
     }
 }
 

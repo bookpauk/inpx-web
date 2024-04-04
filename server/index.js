@@ -1,5 +1,6 @@
 const fs = require('fs-extra');
 const path = require('path');
+const os = require('os');
 
 const express = require('express');
 const http = require('http');
@@ -13,7 +14,7 @@ let log;
 let config;
 let argv;
 let branch = '';
-const argvStrings = ['host', 'port', 'app-dir', 'lib-dir', 'inpx'];
+const argvStrings = ['host', 'port', 'config', 'data-dir', 'app-dir', 'lib-dir', 'inpx'];
 
 function showHelp(defaultConfig) {
     console.log(utils.versionText(defaultConfig));
@@ -21,24 +22,27 @@ function showHelp(defaultConfig) {
 `Usage: ${defaultConfig.name} [options]
 
 Options:
-  --help              Print ${defaultConfig.name} command line options
-  --host=<ip>         Set web server host, default: ${defaultConfig.server.host}
-  --port=<port>       Set web server port, default: ${defaultConfig.server.port}
-  --app-dir=<dirpath> Set application working directory, default: <execDir>/.${defaultConfig.name}
-  --lib-dir=<dirpath> Set library directory, default: the same as ${defaultConfig.name} executable's
-  --inpx=<filepath>   Set INPX collection file, default: the one that found in library dir
-  --recreate          Force recreation of the search database on start
+  --help               Print ${defaultConfig.name} command line options
+  --host=<ip>          Set web server host, default: ${defaultConfig.server.host}
+  --port=<port>        Set web server port, default: ${defaultConfig.server.port}
+  --config=<filepath>  Set config filename, default: <dataDir>/config.json
+  --data-dir=<dirpath> (or --app-dir) Set application working directory, default: <execDir>/.${defaultConfig.name}
+  --lib-dir=<dirpath>  Set library directory, default: the same as ${defaultConfig.name} executable's
+  --inpx=<filepath>    Set INPX collection file, default: the one that found in library dir
+  --recreate           Force recreation of the search database on start
+  --unsafe-filter      Use filter config at your own risk
 `
     );
 }
 
 async function init() {
     argv = require('minimist')(process.argv.slice(2), {string: argvStrings});
-    const dataDir = argv['app-dir'];
+    const argvDataDir = argv['data-dir'] || argv['app-dir'];
+    const configFile = argv['config'];
 
     //config
     const configManager = new (require('./config'))();//singleton
-    await configManager.init(dataDir);
+    await configManager.init(argvDataDir, configFile);
     const defaultConfig = configManager.config;
 
     await configManager.load();
@@ -46,8 +50,12 @@ async function init() {
     branch = config.branch;
 
     //dirs
-    config.tempDir = `${config.dataDir}/tmp`;
-    config.logDir = `${config.dataDir}/log`;
+    config.dataDir = config.dataDir || argvDataDir || `${config.execDir}/.${config.name}`;
+    config.tempDir = config.tempDir || `${config.dataDir}/tmp`;
+    if (config.tempDir === '${OS}')
+        config.tempDir = `${os.tmpdir()}/${config.name}`
+
+    config.logDir = config.logDir || `${config.dataDir}/log`;    
     config.publicDir = `${config.dataDir}/public`;
     config.publicFilesDir = `${config.dataDir}/public-files`;
     config.rootPathStatic = config.server.root || '';
@@ -127,14 +135,22 @@ async function init() {
     }
 
     config.recreateDb = argv.recreate || false;
-    config.inpxFilterFile = `${config.dataDir}/filter.json`;
-    config.allowUnsafeFilter = argv['unsafe-filter'] || false;
+    config.inpxFilterFile = config.inpxFilterFile || `${path.dirname(config.configFile)}/filter.json`;
+    config.allowUnsafeFilter = argv['unsafe-filter'] || config.allowUnsafeFilter || false;
 
     //web app
     if (branch !== 'development') {
         const createWebApp = require('./createWebApp');
         await createWebApp(config);
     }
+
+    //log dirs
+    for (const prop of ['configFile', 'dataDir', 'tempDir', 'logDir']) {
+        log(`${prop}: ${config[prop]}`);
+    }
+
+    if (await fs.pathExists(config.inpxFilterFile))
+        log(`inpxFilterFile: ${config.inpxFilterFile}`)
 }
 
 function logQueries(app) {
