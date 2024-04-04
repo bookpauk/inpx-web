@@ -10,9 +10,15 @@ module.exports = {
     name: pckg.name,
 
     execDir,
+    dataDir: '',
+    tempDir: '',
+    logDir: '',
     libDir: '',
     inpx: '',
+    inpxFilterFile: '',
 
+    allowConfigRewrite: false,
+    allowUnsafeFilter: false,
     accessPassword: '',
     accessTimeout: 0,
     extendedSearch: true,
