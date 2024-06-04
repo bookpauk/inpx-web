@@ -76,6 +76,7 @@ class ConfigManager {
         if (configFile) {
             config.configFile = path.resolve(configFile);
         } else {
+            await fs.ensureDir(defaultDataDir);
             config.configFile = `${defaultDataDir}/config.json`;
         }
 
