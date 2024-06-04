@@ -52,7 +52,7 @@ class ConfigManager {
         return instance;
     }
 
-    async init(tempDataDir, configFile) {
+    async init(defaultDataDir, configFile) {
         if (this.inited)
             throw new Error('already inited');
 
@@ -69,14 +69,15 @@ class ConfigManager {
         this.branchConfigFile = __dirname + `/${this.branch}.js`;
         const config = require(this.branchConfigFile);
 
-        if (!tempDataDir) {
-            tempDataDir = `${config.execDir}/.${config.name}`;
+        if (!defaultDataDir) {
+            defaultDataDir = `${config.execDir}/.${config.name}`;
         }
 
         if (configFile) {
             config.configFile = path.resolve(configFile);
         } else {
-            config.configFile = `${tempDataDir}/config.json`;
+            await fs.ensureDir(defaultDataDir);
+            config.configFile = `${defaultDataDir}/config.json`;
         }
 
         this._config = config;
