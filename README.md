@@ -22,6 +22,7 @@ OPDS-сервер доступен по адресу [http://127.0.0.1:12380/opd
 [Отблагодарить автора проекта](https://donatty.com/liberama)
 
 ## 
+## 
 * [Возможности программы](#capabilities)
 * [Использование](#usage)
     * [Параметры командной строки](#cli)
@@ -32,6 +33,7 @@ OPDS-сервер доступен по адресу [http://127.0.0.1:12380/opd
 * [Сборка релизов](#build)
 * [Запуск без сборки релиза](#native_run)
 * [Разработка](#development)
+* [Запуск в docker](#docker)
 
 <a id="capabilities" />
 
@@ -409,5 +411,17 @@ node server --app-dir=.inpx-web
 ```sh
 npm run dev
 ```
+
+<a id="docker" />
+
+### Запуск в docker
+
+```sh
+docker build -t inpx-web .
+docker run -v /path/to/library:/library -v /path/to/library/flibusta.inpx:/app/data/index.inpx -p 12380:12380 inpx-web
+```
+
+Внутри контейнера создаётся пользователь inpx-web и id=1000 и сервер запускается под этим пользователем.
+Важно: запускать контейнер и монтировать внутрь папку с архивами в `/library` и файл inpx в `/app/data/index.inpx`.
 
 Связаться с автором проекта: [bookpauk@gmail.com](mailto:bookpauk@gmail.com)
