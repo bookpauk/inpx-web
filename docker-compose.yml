@@ -1,0 +1,17 @@
+version: '2'
+services:
+        inpx-web:
+                build: .
+                image: inpx-web
+                container_name: inpx-web
+                user: "${UID}:${GID}"
+                stdin_open: true
+                tty: true
+                command: /bin/bash
+                restart: unless-stopped
+                volumes:
+                        - ${DATA_PATH}:/data
+                        - ${LIBRARY_PATH}:/library
+                        - ${INPX_PATH}:/library/fb2_local.inpx
+                ports:
+                        - "${PORT}:12380"

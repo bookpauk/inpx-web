@@ -403,6 +403,28 @@ rm ./server/config/application_env
 node server --app-dir=.inpx-web
 ```
 
+<a id="docker_run" />
+
+### Запуск docker контейнера с помощью docker-compose
+
+В файле .env необходимо выставить необходимые параметры:
+```sh
+UID & GID: локальный uid & gid с которыми будут создаваться файлы inpx-web базы данных и осуществляться доступ к файлам библиотеки из докер контейнера
+DATA_PATH: путь к inpx-web базе данных
+LIBRARY_PATH: директория библиотеки
+INPX_PATH: путь к файлу .inpx
+```
+после этого выполняется билд контейнера
+```sh
+docker-compose build
+```
+и запуск
+```sh
+docker-compose up -d
+```
+
+
+
 <a id="development" />
 
 ### Разработка
