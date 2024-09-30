@@ -158,6 +158,20 @@ export default class BaseList {
             if (action == 'download') {
                 //скачивание
                 const d = this.$refs.download;
+                d.href = href;                
+
+                d.click();
+            }else if (action == 'downloadEPUB') {
+                //скачивание epub                
+                const d = this.$refs.download;
+                href += '/epub';		        
+                d.href = href;
+
+                d.click();
+            } else if (action == 'downloadMOBI') {
+                //скачивание mobi 
+                const d = this.$refs.download;
+                href += '/mobi';
                 d.href = href;
 
                 d.click();
@@ -217,6 +231,8 @@ export default class BaseList {
                 this.selectTitle(event.book.title);
                 break;
             case 'download':
+            case 'downloadEPUB':
+            case 'downloadMOBI':
             case 'copyLink':
             case 'readBook':
             case 'bookInfo':

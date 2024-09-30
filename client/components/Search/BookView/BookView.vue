@@ -59,10 +59,29 @@
                     (инфо)
                 </div>
 
-                <div class="q-ml-sm clickable" @click.stop.prevent="emit('download')">
-                    (скачать)
-                </div>
-
+                <div v-if="(book.ext != 'fb2')" class="q-ml-sm clickable" @click.stop.prevent="emit('download')">
+	                        (скачать)
+	            </div>
+                <div v-if="(book.ext == 'fb2')" >
+	                        скачать:
+	            </div>
+                <div v-if="(book.ext == 'fb2')" >
+                    <div class="q-ml-sm clickable" @click.stop.prevent="emit('download')">
+	                        (fb2)  
+	                </div>
+	            </div>
+                <div v-if="(book.ext == 'fb2')" >
+                    <div class="q-ml-sm clickable" @click.stop.prevent="emit('downloadEPUB')">
+	                        (epub)  
+	                </div>
+	            </div>
+                <div v-if="(book.ext == 'fb2')" >
+                    <div class="q-ml-sm clickable" @click.stop.prevent="emit('downloadMOBI')">
+	                        (mobi)  
+	                </div>
+	            </div>
+                
+                
                 <div class="q-ml-sm clickable" @click.stop.prevent="emit('copyLink')">
                     <q-icon name="la la-copy" size="20px" />
                 </div>
@@ -91,7 +110,7 @@
 //-----------------------------------------------------------------------------
 import vueComponent from '../../vueComponent.js';
 
-import * as utils from '../../../share/utils';
+import * as utils from '../../../share/utils.js';
 
 const componentOptions = {
     components: {

@@ -29,6 +29,7 @@ Options:
   --data-dir=<dirpath> (or --app-dir) Set application working directory, default: <execDir>/.${defaultConfig.name}
   --lib-dir=<dirpath>  Set library directory, default: the same as ${defaultConfig.name} executable's
   --inpx=<filepath>    Set INPX collection file, default: the one that found in library dir
+  --fb2c=<filepath>    Set fb2c path
   --recreate           Force recreation of the search database on start
   --unsafe-filter      Use filter config at your own risk
 `
@@ -89,6 +90,12 @@ async function init() {
 
     if (argv.port) {
         config.server.port = argv.port;
+    }
+
+    if (argv.fb2c) {
+        config.fb2c = argv.fb2c
+    } else {
+        config.fb2c = ''
     }
 
     if (!config.remoteLib) {
