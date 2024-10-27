@@ -11,6 +11,7 @@ const propsToSave = [
     'libDir',
     'inpx',
     'inpxFilterFile',
+    'externalToolsConfig',
     'allowConfigRewrite',
     'allowUnsafeFilter',
     'accessPassword',

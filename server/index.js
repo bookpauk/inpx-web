@@ -50,7 +50,7 @@ async function init() {
     branch = config.branch;
 
     //dirs
-    config.dataDir = config.dataDir || argvDataDir || `${config.execDir}/.${config.name}`;
+    config.dataDir = path.resolve(config.dataDir || argvDataDir || `${config.execDir}/.${config.name}`);
     config.tempDir = config.tempDir || `${config.dataDir}/tmp`;
     if (config.tempDir === '${OS}')
         config.tempDir = `${os.tmpdir()}/${config.name}`
@@ -137,6 +137,7 @@ async function init() {
     config.recreateDb = argv.recreate || false;
     config.inpxFilterFile = config.inpxFilterFile || `${path.dirname(config.configFile)}/filter.json`;
     config.allowUnsafeFilter = argv['unsafe-filter'] || config.allowUnsafeFilter || false;
+    config.externalToolsConfig = config.externalToolsConfig || `${path.dirname(config.configFile)}/external_tools.json`;
 
     //web app
     if (branch !== 'development') {
@@ -151,6 +152,16 @@ async function init() {
 
     if (await fs.pathExists(config.inpxFilterFile))
         log(`inpxFilterFile: ${config.inpxFilterFile}`)
+
+    if (await fs.pathExists(config.externalToolsConfig)) {
+        log(`externalToolsConfig: ${config.externalToolsConfig}`);
+        try {
+            config.external = JSON.parse(await fs.readFile(config.externalToolsConfig, 'utf8'));
+        } catch(e) {
+            log(LM_ERR, `externalToolsConfig: ${e.message}`);
+            config.external = {};
+        }
+    }
 }
 
 function logQueries(app) {

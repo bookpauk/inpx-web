@@ -1,0 +1,104 @@
+{
+  "mobi": {
+    "active": true,
+    "title": "(mobi)",
+    "hint": "fb2converter был установлен отсюда: https://github.com/rupor-github/fb2converter/releases",
+    "ext": "mobi",
+    "cmd": "cp '${HASHFILE}.raw' '${HASHFILE}.fb2'; ${EXTDIR}/fb2c/fb2c convert --to mobi --nodirs --overwrite '${HASHFILE}.fb2'; rm -f '${HASHFILE}.fb2'",
+    "cmdExport": "mkdir -p '${EXTDIR}/export'; cp '${RESULTFILE}' '${EXTDIR}/export/${FILENAME}'",
+    "debug": true,
+    "type": "download"
+  },
+  "epub": {
+    "active": true,
+    "title": "(epub)",
+    "hint": "пример: конвертация, сохранение копии в отддельной папке, download",
+    "ext": "epub",
+    "cmd": "cp '${HASHFILE}.raw' '${HASHFILE}.fb2'; ${EXTDIR}/fb2c/fb2c convert --to epub --nodirs --overwrite '${HASHFILE}.fb2'; rm -f '${HASHFILE}.fb2'",
+    "cmdExport": "mkdir -p '${EXTDIR}/export'; cp '${RESULTFILE}' '${EXTDIR}/export/${FILENAME}'",
+    "debug": true,
+    "type": "download"
+  },
+  "azw3": {
+    "active": true,
+    "title": "(azw3)",
+    "hint": "пример: конвертация и сохранение копии в папке export. в принципе, можно вместо экспорта сделать отправку на почту или в телеграмм",
+    "ext": "azw3",
+    "cmd": "cp '${HASHFILE}.raw' '${HASHFILE}.fb2'; ${EXTDIR}/fb2c/fb2c convert --to azw3 --nodirs --overwrite '${HASHFILE}.fb2'; rm -f '${HASHFILE}.fb2'",
+    "cmdExport": "mkdir -p '${EXTDIR}/export'; cp '${RESULTFILE}' '${EXTDIR}/export/${FILENAME}'",
+    "debug": true,
+    "type": "cmd"
+  },
+  "kepub": {
+    "active": true,
+    "title": "(kepub)",
+    "hint": "пример: конвертация и download",
+    "ext": "kepub.epub",
+    "cmd": "cp '${HASHFILE}.raw' '${HASHFILE}.fb2'; ${EXTDIR}/fb2c/fb2c convert --to kepub --nodirs --overwrite '${HASHFILE}.fb2'; rm -f '${HASHFILE}.fb2'",
+    "debug": true,
+    "type": "download"
+  },
+
+  "pdf": {
+    "active": true,
+    "title": "(pdf)",
+    "hint": "другой конвертер: https://github.com/viktor-z/fb2pdf/releases",
+    "ext": "pdf",
+    "cmd": "cp '${HASHFILE}.raw' '${HASHFILE}.fb2'; java -jar '${EXTDIR}/fb2pdf/lib/fb2pdf.jar' -o -e UTF-8 '${HASHFILE}.fb2'; rm -f '${HASHFILE}.fb2'",
+    "cmdExport": "mkdir -p '${EXTDIR}/export'; cp '${RESULTFILE}' '${EXTDIR}/export/${FILENAME}'",
+    "debug": true,
+    "type": "download"
+  },
+
+  "fb2Export": {
+    "active": true,
+    "title": "(export fb2)",
+    "hint": "пример: просто экспорт",
+    "ext": "fb2",
+    "cmd": "mkdir -p '${EXTDIR}/export'; cp '${BOOKFILE}.raw' '${EXTDIR}/export/${FILENAME}'",
+    "type": "cmd"
+  },
+  "fb2ExportZip": {
+    "active": true,
+    "title": "(export fb2.zip)",
+    "hint": "печальный архиватор zip не понимает stdin.. тут хотелось проверить универсальность подхода, а не взять готовый .zip из папки ",
+    "ext": "fb2",
+    "cmd": "rm -f '${RESULTFILE}'; cp '${HASHFILE}.raw' '${FILENAME}'; zip -m '${RESULTFILE}' '${FILENAME}'",
+    "cmdExport": "mkdir -p '${EXTDIR}/export'; mv '${RESULTFILE}' '${EXTDIR}/export/${FILENAME}.zip'",
+    "type": "cmd"
+  },
+
+
+  "localReader1": {
+    "active": true,
+    "title": "(read1)",
+    "hint": "добавление своей ссылки на страницу",
+    "link": "http://127.0.0.1:44080/#/reader?url=http://127.0.0.1:12382${DOWNLOAD_URI}",
+    "type": "link"
+  },
+  "localReader2": {
+    "active": true,
+    "title": "(read2)",
+    "hint": "еще ссылка",
+    "link": "http://127.0.0.1:44080/#/reader?url=${DOWNLOAD_LINK}",
+    "type": "link"
+  },
+
+
+  "fbreader": {
+    "active": true,
+    "title": "(fbreader)",
+    "hint": "можно даже что-то свое в GUI запустить и подсунуть файл нужной книги",
+    "cmd": "gtk-launch fbreader_fbreader.desktop '${BOOKFILE}.raw'",
+    "debug": true,
+    "type": "gui"
+  },
+  "fbreader2": {
+    "active": true,
+    "title": "(fbreader-old)",
+    "hint": "можно даже что-то свое в GUI запустить и подсунуть файл нужной книги",
+    "cmd": "fbreader '${BOOKFILE}.raw'",
+    "debug": true,
+    "type": "gui"
+  }
+}

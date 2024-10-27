@@ -63,6 +63,12 @@
                     (скачать)
                 </div>
 
+                <div v-for="(item, key) in this.config.external">
+                    <div v-if="item.active" class="q-ml-sm clickable" :title="item.hint" @click.stop.prevent="emit('ext-' + key)">
+                        {{ item.title || key }}
+                    </div>
+                </div>
+
                 <div class="q-ml-sm clickable" @click.stop.prevent="emit('copyLink')">
                     <q-icon name="la la-copy" size="20px" />
                 </div>
@@ -132,6 +138,10 @@ class BookView {
         this.showDates = settings.showDates;
         this.showDeleted = settings.showDeleted;
         this.showJson = settings.showJson;
+    }
+
+    get config() {
+        return this.$store.state.config;
     }
 
     get settings() {

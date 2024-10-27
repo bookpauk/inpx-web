@@ -16,6 +16,8 @@ module.exports = {
     libDir: '',
     inpx: '',
     inpxFilterFile: '',
+    externalToolsConfig: '',
+    external: '',
 
     allowConfigRewrite: false,
     allowUnsafeFilter: false,
@@ -42,7 +44,7 @@ module.exports = {
     lowMemoryMode: false,
     fullOptimization: false,
 
-    webConfigParams: ['name', 'version', 'latestVersion', 'branch', 'bookReadLink', 'dbVersion', 'extendedSearch', 'latestReleaseLink', 'uiDefaults'],
+    webConfigParams: ['name', 'version', 'latestVersion', 'branch', 'bookReadLink', 'dbVersion', 'extendedSearch', 'latestReleaseLink', 'uiDefaults', 'external'],
 
     allowRemoteLib: false,
     remoteLib: false,

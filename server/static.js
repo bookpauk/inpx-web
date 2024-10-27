@@ -5,6 +5,7 @@ const yazl = require('yazl');
 const express = require('express');
 const utils = require('./core/utils');
 const webAppDir = require('../build/appdir');
+const {exec, execSync} = require('child_process');
 
 const log = new (require('./core/AppLogger'))().log;//singleton
 
@@ -39,7 +40,7 @@ module.exports = (app, config) => {
             const fileType = req.params.fileType;
 
             if (path.extname(fileName) === '') {//восстановление файлов {hash}.raw, {hash}.zip
-                let bookFile = `${config.bookDir}/${fileName}`;
+                let bookFile = path.resolve(`${config.bookDir}/${fileName}`);
                 const bookFileDesc = `${bookFile}.d.json`;
 
                 //восстановим из json-файла описания
@@ -47,8 +48,8 @@ module.exports = (app, config) => {
                     await utils.touchFile(bookFile);
                     await utils.touchFile(bookFileDesc);
 
-                    let desc = await fs.readFile(bookFileDesc, 'utf8');
-                    let downFileName = (JSON.parse(desc)).downFileName;
+                    let bookDesc = JSON.parse(await fs.readFile(bookFileDesc, 'utf8'));
+                    let downFileName = bookDesc.downFileName;
                     let gzipped = true;
 
                     if (!req.acceptsEncodings('gzip') || fileType) {
@@ -68,6 +69,110 @@ module.exports = (app, config) => {
                                 await generateZip(bookFile, rawFile, downFileName);
                             downFileName += '.zip';
                         } else {
+                            let extType = fileType.match(/^ext-([0-9a-z]+)$/i);
+                            if (extType && config.external[extType[1]]) {
+                                //external tools
+                                let ext = config.external[extType[1]];
+                                ext.ext = ext.ext || extType[1];
+
+                                if (!ext.active || !ext.cmd) {
+                                    throw new Error(`File type '${extType[0]}' is not active or has empty cmd`);
+                                }
+
+                                if (req.method === 'HEAD')
+                                    return res.end();
+
+                                let extVar = {
+                                    BOOKFILE: bookFile,
+                                    HASHFILE: path.basename(bookFile),
+                                    RESULTFILE: `${bookFile}.${ext.ext}`,
+                                    FILENAME: downFileName.replace(/\.fb2$/, `.${ext.ext}`),
+                                    EXTDIR: path.dirname(config.externalToolsConfig),
+                                    LIBFOLDER: bookDesc.libFolder,
+                                    LIBFILE: bookDesc.libFile,
+                                };
+
+                                let re = new RegExp("\\$\\{(.*?)\\}","gi");
+                                let cmd_line = ext.cmd.replace(re, function(matched){
+                                    return extVar[matched.replace(/[${}]/g, "")] || matched;
+                                });
+
+                                if (ext.debug)
+                                    log(`CMD_EXEC: ${cmd_line}`);
+
+                                //можно запускать GUI, например, локальную читалку или какой-то редактор/конвертер с интерфейсом
+                                if (ext.type === "gui") {
+                                    try {
+                                        let cmd = exec(cmd_line, {
+                                            cwd: `${config.publicFilesDir}${config.bookPathStatic}`,
+                                            windowsHide: false,
+                                        }, (error, stdout, stderr) => {
+                                            if (error) {
+                                                log(LM_ERR, error);
+                                                return res.end();
+                                            }
+                                            if (ext.debug) {
+                                                log(`CMD_stdout: ${stdout}`);
+                                                log(`CMD_stderr: ${stderr}`);
+                                            }
+                                        });
+                                    } catch (e) {
+                                        log(LM_ERR, e);
+                                        log(LM_ERR, e.stderr.toString());
+                                    }
+                                    return res.end();
+                                }
+
+                                //запуск cmd конвертера
+                                try {
+                                    let cmd = execSync(cmd_line, {
+                                        cwd: `${config.publicFilesDir}${config.bookPathStatic}`,
+                                        windowsHide: ext.debug ? false : true,
+                                        timeout: 60000,
+                                    });
+                                    if (ext.debug)
+                                        log("CMD_stdout: " + cmd.toString());
+                                } catch (e) {
+                                    log(LM_ERR, e);
+                                    log(LM_ERR, e.stderr.toString());
+                                    return res.end();
+                                }
+
+                                //если есть cmdExport и есть результат работы конвертера(RESULTFILE), то запускается cmdExport
+                                if (ext.cmdExport && await fs.pathExists(extVar.RESULTFILE)) {
+                                    cmd_line = ext.cmdExport.replace(re, function(matched){
+                                        return extVar[matched.replace(/[${}]/g, "")] || matched;
+                                    });
+                                    if (ext.debug)
+                                        log(`CMD_EXPORT: ${cmd_line}`);
+                                    try {
+                                        let cmd = execSync(cmd_line, {
+                                            cwd: `${config.publicFilesDir}${config.bookPathStatic}`,
+                                            windowsHide: ext.debug ? false : true,
+                                            timeout: 60000,
+                                        });
+                                        if (ext.debug)
+                                            log("CMD_stdout: " + cmd.toString());
+                                    } catch (e) {
+                                        log(LM_ERR, e);
+                                        log(LM_ERR, e.stderr.toString());
+                                        return res.end();
+                                    }
+                                }
+
+                                if (ext.type === "download") {
+                                    if (!await fs.pathExists(extVar.RESULTFILE))
+                                        throw new Error(`File not exists: '${extVar.RESULTFILE}'`);
+                                    //тут нужно посмотреть, что лучше inline или attachment. на inline может браузер со своими действиями влезть
+                                    //res.set('Content-Disposition', `attachment; filename*=UTF-8''${encodeURIComponent(extVar.FILENAME)}`);
+                                    //res.set('Content-Type', 'application/octet-stream');
+                                    res.set('Content-Disposition', `inline; filename*=UTF-8''${encodeURIComponent(extVar.FILENAME)}`);
+                                    res.set('Content-Length', fs.statSync(extVar.RESULTFILE).size);
+                                    res.set('Cache-Control', 'private');
+                                    return res.sendFile(extVar.RESULTFILE);
+                                }
+                                return res.end();
+                            }
                             throw new Error(`Unsupported file type: ${fileType}`);
                         }
                     }
