@@ -20,6 +20,7 @@ const propsToSave = [
     'loggingEnabled',
     'logServerStats',
     'logQueries',
+    'multyArchiveStorage',
     'dbCacheSize',
     'maxFilesDirSize',
     'queryCacheEnabled',

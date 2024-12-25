@@ -26,6 +26,7 @@ module.exports = {
     loggingEnabled: true,
     logServerStats: false,
     logQueries: false,
+    multyArchiveStorage: 'false',
 
     //поправить в случае, если были критические изменения в DbCreator или InpxParser
     //иначе будет рассинхронизация по кешу между сервером и клиентом на уровне БД

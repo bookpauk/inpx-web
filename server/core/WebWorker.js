@@ -70,7 +70,7 @@ class WebWorker {
 
             this.periodicCleanDir(dirConfig);//no await
             this.periodicCheckInpx();//no await
-            this.periodicCheckNewRelease();//no await
+            //this.periodicCheckNewRelease();//no await
 
             instance = this;
         }
@@ -393,20 +393,25 @@ class WebWorker {
     }
 
     async extractBook(libFolder, libFile) {
+        console.log('Entered extractBook: '  + ' LIB Folder: '+ libFolder + ' libFile: ' + libFile);
+
         const outFile = `${this.config.tempDir}/${utils.randomHexString(30)}`;
 
         libFolder = libFolder.replace(/\\/g, '/').replace(/\/\//g, '/');
 
         const folder = `${this.config.libDir}/${libFolder}`;
+        console.log('search book in folder: ' + folder);
         const file = libFile;
         
         const fullPath = `${folder}/${file}`;
+        console.log('full path: ' + fullPath);
 
         if (!file || await fs.pathExists(fullPath)) {// файл есть на диске
-            
+            console.log('file found on path: ' + fullPath);
             await fs.copy(fullPath, outFile);
             return outFile;
         } else {// файл в zip-архиве
+            console.log('search file in archive: ' + folder);
             const zipReader = new ZipReader();
             await zipReader.open(folder);
 
@@ -415,6 +420,16 @@ class WebWorker {
 
                 if (!await fs.pathExists(outFile)) {//не удалось найти в архиве, попробуем имя файла в кодировке cp866
                     await zipReader.extractToFile(iconv.encode(file, 'cp866').toString(), outFile);                    
+                }
+
+                if (!await fs.pathExists(outFile)) {//не удалось найти в архиве, возможно в архиве лежит архив с расширением zip
+                    console.log('search filename: ' + file.replace('.fb2', '.zip'));
+                    await zipReader.extractToFile(file.replace('.fb2', '.zip'), outFile);                    
+                }
+
+                if (!await fs.pathExists(outFile)) {//не удалось найти в архиве, и проверим последний вариант (с кодировкой и в архиве)
+                    console.log('search filename: ' + iconv.encode(file.replace('.fb2', '.zip'), 'cp866').toString());
+                    await zipReader.extractToFile(iconv.encode(file.replace('.fb2', '.zip'), 'cp866').toString(), outFile);                    
                 }
 
                 return outFile;
@@ -429,6 +444,7 @@ class WebWorker {
 
         let extractedFile = '';
         let hash = '';
+        console.log('Entered restoreBook ' + bookUid + ' LIB Folder: '+ libFolder + 'libFile: ' + libFile + 'Filename: '+ downFileName);
 
         if (!this.remoteLib) {
             extractedFile = await this.extractBook(libFolder, libFile);

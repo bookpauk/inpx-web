@@ -47,12 +47,12 @@
                     {{ book.title }}
                 </div>
                 <div v-if="(mode == 'title' || mode == 'extended') && bookSeries" class="q-ml-xs clickable2" @click.stop.prevent="emit('seriesClick')">
-                    {{ bookSeries }}
+                    {{ bookSeries }} 
                 </div>
 
 
                 <div class="q-ml-sm">
-                    {{ bookSize }}, {{ book.ext }}
+                    {{ bookSize }}, {{ book.ext }}, FileId: {{ book.file }}  
                 </div>
 
                 <div v-if="showInfo" class="q-ml-sm clickable" @click.stop.prevent="emit('bookInfo')">
@@ -163,6 +163,11 @@ class BookView {
             unit = 'MB';
         }
         return `${size.toFixed(0)}${unit}`;
+    }
+
+    get bookFileName() {
+        let FileName = this.book.file;
+        return FileName;
     }
 
     get rateColor() {

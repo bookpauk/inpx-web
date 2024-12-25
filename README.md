@@ -75,6 +75,7 @@ Options:
   --inpx=<filepath>    Задать путь к файлу .inpx, по умолчанию: тот, что найдется в директории библиотеки
   --recreate           Принудительно пересоздать поисковую БД при запуске приложения
   --unsafe-filter      Использовать небезопасный фильтр на свой страх и риск
+  --multyArchiveStorage=true      Если книги хранятся в архивах вида <префикс>-<ID первой книги в архиве>-<ID последней книги в архиве>.zip 
 ```
 
 <a id="config" />
@@ -408,6 +409,30 @@ node server --app-dir=.inpx-web
 ### Разработка
 ```sh
 npm run dev
+```
+
+
+### Для запуска в docker Container 
+
+В каталоге с приложением, собираем контейнер:
+```bash
+docker build . -t bpk/inpx-web
+```
+
+Пример команды запуска после сборки ниже.
+
+!не забыть перед выполнением заменить подстроки с флажками <host-libruArch> 
+```bash
+docker run \
+-v /bookshelf/inpx-web/config:/configDir \
+-v <host-libruArch>:/inpxDir \
+-v <host-libruArch>:/libDir \
+-v <host-libruData>:/dataDir \
+-p 12380:12380 \
+bpk/inpx-web node server --app-dir=.inpx-web \
+--data-dir=/dataDir \
+--lib-dir=/libDir \
+--multyArchiveStorage=true
 ```
 
 Связаться с автором проекта: [bookpauk@gmail.com](mailto:bookpauk@gmail.com)

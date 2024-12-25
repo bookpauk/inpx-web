@@ -63,6 +63,7 @@ class RemoteLib {
 
     async downloadBook(bookUid) {
         try {
+            console.log('download book '+ bookUid);
             const response = await await this.wsRequest({action: 'get-book-link', bookUid});
             const link = response.link;
 
