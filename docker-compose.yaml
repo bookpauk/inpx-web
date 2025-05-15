@@ -1,0 +1,10 @@
+services:
+  flibusta:
+    build:
+      context: ./
+    restart: unless-stopped
+    ports:
+      - "12380:12380/tcp"
+    volumes:
+      - "/main/Media/torrents/fb2.Flibusta.Net:/library"
+      - "/main/Media/torrents/fb2.Flibusta.Net/flibusta_fb2_local.inpx:/app/data/index.inpx"
