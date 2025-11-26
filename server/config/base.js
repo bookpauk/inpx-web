@@ -16,13 +16,15 @@ module.exports = {
     libDir: '',
     inpx: '',
     inpxFilterFile: '',
+    externalToolsConfig: '',
+    external: '',
 
     allowConfigRewrite: false,
     allowUnsafeFilter: false,
     accessPassword: '',
     accessTimeout: 0,
     extendedSearch: true,
-    bookReadLink: '',
+    bookReadLink: '/reader/?${DOWNLOAD_LINK}',
     loggingEnabled: true,
     logServerStats: false,
     logQueries: false,
@@ -42,7 +44,7 @@ module.exports = {
     lowMemoryMode: false,
     fullOptimization: false,
 
-    webConfigParams: ['name', 'version', 'latestVersion', 'branch', 'bookReadLink', 'dbVersion', 'extendedSearch', 'latestReleaseLink', 'uiDefaults'],
+    webConfigParams: ['name', 'version', 'latestVersion', 'branch', 'bookReadLink', 'dbVersion', 'extendedSearch', 'latestReleaseLink', 'uiDefaults', 'external'],
 
     allowRemoteLib: false,
     remoteLib: false,

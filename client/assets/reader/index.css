@@ -1,0 +1,758 @@
+/* ../../client/islets/core/y-design/y-design.styl:begin */
+/* ../../client/islets/core/y-design/y-design.styl:end */
+/* ../../client/core/chitalka-design/chitalka-design.styl:begin */
+/* ../../client/core/chitalka-design/chitalka-design.styl:end */
+/* ../../client/core/controls/controls.styl:begin */
+.controls_default._hidden .controls_default__menu {
+/*
+        Добавляем стартовое положение для анимации появления элемента menu.
+        131px - длина окружности кнопки "menu",
+        что бы выкатывание(появление) кнопки было реалистичней
+        */
+  -webkit-transform: translateX(-131px) rotate(-360deg);
+      -ms-transform: translateX(-131px) rotate(-360deg);
+          transform: translateX(-131px) rotate(-360deg);
+}
+.controls_default__menu {
+  width: 42px;
+  margin-left: 15px;
+  -webkit-user-select: none;
+     -moz-user-select: none;
+      -ms-user-select: none;
+          user-select: none;
+  -webkit-transition-timing-function: cubic-bezier(0.75, 0, 0.25, 1);
+          transition-timing-function: cubic-bezier(0.75, 0, 0.25, 1);
+  -webkit-transition-duration: 0.25s, 0.25s, 0.25s, 0.5s;
+          transition-duration: 0.25s, 0.25s, 0.25s, 0.5s;
+  -webkit-transition-property: background-color, -webkit-box-shadow, opacity, -webkit-transform;
+          transition-property: background-color, box-shadow, opacity, transform;
+  -webkit-transform: translateX(0) rotate(0);
+      -ms-transform: translateX(0) rotate(0);
+          transform: translateX(0) rotate(0);
+  border-radius: 21px;
+}
+.controls_default__trigger {
+  position: relative;
+  width: 42px;
+  height: 42px;
+  cursor: pointer;
+  background-repeat: no-repeat;
+  background-position: center, 50% 100%;
+}
+.controls_default__trigger._disabled {
+  cursor: default;
+}
+.controls_default__trigger::before {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  content: '';
+  width: 6px;
+  height: 28px;
+  margin: -14px 0 0 -3px;
+  background: #fff;
+  border-radius: 5px;
+  -webkit-box-shadow: 0 0 2px #999;
+          box-shadow: 0 0 2px #999;
+  -webkit-transition-timing-function: inherit;
+          transition-timing-function: inherit;
+  -webkit-transition-duration: 0.25s;
+          transition-duration: 0.25s;
+  -webkit-transition-property: width, height, margin, background-color;
+          transition-property: width, height, margin, background-color;
+  -webkit-transition: 0.15s width cubic-bezier(0.75, 0, 0.25, 1), 0.15s height cubic-bezier(0.75, 0, 0.25, 1), 0.15s margin cubic-bezier(0.75, 0, 0.25, 1), 0.05s background-color linear;
+          transition: 0.15s width cubic-bezier(0.75, 0, 0.25, 1), 0.15s height cubic-bezier(0.75, 0, 0.25, 1), 0.15s margin cubic-bezier(0.75, 0, 0.25, 1), 0.05s background-color linear;
+}
+.controls_default__plus,
+.controls_default__minus {
+  position: relative;
+  width: 42px;
+  height: 42px;
+  cursor: pointer;
+  background-repeat: no-repeat;
+  background-position: center, 50% 100%;
+}
+.controls_default__plus._disabled,
+.controls_default__minus._disabled {
+  cursor: default;
+}
+.controls_default__plus::before,
+.controls_default__minus::before {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  content: '';
+  height: 2px;
+  width: 18px;
+  margin: -1px 0 0 -9px;
+  background: #000;
+}
+.controls_default__plus:hover::before,
+.controls_default__minus:hover::before,
+.controls_default__plus:hover::after,
+.controls_default__minus:hover::after {
+  background: #ffce00;
+}
+.controls_default__plus._disabled::before,
+.controls_default__minus._disabled::before,
+.controls_default__plus._disabled::after,
+.controls_default__minus._disabled::after {
+  background: #ccc !important;
+}
+.controls_default__plus::after {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  content: '';
+  width: 2px;
+  height: 18px;
+  margin: -9px 0 0 -1px;
+  background: #000;
+}
+.controls_default__footnotes {
+  position: relative;
+  width: 42px;
+  height: 42px;
+  cursor: pointer;
+  background-repeat: no-repeat;
+  background-position: center, 50% 100%;
+  line-height: 40px;
+  text-align: center;
+}
+.controls_default__footnotes._disabled {
+  cursor: default;
+}
+.controls_default__footnotes._mode_appendix .controls_default__footnotes-footnote {
+  vertical-align: super;
+  font-size: 13px;
+}
+.controls_default__pages {
+  position: relative;
+  width: 42px;
+  height: 42px;
+  cursor: pointer;
+  background-repeat: no-repeat;
+  background-position: center, 50% 100%;
+  text-align: center;
+  line-height: 42px;
+}
+.controls_default__pages._disabled {
+  cursor: default;
+}
+.controls_default__pages::before {
+  position: absolute;
+  z-index: 1;
+  top: 0;
+  left: 0;
+  content: 'auto';
+  width: 100%;
+  height: 100%;
+/* Выравнивает текст по центру */
+  line-height: 34px;
+}
+.controls_default__pages-one {
+  width: 8px;
+  height: 14px;
+  display: inline-block;
+  border: 2px solid #eee;
+}
+.controls_default__pages-two {
+  position: relative;
+  width: 12px;
+  height: 14px;
+  margin-left: 3px;
+  display: inline-block;
+  border: 2px solid #eee;
+}
+.controls_default__pages-two::before {
+  position: absolute;
+  left: 50%;
+  content: '';
+  margin-left: -1px;
+  width: 2px;
+  height: 100%;
+  background: #eee;
+}
+.controls_default__pages._mode_one::before,
+.controls_default__pages._mode_two::before {
+  display: none;
+}
+.controls_default__pages._mode_one .controls_default__pages-one,
+.controls_default__pages._mode_two .controls_default__pages-two {
+  border-color: #000;
+  margin-left: 0;
+}
+.controls_default__pages._mode_two .controls_default__pages-two::before {
+  background: #000;
+}
+.controls_default__pages._mode_one .controls_default__pages-two {
+  display: none;
+}
+.controls_default__pages._mode_two .controls_default__pages-one {
+  display: none;
+}
+.controls_default__menu._state_closed {
+  background-color: rgba(127,127,127,0.5);
+}
+.controls_default__menu._state_closed .controls_default__buttons {
+  height: 0 !important;
+}
+.controls_default__buttons {
+  overflow: hidden;
+  -webkit-transition-timing-function: cubic-bezier(0.75, 0, 0.25, 1);
+          transition-timing-function: cubic-bezier(0.75, 0, 0.25, 1);
+  -webkit-transition-duration: 0.25s;
+          transition-duration: 0.25s;
+  -webkit-transition-property: height opacity;
+          transition-property: height opacity;
+  -webkit-transform: translateZ(0);
+          transform: translateZ(0);
+}
+.controls_default__menu._state_opened {
+  background-color: #fff;
+  -webkit-box-shadow: rgba(0,0,0,0.3) 0 1px 4px 0;
+          box-shadow: rgba(0,0,0,0.3) 0 1px 4px 0;
+}
+.controls_default__menu._state_opened .controls_default__trigger::before {
+  height: 10px;
+  width: 10px;
+  margin: -5px 0 0 -5px;
+  -webkit-box-shadow: none;
+          box-shadow: none;
+  background: #000;
+  -webkit-transition: 0.15s width cubic-bezier(0.75, 0, 0.25, 1), 0.15s height cubic-bezier(0.75, 0, 0.25, 1), 0.15s margin cubic-bezier(0.75, 0, 0.25, 1);
+          transition: 0.15s width cubic-bezier(0.75, 0, 0.25, 1), 0.15s height cubic-bezier(0.75, 0, 0.25, 1), 0.15s margin cubic-bezier(0.75, 0, 0.25, 1);
+}
+.controls_default__menu._state_opened .controls_default__trigger:hover::before {
+  background: #ffce00;
+}
+.controls_default._hidden .controls_default__arrow-right {
+  opacity: 0;
+}
+.controls_default__arrow-left,
+.controls_default__arrow-right {
+  position: absolute;
+  top: 90px;
+  bottom: 4px;
+  width: 70px;
+  cursor: pointer;
+  -webkit-user-select: none;
+     -moz-user-select: none;
+      -ms-user-select: none;
+          user-select: none;
+  -webkit-transition: -webkit-transform 0.5s ease;
+          transition: transform 0.5s ease;
+}
+.controls_default__arrow-left:hover .controls_default__arrow-inner,
+.controls_default__arrow-right:hover .controls_default__arrow-inner {
+  opacity: 1;
+}
+.controls_default__arrow-left .controls_default__arrow-inner,
+.controls_default__arrow-right .controls_default__arrow-inner {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 13px;
+  height: 24px;
+  margin-top: -12px;
+  margin-left: -6.5px;
+  opacity: 0.3;
+  background: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHhtbG5zOnhsaW5rPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5L3hsaW5rIiB3aWR0aD0iMTMiIGhlaWdodD0iNDgiIHZpZXdCb3g9IjAgMCAxMyA0OCI+PHN2ZyB3aWR0aD0iMTMiIGhlaWdodD0iMjQiIGlkPSJhcnJvd19sZWZ0IiB5PSIwIj48cGF0aCBkPSJNMTMgLjY2N0wxMi4zMTYgMCAwIDEyLjAxbC42ODQuNjY3TDEzIC42NjdtMCAyMi42NjZsLS42ODQuNjY3TDAgMTEuOTlsLjY4NC0uNjY3TDEzIDIzLjMzMyIgb3BhY2l0eT0iMSIgZmlsbD0iIzAwMCIvPjwvc3ZnPjxzdmcgd2lkdGg9IjEzIiBoZWlnaHQ9IjI0IiBpZD0iYXJyb3dfcmlnaHQiIHk9IjI0Ij48cGF0aCBkPSJNMCAuNjY3TC42ODQgMCAxMyAxMi4wMWwtLjY4NC42NjdMMCAuNjY3bTAgMjIuNjY2TC42ODQgMjQgMTMgMTEuOTlsLS42ODQtLjY2N0wwIDIzLjMzMyIgb3BhY2l0eT0iMSIgZmlsbD0iIzAwMCIvPjwvc3ZnPjwvc3ZnPgo=");
+  transition: opacity 0.3s ease;
+/*.y-ua_svg_no &  {*/
+/*background-image: url(images/arrows.png);*/
+/*}*/
+}
+.controls_default__arrow-left._disabled {
+  -webkit-transform: translateX(-100%);
+      -ms-transform: translateX(-100%);
+          transform: translateX(-100%);
+}
+.controls_default__arrow-left {
+  left: 0;
+}
+.controls_default__arrow-right .controls_default__arrow-inner {
+  background-position: 0 -24px;
+}
+.controls_default__arrow-right._disabled {
+  -webkit-transform: translateX(100%);
+      -ms-transform: translateX(100%);
+          transform: translateX(100%);
+}
+.controls_default__arrow-right {
+  opacity: 1;
+  right: 0;
+}
+/* ../../client/core/controls/controls.styl:end */
+/* ../../client/core/spin/_skin/spin_skin_size-l.styl:begin */
+/* ../../client/core/spin/_skin/spin_skin_size-l.styl:end */
+/* ../../client/core/chitalka-fb2/chitalka-fb2.styl:begin */
+.chitalka-fb2_default {
+  font-family: Arial, serif;
+  min-height: 50ch;
+}
+.chitalka-fb2_default__book {
+  height: 100%;
+  width: 100%;
+  -webkit-column-count: 2;
+  -moz-column-count: 2;
+  column-count: 2;
+  -webkit-column-gap: 50px;
+  -moz-column-gap: 50px;
+  column-gap: 50px;
+  -webkit-column-axis: horizont;
+  -moz-column-axis: horizont;
+  column-axis: horizont;
+}
+@media (max-width: 1400px) {
+  .chitalka-fb2_default__book {
+/* Здесь так, потому что вебкит не понимает одну колонку и вытягивает её в высоту */
+    width: 200%;
+    -webkit-column-gap: 40px;
+    -moz-column-gap: 40px;
+    column-gap: 40px;
+  }
+}
+.chitalka-fb2_default__book img {
+  max-width: 100%;
+  max-height: 100%;
+}
+.chitalka-fb2_default__title {
+  position: relative;
+  width: 650px;
+  height: 52px;
+  margin: 15px auto 0;
+  text-align: center;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  color: #999;
+}
+.chitalka-fb2_default__bookholder {
+/* Два раза width, потому что деградация */
+/*width: 700px;*/
+/* 1ch = ширина буквы 0 в данном шрифте, подробнее тут https://developer.mozilla.org/ru/docs/Web/CSS/length */
+/* заокомментировано на память, когда решим проблему */
+/*width: 60ch;*/
+/*width: 650px;*/
+/* в Войне и мире начинают глючит вычисление whatPageIsDomElem  */
+/*width: 70ch;*/
+/*max-width: 700px;*/
+/* нужно было, когда размер был в ch */
+/*height: 800px;*/
+/* Для выравнивания по середие */
+  margin: 0 auto;
+  font: 15px/1.4 Arial, sans-serif;
+  overflow: hidden;
+  color: #333;
+/* Первый параграф в section, где есть заголовок уровня h1 можно сделать без отступа */
+  width: 1300px;
+  position: absolute;
+  top: 77px;
+  bottom: 60px;
+  left: 81px;
+  right: 81px;
+  -webkit-transform: translateZ(0);
+          transform: translateZ(0);
+}
+.chitalka-fb2_default__bookholder p {
+  padding: 0;
+  margin: 0;
+  text-align: justify;
+  -webkit-hyphens: auto;
+     -moz-hyphens: auto;
+      -ms-hyphens: auto;
+          hyphens: auto;
+}
+.chitalka-fb2_default__bookholder section {
+/* ни в коем случае не использовать before, иначе баг в вебките! */
+  -webkit-column-break-after: always;
+  page-break-inside: avoid;
+/* у неправильно размеченных книг и такое бывает */
+/* Но если вдруг вложена глава, то применяем несколько иные правила */
+/* Первая глава наверняка захочет приклеиться к названию части или истории */
+}
+.chitalka-fb2_default__bookholder section section {
+  -webkit-column-break-after: auto;
+  page-break-inside: unset;
+}
+.chitalka-fb2_default__bookholder section section.chapter {
+  -webkit-column-break-after: always;
+  page-break-inside: avoid;
+}
+.chitalka-fb2_default__bookholder section section.chapter:first-of-type {
+  column-break-after: auto;
+  page-break-inside: unset;
+}
+.chitalka-fb2_default__bookholder .wrapper {
+  -webkit-column-break-after: always;
+  page-break-inside: avoid;
+}
+.chitalka-fb2_default__bookholder .annotation {
+  -webkit-column-break-inside: avoid;
+  page-break-inside: avoid;
+}
+._footnotes_inline .chitalka-fb2_default__bookholder a.footnote {
+  text-decoration: none;
+  color: #333;
+  cursor: text;
+}
+._footnotes_inline .chitalka-fb2_default__bookholder a.footnote:after {
+  content: " [" attr(title) "]";
+}
+._footnotes_inline .chitalka-fb2_default__bookholder a sup {
+  display: none;
+}
+.chitalka-fb2_default__bookholder h1 ~ p:first-of-type,
+.chitalka-fb2_default__bookholder section.book__annotation > p:first-of-type,
+.chitalka-fb2_default__bookholder h1 ~ section > p:first-of-type {
+  text-indent: 0;
+}
+.chitalka-fb2_default__bookholder p {
+  text-indent: 1.3em;
+}
+.chitalka-fb2_default__bookholder h1 {
+  display: block;
+  font-size: 2.2em;
+  -webkit-margin-before: 1.34em;
+  -webkit-margin-before: 0.67em;
+  font-weight: normal;
+}
+.chitalka-fb2_default__bookholder section h1:first-of-type {
+  margin-top: 0;
+}
+.chitalka-fb2_default__bookholder h2,
+.chitalka-fb2_default__bookholder h3,
+.chitalka-fb2_default__bookholder h4,
+.chitalka-fb2_default__bookholder h5 {
+/* Делаем заранее огромный паддинг */
+  padding-bottom: 2em;
+/* и притягиваем текст, достигается эффект, при котором не возникает разрыва страницы между заголовком и первым параграфом */
+  margin-bottom: -1em;
+  margin-top: 2em;
+  -webkit-column-break-inside: avoid;
+  page-break-inside: avoid;
+}
+.chitalka-fb2_default__bookholder h2 + h2,
+.chitalka-fb2_default__bookholder h3 + h3,
+.chitalka-fb2_default__bookholder h4 + h4,
+.chitalka-fb2_default__bookholder h5 + h5 {
+  margin-top: -2em;
+}
+.chitalka-fb2_default__bookholder .book__cover {
+  position: relative;
+  height: 100%;
+}
+.chitalka-fb2_default__bookholder .book__cover img {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  -webkit-transform: translate(-50%, -50%);
+      -ms-transform: translate(-50%, -50%);
+          transform: translate(-50%, -50%);
+}
+.chitalka-fb2_default__bookholder .image-small {
+  margin-bottom: 20px;
+}
+.chitalka-fb2_default__bookholder .image + br,
+.chitalka-fb2_default__bookholder .image + p + br {
+  display: none;
+}
+.chitalka-fb2_default__bookholder .image {
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: -ms-flexbox;
+  display: flex;
+  overflow: hidden;
+  max-height: 100%;
+  max-width: 100%;
+  -webkit-column-break-inside: avoid;
+  page-break-inside: avoid;
+  -webkit-box-orient: vertical;
+  -webkit-box-direction: normal;
+  -webkit-flex-direction: column;
+      -ms-flex-direction: column;
+          flex-direction: column;
+  -webkit-box-sizing: border-box;
+     -moz-box-sizing: border-box;
+          box-sizing: border-box;
+  padding: 1em 0;
+}
+.chitalka-fb2_default__bookholder .image__wrapper {
+  max-width: 100%;
+  max-height: 100%;
+  -webkit-flex-shrink: 1;
+  -ms-flex-negative: 1;
+      flex-shrink: 1;
+  overflow: hidden;
+}
+.chitalka-fb2_default__bookholder .image__annotation {
+  -webkit-flex-shrink: 0;
+  -ms-flex-negative: 0;
+      flex-shrink: 0;
+  padding: 0.5em 0;
+}
+.chitalka-fb2_default__bookholder .image__annotation p {
+  text-align: center;
+  text-indent: 0;
+}
+.chitalka-fb2_default__bookholder .image img {
+  display: block;
+  max-height: 100%;
+  max-width: 100%;
+  margin: 0 auto;
+  pointer-events: none;
+  -webkit-user-select: none;
+     -moz-user-select: none;
+      -ms-user-select: none;
+          user-select: none;
+}
+.chitalka-fb2_default__bookholder .image + p {
+  display: none;
+}
+.chitalka-fb2_default__bookholder .epigraph {
+  margin: 0 0 2em auto;
+  max-width: 20em;
+  text-align: right;
+}
+.chitalka-fb2_default__bookholder .epigraph .author {
+  margin: 0.5em 0 0;
+}
+.chitalka-fb2_default__bookholder .epigraph p {
+  display: inline-block;
+  max-width: inherit;
+  text-indent: 0;
+  text-align: justify;
+}
+@media (max-width: 1400px) {
+  .chitalka-fb2_default__bookholder {
+    width: 650px;
+  }
+}
+._pages_one .chitalka-fb2_default__book {
+  width: 200%;
+  -webkit-column-gap: 40px;
+  -moz-column-gap: 40px;
+  column-gap: 40px;
+}
+._pages_two .chitalka-fb2_default__book {
+  width: 100%;
+  -webkit-column-gap: 50px;
+  -moz-column-gap: 50px;
+  column-gap: 50px;
+}
+._pages_one .chitalka-fb2_default__bookholder {
+  width: 650px;
+}
+._pages_two .chitalka-fb2_default__bookholder {
+  width: 1300px;
+}
+/* ../../client/core/chitalka-fb2/chitalka-fb2.styl:end */
+/* ../../client/core/spin/_skin/spin_skin_common.styl:begin */
+/* ../../client/core/spin/_skin/spin_skin_common.styl:end */
+/* ../../client/core/chitalka-ui/chitalka-ui.styl:begin */
+.chitalka-ui {
+  font: 15px/1.4 Arial, sans-serif;
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  overflow: hidden;
+  min-width: 790px;
+}
+.chitalka-ui._drag {
+  background: #fff;
+}
+.chitalka-ui._drag::after {
+  position: absolute;
+  content: '';
+  left: 30px;
+  bottom: 30px;
+  right: 30px;
+  top: 30px;
+  text-align: center;
+  border: 4px dashed #0f0;
+}
+.chitalka-ui._drag::before {
+  position: absolute;
+  top: 50%;
+  width: 100%;
+  -webkit-transform: translateY(-50%);
+      -ms-transform: translateY(-50%);
+          transform: translateY(-50%);
+  text-align: center;
+  content: 'drag file here';
+}
+.chitalka-ui._mode_one-page {
+  min-width: 790px;
+}
+.chitalka-ui._mode_two-page {
+  min-width: 1490px;
+}
+.chitalka-ui__book {
+  padding: 0 30px;
+  visibility: visible;
+  opacity: 1;
+  -webkit-transition: visibility 0s ease, opacity 1s ease;
+          transition: visibility 0s ease, opacity 1s ease;
+}
+.chitalka-ui__controls {
+  position: absolute;
+  top: 15px;
+  right: 0;
+  bottom: 0;
+  left: 0;
+}
+.chitalka-ui__progress-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 4px;
+  background: #fc0;
+  -webkit-transition: width 0.5s ease;
+          transition: width 0.5s ease;
+}
+.chitalka-ui__progress {
+  font-size: 12px;
+  position: absolute;
+  bottom: 15px;
+  left: 50%;
+  margin-left: -150px;
+  width: 300px;
+  text-align: center;
+  color: #999;
+}
+.chitalka-ui__estimated {
+  font-size: 12px;
+  position: absolute;
+  bottom: 15px;
+  right: 15px;
+  text-align: right;
+  width: 200px;
+  color: #999;
+}
+.chitalka-ui._loading .chitalka-ui__loader {
+  display: block;
+}
+.chitalka-ui__loader,
+.chitalka-ui._loading .chitalka-ui__progress,
+.chitalka-ui._loading .chitalka-ui__estimated,
+.chitalka-ui._drag .chitalka-ui__progress,
+.chitalka-ui._drag .chitalka-ui__loader,
+.chitalka-ui._drag .chitalka-ui__estimated {
+  display: none;
+}
+.chitalka-ui._loading .chitalka-ui__book,
+.chitalka-ui._drag .chitalka-ui__book {
+  visibility: hidden;
+  opacity: 0;
+}
+.chitalka-ui._no-book::before {
+  position: absolute;
+  top: 50%;
+  width: 100%;
+  -webkit-transform: translateY(-50%);
+      -ms-transform: translateY(-50%);
+          transform: translateY(-50%);
+  text-align: center;
+  content: 'no book, drag book here';
+}
+.chitalka-ui__loader {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  text-align: center;
+/* Псевдо-элмемент нужен для вертикального выравнивания inline-block'а */
+}
+.chitalka-ui__loader:after {
+  display: inline-block;
+  height: 100%;
+  content: '';
+  vertical-align: middle;
+}
+.chitalka-ui__back-to-page {
+  font-size: 12px;
+  position: absolute;
+  bottom: 15px;
+  left: 15px;
+  width: 200px;
+  display: none;
+  color: #999;
+  cursor: pointer;
+  text-decoration: underline;
+}
+.chitalka-ui__back-to-page:hover {
+  color: #333;
+}
+.chitalka-ui__back-to-page._visible {
+  display: block;
+}
+/* ../../client/core/chitalka-ui/chitalka-ui.styl:end */
+/* ../../client/core/spin/spin_default-large.styl:begin */
+.spin_default-large {
+/* Для правильного позиционирования прелоадера относительно baseline */
+  width: 38px;
+  height: 38px;
+  font-size: 18px;
+  line-height: 34px;
+  background-position: -2px -106px;
+}
+.spin_default-large {
+  display: inline-block;
+  -webkit-box-sizing: border-box;
+     -moz-box-sizing: border-box;
+          box-sizing: border-box;
+  border: 2px solid transparent;
+  border-radius: 100px;
+/*
+       * Поддержка CSS анимаций и CSS градиентов у основных браузеров совпадает
+       * Если браузер не поддерживает градиенты, будет показана gif-анимация
+       */
+  background-image: url("../../client/core/spin/images/spin.gif");
+  background-image: -webkit-gradient(linear, left top, right top, from(rgba(0,0,0,0)), to(rgba(0,0,0,0)));
+  background-image: -webkit-linear-gradient(left, rgba(0,0,0,0), rgba(0,0,0,0));
+  background-image: linear-gradient(to right, rgba(0,0,0,0), rgba(0,0,0,0));
+}
+.spin_default-large:after {
+  visibility: hidden;
+  content: '\00A0'; /* &nbsp; */
+}
+.spin_default-large._progressed {
+  display: inline-block;
+  -webkit-animation: spin 1s infinite linear;
+          animation: spin 1s infinite linear;
+  -webkit-backface-visibility: hidden;
+          backface-visibility: hidden; /* Для ускорения анимации */
+}
+@-webkit-keyframes spin {
+  from {
+    border-top-color: #fc0;
+    border-left-color: #fc0;
+    -webkit-transform: rotate(0deg);
+            transform: rotate(0deg);
+  }
+  to {
+    border-top-color: #fc0;
+    border-left-color: #fc0;
+    -webkit-transform: rotate(360deg);
+    transform: rotate(360deg);
+  }
+}
+@keyframes spin {
+  from {
+    border-top-color: #fc0;
+    border-left-color: #fc0;
+    -webkit-transform: rotate(0deg);
+            transform: rotate(0deg);
+  }
+  to {
+    border-top-color: #fc0;
+    border-left-color: #fc0;
+    -webkit-transform: rotate(360deg);
+    transform: rotate(360deg);
+  }
+}
+/* ../../client/core/spin/spin_default-large.styl:end */

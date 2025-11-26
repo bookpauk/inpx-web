@@ -28,6 +28,16 @@ class DbCreator {
                 filter.excludeSet = new Set(filter.excludeAuthors);
             }
 
+            if (filter.includeLangs) {
+                filter.includeLangs = filter.includeLangs.map(a => a.toLowerCase());
+                filter.includeLangSet = new Set(filter.includeLangs);
+            }
+
+            if (filter.excludeLangs) {
+                filter.excludeLangs = filter.excludeLangs.map(a => a.toLowerCase());
+                filter.excludeLangSet = new Set(filter.excludeLangs);
+            }
+
             return filter;
         } else {
             return false;
@@ -94,13 +104,14 @@ class DbCreator {
             }
 
             filter = (rec) => {
+                let excluded = false;
+
                 let author = rec.author;
                 if (!author)
                     author = emptyFieldValue;
 
                 author = author.toLowerCase();
 
-                let excluded = false;
                 if (inpxFilter.excludeSet) {
                     const authors = author.split(',');
 
@@ -112,8 +123,21 @@ class DbCreator {
                     }
                 }
 
+                let lang = rec.lang;
+                if (!lang)
+                    lang = emptyFieldValue;
+
+                lang = lang.toLowerCase();
+
+                if (inpxFilter.excludeLangSet) {
+                    if (inpxFilter.excludeLangSet.has(lang)) {
+                        excluded = true;
+                    }
+                }
+
                 return recFilter(rec)
                     && (!inpxFilter.includeSet || inpxFilter.includeSet.has(author))
+                    && (!inpxFilter.includeLangSet || inpxFilter.includeLangSet.has(lang))
                     && !excluded
                 ;
             };
