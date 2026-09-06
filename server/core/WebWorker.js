@@ -451,7 +451,7 @@ class WebWorker {
                 await utils.touchFile(bookFile);
             }
 
-            await fs.writeFile(bookFileDesc, JSON.stringify({libFolder, libFile, downFileName}));
+            await fs.writeFile(bookFileDesc, JSON.stringify({bookUid, libFolder, libFile, downFileName}));
         } else {
             if (extractedFile)
                 await fs.remove(extractedFile);
@@ -469,6 +469,36 @@ class WebWorker {
         });
 
         return link;
+    }
+
+    //в .d.json, созданных до появления полки, нет bookUid: по нему статика узнает, что скачали
+    async updateBookFileDesc(bookFileDesc, bookUid) {
+        try {
+            const desc = JSON.parse(await fs.readFile(bookFileDesc, 'utf8'));
+            if (desc.bookUid !== bookUid) {
+                desc.bookUid = bookUid;
+                await fs.writeFile(bookFileDesc, JSON.stringify(desc));
+            }
+        } catch (e) {
+            log(LM_ERR, `updateBookFileDesc error: ${e.message}`);
+        }
+    }
+
+    async getBookRecord(bookUid) {
+        this.checkMyState();
+
+        const db = this.db;
+        const rows = await db.select({table: 'book', where: `@@hash('_uid', ${db.esc(bookUid)})`});
+        return (rows.length ? rows[0] : null);
+    }
+
+    //для файлов, попавших в кеш до появления полки, bookUid в .d.json нет — ищем по хешу
+    async getBookUidByHash(hash) {
+        this.checkMyState();
+
+        const rows = await this.db.select({table: 'file_hash'});
+        const found = rows.find(r => r.hash === hash);
+        return (found ? found.id : '');
     }
 
     async getBookLink(bookUid) {
@@ -517,6 +547,7 @@ class WebWorker {
 
                 if (await fs.pathExists(bookFile) && await fs.pathExists(bookFileDesc)) {
                     link = `${this.config.bookPathStatic}/${hash}`;
+                    await this.updateBookFileDesc(bookFileDesc, bookUid);
                 }
             }
 

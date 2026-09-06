@@ -59,6 +59,13 @@ module.exports = {
         port: '22380',
         root: '',
     },
+    //полка «Избранное»: скачанные книги попадают в нее автоматически
+    favorites: {
+        enabled: true,
+        autoAdd: true,
+        maxCount: 5000,
+    },
+
     //opds: false,
     opds: {
         enabled: true,
