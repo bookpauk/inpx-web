@@ -28,6 +28,14 @@ module.exports = (app, config) => {
     config.bookPathStatic = `${config.rootPathStatic}/book`;
     config.bookDir = `${config.publicFilesDir}/book`;
     */
+    //tolino качает книги методом POST: для отдачи файла это тот же GET, иначе express отвечает 404
+    app.use(config.bookPathStatic, (req, res, next) => {
+        if (req.method === 'POST')
+            req.method = 'GET';
+
+        return next();
+    });
+
     //загрузка или восстановление файлов в /public-files, при необходимости
     app.use([`${config.bookPathStatic}/:fileName/:fileType`, `${config.bookPathStatic}/:fileName`], async(req, res, next) => {
         if (req.method !== 'GET' && req.method !== 'HEAD') {

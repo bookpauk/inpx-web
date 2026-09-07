@@ -61,7 +61,8 @@ class BasePage {
         return this.makeLink({
             href: (attrs.hrefAsIs ? attrs.href : `${this.opdsRoot}${attrs.href || ''}`),
             rel: attrs.rel || 'subsection',
-            type: 'application/atom+xml;profile=opds-catalog;kind=navigation',
+            //без kind=: tolino сравнивает тип целиком и ссылку с лишним параметром игнорирует
+            type: 'application/atom+xml;profile=opds-catalog',
         });
     }
 
@@ -69,7 +70,7 @@ class BasePage {
         return this.makeLink({
             href: (attrs.hrefAsIs ? attrs.href : `${this.opdsRoot}${attrs.href || ''}`),
             rel: attrs.rel || 'subsection',
-            type: 'application/atom+xml;profile=opds-catalog;kind=acquisition',
+            type: 'application/atom+xml;profile=opds-catalog',
         });
     }
 
@@ -114,7 +115,29 @@ class BasePage {
         return result;
     }
 
+    //tolino ходит по записи только через ссылку без rel: дублируем навигационную, subsection остается для остальных
+    addPlainNavLinks(content) {
+        const entries = (Array.isArray(content.entry) ? content.entry : (content.entry ? [content.entry] : []));
+
+        for (const entry of entries) {
+            if (!entry.link)
+                continue;
+
+            const links = (Array.isArray(entry.link) ? entry.link : [entry.link]);
+            const nav = links.find(l => l['*ATTRS'] && l['*ATTRS'].rel === 'subsection');
+
+            if (!nav || links.some(l => l['*ATTRS'] && !l['*ATTRS'].rel))
+                continue;
+
+            const attrs = Object.assign({}, nav['*ATTRS']);
+            delete attrs.rel;
+            entry.link = links.concat([{'*ATTRS': attrs}]);
+        }
+    }
+
     makeBody(content, req) {
+        this.addPlainNavLinks(content);
+
         const base = this.makeEntry({id: this.id, title: this.title});
         base['*ATTRS'] = {
             'xmlns': 'http://www.w3.org/2005/Atom',
