@@ -86,5 +86,7 @@ module.exports = function(app, config) {
         }));
     }
     app.get(opdsPaths, opds);
+    //tolino и другие читалки проверяют каталог методом POST: без этого они получают 404 и не идут дальше
+    app.post(opdsPaths, opds);
 };
 
